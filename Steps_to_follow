@@ -1,7 +1,7 @@
 *) Download and convert the dataset as tfds
 *) Visualize the source and target lengths
-*) Generalize the text summarization BERT script to Machine translation
-*) Encoder side BERT should be BERT_base. 
-*) Decoder side BERT should be multilingual BERT. Embeddings for Tamil words are extracted from it.
+*) Generalize the text summarization BERT script to suit Machine translation
+*) Encoder part should be BERT_base. 
+*) Decoder part should be multilingual BERT. Embeddings for Tamil words are extracted from it.
 *) Seperate english and tamil vocab should be used
 *) Decode the source and target sentences using BERT tokenizer
