@@ -8,7 +8,7 @@ dataset_name = 'cnn'
 g_drive_vocab_path = '/content/drive/My Drive/Client_demo/input_files/Vocab_files'
 file_path = {
         'best_ckpt_path' : "/content/drive/My Drive/Text_summarization/BERT_text_summarisation/created_files/training_summarization_model_ckpts/cnn/best_checkpoints",  
-        'checkpoint_path' : "/content/",
+        'checkpoint_path' : "/content/drive/My Drive/Text_summarization/BERT_text_summarisation/cnn_checkpoints",
         'G_drive_vocab_path' : g_drive_vocab_path,
         'infer_csv_path' : os.path.join(core_path, "BERT_text_summarisation/input_files/Azure_dataset/Test.csv"),
         'infer_ckpt_path' : "/content/drive/My Drive/Text_summarization/BERT_text_summarisation/cnn_checkpoints/ckpt-1",
