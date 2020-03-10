@@ -79,9 +79,9 @@ def filter_batch_token_size(x, y):
 def map_batch_shuffle(dataset, 
                       buffer_size, 
                       split, 
+                      batch_size,
                       shuffle=True, 
-                      batch_size=h_parms.batch_size,
-                      filter_off=False):
+                      ):
     tf_dataset = dataset.map(
                             tf_encode(
                                 tokenizer, 
@@ -89,18 +89,15 @@ def map_batch_shuffle(dataset,
                                 config.summ_length
                                 ), num_parallel_calls=tf.data.experimental.AUTOTUNE
                             )
-    if not filter_off:
-        tf_dataset = tf_dataset.filter(filter_combined_length)
+    tf_dataset = tf_dataset.filter(filter_combined_length)
     tf_dataset = tf_dataset.cache()
-    if split == 'train' and shuffle and (not config.use_tfds):
+    if split == 'train' and shuffle:
        tf_dataset = tf_dataset.shuffle(buffer_size, seed = 100)
     tf_dataset = tf_dataset.padded_batch(batch_size, padded_shapes=([-1], [-1]))
     tf_dataset = tf_dataset.prefetch(buffer_size=AUTOTUNE)
     return tf_dataset
     
-def create_train_data(num_samples_to_train=config.num_examples_to_train, 
-                      shuffle=True, 
-                      filter_off=False):
+def create_train_data(num_samples_to_train=config.num_examples_to_train):
 
     if config.use_tfds:
         train_examples, _ = tfds.load(
@@ -121,6 +118,7 @@ def create_train_data(num_samples_to_train=config.num_examples_to_train,
                                       )
         train_buffer_size = 287113
         valid_buffer_size = 13368
+        shuffle=False
     else:
         doc, summ = create_dataframe(file_path.train_csv_path, num_samples_to_train)
         X_train, X_test, y_train, y_test = train_test_split(
@@ -133,20 +131,20 @@ def create_train_data(num_samples_to_train=config.num_examples_to_train,
         valid_examples = tf.data.Dataset.from_tensor_slices((X_test, y_test))
         train_buffer_size = len(X_train) 
         valid_buffer_size = len(X_test)
+        shuffle=True
     train_dataset = map_batch_shuffle(
                                      train_examples, 
                                      train_buffer_size, 
                                      split = 'train',
                                      shuffle = shuffle,
-                                     batch_size=h_parms.batch_size,
-                                     filter_off=filter_off
+                                     batch_size=h_parms.batch_size
                                      )
     valid_dataset = map_batch_shuffle(
                                      valid_examples, 
                                      valid_buffer_size, 
                                      split='valid',
-                                     batch_size=h_parms.validation_batch_size,
-                                     filter_off=filter_off
+                                     shuffle = shuffle,
+                                     batch_size=h_parms.validation_batch_size
                                      )
     log.info('Train and Test tf_datasets created')
     return (train_dataset, valid_dataset, train_buffer_size, valid_buffer_size)

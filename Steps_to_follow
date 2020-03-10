@@ -1,3 +1,4 @@
+*) Add l2 regularization loss during loss calculation in the triaing loop
 *) Download and convert the dataset as tfds
 *) Visualize the source and target lengths
 *) Generalize the text summarization BERT script to suit Machine translation

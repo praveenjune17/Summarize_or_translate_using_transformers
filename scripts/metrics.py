@@ -84,7 +84,7 @@ def write_summary(tar_real, predictions, step, write=config.write_summary_op):
     avg_rouge_f1 = 0
     avg_bert_f1 = 0
   
-  if write and (step)%config.write_per_step == 0:
+  if write and step%config.eval_after == 0:
     with tf.io.gfile.GFile(file_path.summary_write_path+str(step.numpy()), 'w') as f:
       for ref, hyp in zip(ref_sents, hyp_sents):
         f.write(ref+'\t'+hyp+'\n')
@@ -123,10 +123,9 @@ def monitor_run(latest_ckpt,
   monitor_metrics['combined_metric'] = round(tf.reduce_sum([(i*j) for i,j in zip(monitor_metrics['combined_metric'],  
                                                                                  h_parms.combined_metric_weights)]).numpy(), 2)
   log.info(f"combined_metric {monitor_metrics['combined_metric']:4f}")
-  cond = (config.last_recorded_value < monitor_metrics[to_monitor])
-  if (latest_ckpt > config.monitor_only_after) and cond:
+  if config.last_recorded_value < monitor_metrics[to_monitor]:
     # reset tolerance to zero if the monitor_metric decreases before the tolerance threshold
-    config.init_tolerance=0
+    tolerance=0
     config.last_recorded_value =  monitor_metrics[to_monitor]
     ckpt_files_tocopy = [files for files in os.listdir(os.path.split(ckpt_save_path)[0]) \
                          if ckpt_string in files]
@@ -137,11 +136,11 @@ def monitor_run(latest_ckpt,
     for files in ckpt_files_tocopy:
         shutil.copy2(os.path.join(ckpt_fold, files), file_path.best_ckpt_path)
   else:
-    config.init_tolerance+=1
+    tolerance+=1
   # Warn and early stop
-  if config.init_tolerance > config.tolerance_threshold:
+  if tolerance > config.tolerance_threshold:
     log.warning('Tolerance exceeded')
-  if config.early_stop and config.init_tolerance > config.tolerance_threshold:
+  if config.early_stop and tolerance > config.tolerance_threshold:
     log.info(f'Early stopping since the {to_monitor} reached the tolerance threshold')
     return False
   else:
