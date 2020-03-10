@@ -17,11 +17,8 @@ def check_and_create_dir(path):
 if not config.use_tfds:
   assert (os.path.exists(file_path['train_csv_path'])), 'Training dataset not available'
 for key in file_path.keys():
-  if key in ['infer_ckpt_path' , 'G_drive_vocab_path', 'subword_vocab_path']:
-    pass
-  else:
-      if os.path.splitext(file_path[key])[1] == '':
-        check_and_create_dir(file_path[key])
+  if key in ['subword_vocab_path', 'summary_write_path', 'tensorboard_log']:
+    check_and_create_dir(file_path[key])
               
 # get TF logger
 log = logging.getLogger('tensorflow')

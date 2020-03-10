@@ -7,7 +7,7 @@ core_path = os.getcwd()
 dataset_name = 'cnn'
 file_path = {
         'best_ckpt_path' : "/content/drive/My Drive/Text_summarization/BERT_text_summarisation/created_files/training_summarization_model_ckpts/cnn/best_checkpoints",  
-        'checkpoint_path' : "/content/drive/My Drive/Text_summarization/BERT_text_summarisation/cnn_checkpoints",
+        'checkpoint_path' : "/content/cnn_checkpoints",
         'infer_csv_path' : None,
         'infer_ckpt_path' : "/content/drive/My Drive/Text_summarization/BERT_text_summarisation/cnn_checkpoints/ckpt-1",
         'log_path' : "/content/drive/My Drive/Text_summarization/BERT_text_summarisation/created_files/tensorflow.log",

@@ -97,7 +97,7 @@ def map_batch_shuffle(dataset,
     tf_dataset = tf_dataset.prefetch(buffer_size=AUTOTUNE)
     return tf_dataset
     
-def create_train_data(num_samples_to_train=config.num_examples_to_train):
+def create_train_data():
 
     if config.use_tfds:
         train_examples, _ = tfds.load(
@@ -120,7 +120,7 @@ def create_train_data(num_samples_to_train=config.num_examples_to_train):
         valid_buffer_size = 13368
         shuffle=False
     else:
-        doc, summ = create_dataframe(file_path.train_csv_path, num_samples_to_train)
+        doc, summ = create_dataframe(file_path.train_csv_path, config.num_examples_to_train)
         X_train, X_test, y_train, y_test = train_test_split(
                                                             doc, 
                                                             summ, 
@@ -149,8 +149,8 @@ def create_train_data(num_samples_to_train=config.num_examples_to_train):
     log.info('Train and Test tf_datasets created')
     return (train_dataset, valid_dataset, train_buffer_size, valid_buffer_size)
     
-def infer_data_from_df(num_of_infer_examples=config.num_examples_to_infer):
-    doc, summ = create_dataframe(file_path.infer_csv_path, num_of_infer_examples)
+def infer_data_from_df():
+    doc, summ = create_dataframe(file_path.infer_csv_path, config.num_examples_to_infer)
     infer_examples = tf.data.Dataset.from_tensor_slices((doc, summ))
     infer_buffer_size = len(doc)
     infer_dataset = map_batch_shuffle(
