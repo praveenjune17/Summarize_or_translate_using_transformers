@@ -86,7 +86,7 @@ def val_step(
              input_ids,
              target_ids_,
              step, 
-             create_summ):
+             write_summary):
   validation_accuracy.reset_states()
   (preds_draft_summary, _,  
    refine_predictions, _) = predict_using_sampling( 
@@ -100,10 +100,7 @@ def val_step(
   
   
   validation_accuracy(target_ids_[:, 1:], tf.one_hot(refine_predictions[:, 1:], depth=config.input_vocab_size))  
-  if create_summ: 
-    rouge, bert = tf_write_summary(target_ids_[:, 1:], refine_predictions[:, 1:], step)  
-  else: 
-    rouge, bert = (1.0, 1.0)  
+  rouge, bert = tf_write_summary(target_ids_[:, 1:], refine_predictions[:, 1:], step, write_summary)  
   return (rouge, bert)
 
 # if a checkpoint exists, restore the latest checkpoint.

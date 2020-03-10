@@ -64,6 +64,8 @@ def calc_validation_loss(validation_dataset,
                          val_step, 
                          valid_summary_writer, 
                          validation_accuracy):
+  rouge_score_total = 0
+  bert_score_total = 0
   total_val_acc_avg = tf.keras.metrics.Mean()
   for (batch, (input_ids, target_ids_)) in enumerate(validation_dataset.take(config.valid_samples_to_eval//h_parms.validation_batch_size)):
     # calculate rouge and bert score for only the first batch
@@ -77,14 +79,17 @@ def calc_validation_loss(validation_dataset,
                                          config.write_summary_op
                                          )
     else:
-      _  =  val_step(input_ids,
-                     target_ids_, 
-                     step, 
-                     False
-                     )
-    if config.run_tensorboard:
-      with valid_summary_writer.as_default():
-        tf.summary.scalar('validation_accuracy', validation_accuracy.result(), step=batch)
+      rouge_score, bert_score  =  val_step(input_ids,
+                                           target_ids_, 
+                                           step, 
+                                           False
+                                           )
+    rouge_score_total+=rouge_score
+    bert_score_total+=bert_score
+
+  if config.run_tensorboard:
+    with valid_summary_writer.as_default():
+      tf.summary.scalar('validation_accuracy', validation_accuracy.result(), step=batch)
   return (total_val_acc_avg(validation_accuracy.result()), 
-          rouge_score, 
-          bert_score)
+          rouge_score_total/(batch+1), 
+          bert_score_total/(batch+1))
