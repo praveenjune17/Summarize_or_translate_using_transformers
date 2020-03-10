@@ -46,8 +46,9 @@ def train_step(input_ids,
     train_variables = model.trainable_variables
     draft_summary_loss = loss_function(target_ids[:, 1:, :], draft_predictions, draft_mask)
     refine_summary_loss = loss_function(target_ids[:, :-1, :], refine_predictions, refine_mask)
-    loss = draft_summary_loss + refine_summary_loss
-    loss = tf.reduce_mean(loss)
+    regularization_loss = tf.add_n(model.losses)
+    loss = draft_summary_loss + refine_summary_loss 
+    loss = tf.reduce_mean(loss) + regularization_loss
     scaled_loss = optimizer.get_scaled_loss(loss)
   scaled_gradients  = tape.gradient(scaled_loss, train_variables)
   gradients = optimizer.get_unscaled_gradients(scaled_gradients)
@@ -86,7 +87,7 @@ def val_step(
              input_ids,
              target_ids_,
              step, 
-             write_summary):
+             write_summ):
   validation_accuracy.reset_states()
   (preds_draft_summary, _,  
    refine_predictions, _) = predict_using_sampling( 
@@ -100,7 +101,7 @@ def val_step(
   
   
   validation_accuracy(target_ids_[:, 1:], tf.one_hot(refine_predictions[:, 1:], depth=config.input_vocab_size))  
-  rouge, bert = tf_write_summary(target_ids_[:, 1:], refine_predictions[:, 1:], step, write_summary)  
+  rouge, bert = tf_write_summary(target_ids_[:, 1:], refine_predictions[:, 1:], step, write_summ)  
   return (rouge, bert)
 
 # if a checkpoint exists, restore the latest checkpoint.

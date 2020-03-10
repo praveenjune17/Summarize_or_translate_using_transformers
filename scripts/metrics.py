@@ -63,7 +63,7 @@ def get_loss_and_accuracy():
     accuracy = tf.keras.metrics.SparseCategoricalAccuracy()
     return(loss, accuracy)
     
-def write_summary(tar_real, predictions, step, write_summary):
+def write_summary(tar_real, predictions, step, write_summ):
   ref_sents=[]
   hyp_sents=[]
   for tar, ref_hyp in zip(tar_real, predictions):
@@ -81,19 +81,19 @@ def write_summary(tar_real, predictions, step, write_summary):
     _, _, bert_f1 = b_score(ref_sents, hyp_sents, lang='en', model_type=config.pretrained_bert_model)
     avg_bert_f1 = np.mean(bert_f1.numpy())
   except:
-    log.warning('Some problem while calculating rouge so setting rouge and bert scores to zero')
+    log.warning('Some problem while calculating ROUGE so setting ROUGE and BERT scores to zero')
     avg_rouge_f1 = 0
     avg_bert_f1 = 0
   
-  if write_summary:
+  if write_summ:
     with tf.io.gfile.GFile(file_path.summary_write_path+str(step.numpy()), 'w') as f:
       for ref, hyp in zip(ref_sents, hyp_sents):
         f.write(ref+'\t'+hyp+'\n')
   return (avg_rouge_f1, avg_bert_f1)
   
   
-def tf_write_summary(tar_real, predictions, step, write_summary):
-  return tf.py_function(write_summary, [tar_real, predictions, step, write_summary], Tout=[tf.float32, tf.float32])
+def tf_write_summary(tar_real, predictions, step, write_summ):
+  return tf.py_function(write_summary, [tar_real, predictions, step, write_summ], Tout=[tf.float32, tf.float32])
     
 
 def monitor_run(latest_ckpt, 
