@@ -71,7 +71,6 @@ def scaled_dot_product_attention(q, k, v, mask):
   matmul_qk = tf.matmul(q, k, transpose_b=True)  # (..., seq_len_q, seq_len_k)
   # scale matmul_qk
   dk = tf.cast(tf.shape(k)[-1], tf.float32)
-  matmul_qk = tf.cast(matmul_qk, tf.float32)
   scaled_attention_logits = matmul_qk / tf.math.sqrt(dk)
   # add the mask to the scaled tensor.
   if mask is not None:
@@ -79,7 +78,6 @@ def scaled_dot_product_attention(q, k, v, mask):
   # softmax is normalized on the last axis (seq_len_k) so that the scores
   # add up to 1.
   attention_weights = tf.nn.softmax(scaled_attention_logits, axis=-1)  # (..., seq_len_q, seq_len_k)
-  v = tf.cast(v, tf.float32)
   output = tf.matmul(attention_weights, v)  # (..., seq_len_q, depth_v)
   return output, attention_weights
 
@@ -93,22 +91,18 @@ class MultiHeadAttention(tf.keras.layers.Layer):
     self.wq = tf.keras.layers.Dense(
                                     d_model, 
                                     kernel_regularizer = tf.keras.regularizers.l2(h_parms.l2_norm),
-                                    dtype='float32'
                                     )
     self.wk = tf.keras.layers.Dense(
                                     d_model, 
                                     kernel_regularizer = tf.keras.regularizers.l2(h_parms.l2_norm),
-                                    dtype='float32'
                                     )
     self.wv = tf.keras.layers.Dense(
                                     d_model, 
                                     kernel_regularizer = tf.keras.regularizers.l2(h_parms.l2_norm),
-                                    dtype='float32'
                                     )
     self.dense = tf.keras.layers.Dense(
                                        d_model, 
                                        kernel_regularizer = tf.keras.regularizers.l2(h_parms.l2_norm),
-                                       dtype='float32'
                                        )
         
   def split_heads(self, x, batch_size):
@@ -157,10 +151,10 @@ def point_wise_feed_forward_network(d_model, dff):
       tf.keras.layers.Dense(dff, 
                             activation='relu', 
                             kernel_regularizer = tf.keras.regularizers.l2(h_parms.l2_norm),
-                            dtype='float32'),
+                            ),
       tf.keras.layers.Dense(d_model, 
                             kernel_regularizer = tf.keras.regularizers.l2(h_parms.l2_norm),
-                            dtype='float32')
+                            )
   ])
 
 
@@ -174,13 +168,13 @@ class DecoderLayer(tf.keras.layers.Layer):
 
     self.ffn = point_wise_feed_forward_network(d_model, dff)
  
-    self.layernorm1 = tf.keras.layers.LayerNormalization(epsilon=1e-6, dtype='float32')
-    self.layernorm2 = tf.keras.layers.LayerNormalization(epsilon=1e-6, dtype='float32')
-    self.layernorm3 = tf.keras.layers.LayerNormalization(epsilon=1e-6, dtype='float32')
+    self.layernorm1 = tf.keras.layers.LayerNormalization(epsilon=1e-6)
+    self.layernorm2 = tf.keras.layers.LayerNormalization(epsilon=1e-6)
+    self.layernorm3 = tf.keras.layers.LayerNormalization(epsilon=1e-6)
     
-    self.dropout1 = tf.keras.layers.Dropout(rate, dtype='float32')
-    self.dropout2 = tf.keras.layers.Dropout(rate, dtype='float32')
-    self.dropout3 = tf.keras.layers.Dropout(rate, dtype='float32')
+    self.dropout1 = tf.keras.layers.Dropout(rate)
+    self.dropout2 = tf.keras.layers.Dropout(rate)
+    self.dropout3 = tf.keras.layers.Dropout(rate)
     
     
   def call(self, x, enc_output, training, 
@@ -189,7 +183,6 @@ class DecoderLayer(tf.keras.layers.Layer):
     
     attn1, attn_weights_block1 = self.mha1(x, x, x, look_ahead_mask)  
     attn1 = self.dropout1(attn1, training=training)
-    x = tf.cast(x, tf.float32)
     out1 = self.layernorm1(attn1 + x)
     attn2, attn_weights_block2 = self.mha2(
         enc_output, enc_output, out1, padding_mask)  
@@ -212,7 +205,9 @@ class Pointer_Generator(tf.keras.layers.Layer):
     
     self.pointer_generator_layer = tf.keras.layers.Dense(
                                                          1, 
-                                                         kernel_regularizer = tf.keras.regularizers.l2(h_parms.l2_norm)
+                                                         kernel_regularizer = tf.keras.regularizers.l2(
+											                                                         	h_parms.l2_norm
+											                                                         	)
                                                         )
     self.pointer_generator_vec   = tf.keras.layers.Activation('sigmoid', dtype='float32')
     
@@ -260,11 +255,10 @@ class Decoder(tf.keras.layers.Layer):
 
     self.d_model = d_model
     self.num_layers = num_layers
-    #self.embedding = tf.keras.layers.Embedding(target_vocab_size, d_model, dtype='float32')
     self.pos_encoding = positional_encoding(target_vocab_size, self.d_model)
     self.dec_layers = [DecoderLayer(d_model, num_heads, dff, rate) 
                        for _ in range(num_layers)]
-    self.dropout = tf.keras.layers.Dropout(rate, dtype='float32')
+    self.dropout = tf.keras.layers.Dropout(rate)
     self.final_layer = tf.keras.layers.Dense(
                                              target_vocab_size, 
                                              dtype='float32',
@@ -279,13 +273,15 @@ class Decoder(tf.keras.layers.Layer):
     seq_len = tf.shape(x)[1]
     attention_weights = {}
     # (batch_size, target_seq_len, d_model) 
-    #x = self.embedding(x)  
     x *= tf.math.sqrt(tf.cast(self.d_model, tf.float32))
     x += self.pos_encoding[:, :seq_len, :]
     x = self.dropout(x, training=training)
     for i in range(self.num_layers):
-      x, block1, block2 = self.dec_layers[i](x, enc_output, training,
-                                             look_ahead_mask, padding_mask)
+      x, block1, block2 = self.dec_layers[i](x, 
+									      	 enc_output, 
+									      	 training,
+                                             look_ahead_mask, 
+                                             padding_mask)
       attention_weights['decoder_layer{}_block1'.format(i+1)] = block1
       attention_weights['decoder_layer{}_block2'.format(i+1)] = block2
     
@@ -300,10 +296,10 @@ class Decoder(tf.keras.layers.Layer):
       block2_attention_weights = attention_weights[f'decoder_layer{self.num_layers}_block2']
     
     # (batch_size, tar_seq_len, target_vocab_size)
-    predictions = self.final_layer(tf.cast(x, tf.float32)) 
+    predictions = self.final_layer(x) 
     if config.copy_gen: 
       predictions = self.pointer_generator(
-                                        tf.cast(x, tf.float32),  #(batch_size, tar_seq_len, d_model)
+                                        x,  #(batch_size, tar_seq_len, d_model)
                                         predictions, 
                                         block2_attention_weights, 
                                         inp, 
@@ -311,7 +307,5 @@ class Decoder(tf.keras.layers.Layer):
                                         seq_len, 
                                         training=training
                                         )
-    # x (batch_size, target_seq_len, target_vocab_size)
+    # (batch_size, target_seq_len, target_vocab_size)
     return predictions, block2_attention_weights
-
-
