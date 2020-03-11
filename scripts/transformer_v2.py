@@ -93,18 +93,22 @@ class MultiHeadAttention(tf.keras.layers.Layer):
     self.wq = tf.keras.layers.Dense(
                                     d_model, 
                                     kernel_regularizer = tf.keras.regularizers.l2(h_parms.l2_norm),
+                                    dtype='float32'
                                     )
     self.wk = tf.keras.layers.Dense(
                                     d_model, 
                                     kernel_regularizer = tf.keras.regularizers.l2(h_parms.l2_norm),
+                                    dtype='float32'
                                     )
     self.wv = tf.keras.layers.Dense(
                                     d_model, 
                                     kernel_regularizer = tf.keras.regularizers.l2(h_parms.l2_norm),
+                                    dtype='float32'
                                     )
     self.dense = tf.keras.layers.Dense(
                                        d_model, 
                                        kernel_regularizer = tf.keras.regularizers.l2(h_parms.l2_norm),
+                                       dtype='float32'
                                        )
         
   def split_heads(self, x, batch_size):
@@ -153,10 +157,10 @@ def point_wise_feed_forward_network(d_model, dff):
       tf.keras.layers.Dense(dff, 
                             activation='relu', 
                             kernel_regularizer = tf.keras.regularizers.l2(h_parms.l2_norm),
-                            ),
+                            dtype='float32'),
       tf.keras.layers.Dense(d_model, 
                             kernel_regularizer = tf.keras.regularizers.l2(h_parms.l2_norm),
-                            )
+                            dtype='float32')
   ])
 
 
@@ -170,13 +174,13 @@ class DecoderLayer(tf.keras.layers.Layer):
 
     self.ffn = point_wise_feed_forward_network(d_model, dff)
  
-    self.layernorm1 = tf.keras.layers.LayerNormalization(epsilon=1e-6)
-    self.layernorm2 = tf.keras.layers.LayerNormalization(epsilon=1e-6)
-    self.layernorm3 = tf.keras.layers.LayerNormalization(epsilon=1e-6)
+    self.layernorm1 = tf.keras.layers.LayerNormalization(epsilon=1e-6, dtype='float32')
+    self.layernorm2 = tf.keras.layers.LayerNormalization(epsilon=1e-6, dtype='float32')
+    self.layernorm3 = tf.keras.layers.LayerNormalization(epsilon=1e-6, dtype='float32')
     
-    self.dropout1 = tf.keras.layers.Dropout(rate)
-    self.dropout2 = tf.keras.layers.Dropout(rate)
-    self.dropout3 = tf.keras.layers.Dropout(rate)
+    self.dropout1 = tf.keras.layers.Dropout(rate, dtype='float32')
+    self.dropout2 = tf.keras.layers.Dropout(rate, dtype='float32')
+    self.dropout3 = tf.keras.layers.Dropout(rate, dtype='float32')
     
     
   def call(self, x, enc_output, training, 
@@ -256,10 +260,11 @@ class Decoder(tf.keras.layers.Layer):
 
     self.d_model = d_model
     self.num_layers = num_layers
+    #self.embedding = tf.keras.layers.Embedding(target_vocab_size, d_model, dtype='float32')
     self.pos_encoding = positional_encoding(target_vocab_size, self.d_model)
     self.dec_layers = [DecoderLayer(d_model, num_heads, dff, rate) 
                        for _ in range(num_layers)]
-    self.dropout = tf.keras.layers.Dropout(rate)
+    self.dropout = tf.keras.layers.Dropout(rate, dtype='float32')
     self.final_layer = tf.keras.layers.Dense(
                                              target_vocab_size, 
                                              dtype='float32',
@@ -274,6 +279,7 @@ class Decoder(tf.keras.layers.Layer):
     seq_len = tf.shape(x)[1]
     attention_weights = {}
     # (batch_size, target_seq_len, d_model) 
+    #x = self.embedding(x)  
     x *= tf.math.sqrt(tf.cast(self.d_model, tf.float32))
     x += self.pos_encoding[:, :seq_len, :]
     x = self.dropout(x, training=training)
@@ -307,3 +313,4 @@ class Decoder(tf.keras.layers.Layer):
                                         )
     # x (batch_size, target_seq_len, target_vocab_size)
     return predictions, block2_attention_weights
+  
