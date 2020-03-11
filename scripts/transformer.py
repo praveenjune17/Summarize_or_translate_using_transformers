@@ -205,10 +205,8 @@ class Pointer_Generator(tf.keras.layers.Layer):
     
     self.pointer_generator_layer = tf.keras.layers.Dense(
                                                          1, 
-                                                         kernel_regularizer = tf.keras.regularizers.l2(
-											                                                         	h_parms.l2_norm
-											                                                         	)
-                                                        )
+                                                         kernel_regularizer = tf.keras.regularizers.l2(h_parms.l2_norm)
+                                                         )
     self.pointer_generator_vec   = tf.keras.layers.Activation('sigmoid', dtype='float32')
     
   def call(self, dec_output, final_output, 
@@ -278,8 +276,8 @@ class Decoder(tf.keras.layers.Layer):
     x = self.dropout(x, training=training)
     for i in range(self.num_layers):
       x, block1, block2 = self.dec_layers[i](x, 
-									      	 enc_output, 
-									      	 training,
+					     enc_output, 
+					     training,
                                              look_ahead_mask, 
                                              padding_mask)
       attention_weights['decoder_layer{}_block1'.format(i+1)] = block1
