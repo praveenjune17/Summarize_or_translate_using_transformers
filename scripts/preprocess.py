@@ -100,7 +100,7 @@ def create_dataset(split, use_tfds, shuffle, from_, to, buffer_size, csv_path, n
   tf_dataset = tf_dataset.cache()
   if shuffle:
      tf_dataset = tf_dataset.shuffle(buffer_size, seed = 100)
-  tf_dataset = tf_dataset.padded_batch(batch_size, padded_shapes=([-1], [-1]), padding_values=config.PAD_ID)
+  tf_dataset = tf_dataset.padded_batch(batch_size, padded_shapes=([-1], [-1]), padding_values=tf.convert_to_tensor(config.PAD_ID))
   tf_dataset = tf_dataset.prefetch(buffer_size=AUTOTUNE)
   log.info(f'{split} tf_dataset created')
   return tf_dataset

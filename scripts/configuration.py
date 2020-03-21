@@ -50,7 +50,7 @@ special_tokens = {
 
 
 h_parms = {
-   'accumulation_steps': 36,                                                                                   
+   'gradient_accumulation_steps': 36,                                                                                   
    'train_batch_size': 1,
    'beam_sizes': [2, 3, 4],              # Used only during inference                                                 
    'combined_metric_weights': [0.4, 0.3, 0.3], #(bert_score, rouge, validation accuracy)
