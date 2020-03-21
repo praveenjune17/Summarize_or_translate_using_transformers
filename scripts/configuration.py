@@ -76,6 +76,7 @@ file_path = {
         'subword_vocab_path' : os.path.join(core_path, "input_files/vocab_file_summarization_"+dataset_name),
         'output_sequence_write_path' : os.path.join(core_path, "created_files/summaries/"+dataset_name+"/"),
         'tensorboard_log' : os.path.join(core_path, "created_files/tensorboard_logs/"+dataset_name+"/"),
+        'tfds_data_dir' : '/content/drive/My Drive/Text_summarization/cnn_dataset',
         'train_csv_path' : None,
         
     }
