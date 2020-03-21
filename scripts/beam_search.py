@@ -27,6 +27,7 @@ import tensorflow as tf
 
 from tensorflow.python.ops import inplace_ops
 from tensorflow.python.util import nest
+from configuration import config
 
 # Assuming EOS_ID is 1
 EOS_ID = config.SEP_ID

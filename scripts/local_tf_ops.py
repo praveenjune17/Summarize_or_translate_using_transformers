@@ -53,7 +53,7 @@ def count_recs(batch, epoch, num_of_train_examples):
   if epoch == 0:
     try:
       if batch > 0:
-        num_of_recs_post_filter_atmost = ((batch)*config.batch_size)/num_of_train_examples
+        num_of_recs_post_filter_atmost = ((batch)*config.train_batch_size)/num_of_train_examples
         log.info(f'Percentage of records used for training should be close to {num_of_recs_post_filter_atmost*100 :.2f}')
     except NameError:
       log.info('End of epoch')

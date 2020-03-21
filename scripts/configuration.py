@@ -41,16 +41,17 @@ if not training_parms['use_tfds']:
 
 # Special Tokens
 special_tokens = {
-          'UNK_ID' : 100,
           'CLS_ID' : 101,
-          'SEP_ID' : 102,
           'MASK_ID' : 103,
+          'PAD_ID' : 0,
+          'SEP_ID' : 102,
+          'UNK_ID' : 100
           }
 
 
 h_parms = {
    'accumulation_steps': 36,                                                                                   
-   'batch_size': 1,
+   'train_batch_size': 1,
    'beam_sizes': [2, 3, 4],              # Used only during inference                                                 
    'combined_metric_weights': [0.4, 0.3, 0.3], #(bert_score, rouge, validation accuracy)
    'dropout_rate': 0.0,
