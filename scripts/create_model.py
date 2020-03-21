@@ -170,7 +170,7 @@ Model = AbstractiveSummarization(
                                 num_heads=config.num_heads, 
                                 dff=config.dff, 
                                 vocab_size=config.input_vocab_size,
-                                output_seq_len=config.summ_length, 
+                                output_seq_len=config.target_seq_length, 
                                 rate=config.dropout_rate
                                 )
 

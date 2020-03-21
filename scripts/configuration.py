@@ -7,14 +7,14 @@ dataset_name = 'cnn'
 
 model_parms = {
      'copy_gen':True,
-     'doc_length': 512,
+     'input_seq_length': 512,
      'd_model': 768,                  # the projected word vector dimension
      'dff': 2048,                      # feed forward network hidden parameters
      'input_vocab_size': 30522,        # total vocab size + start and end token
      'num_heads': 8,                  # the number of heads in the multi-headed attention unit
      'num_layers': 8,                 # number of transformer blocks
      'pretrained_bert_model': 'bert-base-uncased',
-     'summ_length': 72,
+     'target_seq_length': 72,
      'target_vocab_size': 30522,       # total vocab size + start and end token
      }                                    
 training_parms = {
@@ -73,7 +73,7 @@ file_path = {
         'infer_ckpt_path' : "/content/drive/My Drive/Text_summarization/BERT_text_summarisation/cnn_checkpoints/ckpt-1",
         'log_path' : "/content/drive/My Drive/Text_summarization/BERT_text_summarisation/created_files/tensorflow.log",
         'subword_vocab_path' : os.path.join(core_path, "input_files/vocab_file_summarization_"+dataset_name),
-        'summary_write_path' : os.path.join(core_path, "created_files/summaries/"+dataset_name+"/"),
+        'output_sequence_write_path' : os.path.join(core_path, "created_files/summaries/"+dataset_name+"/"),
         'tensorboard_log' : os.path.join(core_path, "created_files/tensorboard_logs/"+dataset_name+"/"),
         'train_csv_path' : None,
         

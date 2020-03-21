@@ -88,7 +88,7 @@ def draft_decoded_summary(model, input_ids, target_ids, beam_size):
                     beam_search_decoder, 
                     start, 
                     beam_size, 
-                    config.summ_length, 
+                    config.target_seq_length, 
                     config.input_vocab_size, 
                     config.length_penalty, 
                     stop_early=True, 
