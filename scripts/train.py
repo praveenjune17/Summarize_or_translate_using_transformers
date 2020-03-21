@@ -20,8 +20,8 @@ policy = mixed_precision.Policy('mixed_float16')
 mixed_precision.set_policy(policy)
 optimizer = mixed_precision.LossScaleOptimizer(optimizer, loss_scale='dynamic')
 
-train_dataset = create_dataset('train', True, False, '90', '100', 287113, None, None, config.train_batch_size)
-val_dataset = create_dataset('validation', True, False, '0', '100', 13368, None, None, config.validation_batch_size)
+train_dataset = create_dataset('train', True, False, 90, 100, 287113, None, None, config.train_batch_size)
+val_dataset = create_dataset('validation', True, False, 0, 100, 13368, None, None, config.validation_batch_size)
 train_loss, train_accuracy = get_loss_and_accuracy()
 _, validation_accuracy = get_loss_and_accuracy()
 gradient_accumulators = []
