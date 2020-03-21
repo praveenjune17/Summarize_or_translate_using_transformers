@@ -6,11 +6,7 @@ from creates import log
 from configuration import config
 
 
-# Special Tokens
-UNK_ID = 100
-CLS_ID = 101
-SEP_ID = 102
-MASK_ID = 103
+
 
 def tile_and_mask_diagonal(x, mask_with):
     """    
@@ -26,21 +22,14 @@ def tile_and_mask_diagonal(x, mask_with):
     """
 
     N, T = tf.shape(x)[0], tf.shape(x)[1]
-
-    first = tf.reshape(tf.tile(x[:, 0], [T-1]), [N, T-1, 1])
-    
+    first = tf.reshape(tf.tile(x[:, 0], [T-1]), [N, T-1, 1])    
     x = x[:, 1:]
-    T = T - 1
-    
-    masked = tf.reshape(tf.tile(x, [1, T]), [N, T, T])
-    
+    T = T - 1    
+    masked = tf.reshape(tf.tile(x, [1, T]), [N, T, T])    
     diag = tf.ones([N, T], dtype=masked.dtype) * mask_with
-    masked = tf.linalg.set_diag(masked, diag)
-    
-    masked = tf.concat([first, masked], axis=2)
-    
+    masked = tf.linalg.set_diag(masked, diag)    
+    masked = tf.concat([first, masked], axis=2)    
     masked = tf.reshape(masked, [N*T, T+1])
-    
     return masked
 
 def _embedding_from_bert():
@@ -174,3 +163,15 @@ class AbstractiveSummarization(tf.keras.Model):
                                                                   )
               
         return draft_logits, draft_attention_dist, refine_logits, refine_attention_dist
+
+Model = AbstractiveSummarization(
+                                num_layers=config.num_layers, 
+                                d_model=config.d_model, 
+                                num_heads=config.num_heads, 
+                                dff=config.dff, 
+                                vocab_size=config.input_vocab_size,
+                                output_seq_len=config.summ_length, 
+                                rate=config.dropout_rate
+                                )
+
+tokenizer = BertTokenizer.from_pretrained(config.pretrained_bert_model)

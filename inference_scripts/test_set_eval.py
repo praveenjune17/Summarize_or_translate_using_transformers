@@ -1,27 +1,21 @@
 '''
 Evaluate a 40 samples from the test set
 '''
-
 import tensorflow as tf
 tf.random.set_seed(100)
 import tensorflow_datasets as tfds
 import numpy as np
 import os
-from create_tokenizer import tokenizer
+from create_model import tokenizer
 from preprocess import map_batch_shuffle
 from configuration import config
-from input_path import file_path
 from preprocess import infer_data_from_df
-from metrics import convert_wordpiece_to_words
+from calculate_metrics import convert_wordpiece_to_words
 from rouge import Rouge
 from bert_score import score as b_score
 from decode_text import *
 from tqdm import tqdm
 
-UNK_ID = 100
-CLS_ID = 101
-SEP_ID = 102
-MASK_ID = 103
 rouge_all = Rouge()
 infer_template = '''Batch size <--- 30\nDraft_decoder_type <--- {}\nRefine_decoder_type <--- {}\nROUGE-f1  <--- {}\nBERT-f1   <--- {}\nbeam-size   <--- {}'''
 h_parms.batch_size = 40
@@ -71,8 +65,6 @@ def run_eval(ckpt_path='/content/drive/My Drive/Text_summarization/BERT_text_sum
       sum_hyp = tokenizer.convert_ids_to_tokens([i for i in tf.squeeze(ref_hyp) if i not in [0, 101, 102]])
       sum_ref = convert_wordpiece_to_words(sum_ref)
       sum_hyp = convert_wordpiece_to_words(sum_hyp)
-      #print('Original summary: {}'.format(sum_ref))
-      #print('Predicted summary: {}'.format(sum_hyp))
       ref_sents.append(sum_ref)
       hyp_sents.append(sum_hyp)
   try:

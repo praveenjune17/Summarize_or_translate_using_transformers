@@ -4,18 +4,14 @@ import numpy as np
 import shutil
 import os
 from configuration import config
-from hyper_parameters import h_parms
 from rouge import Rouge
-from input_path import file_path
-from create_tokenizer import tokenizer
+from create_model import tokenizer
 from bert_score import score as b_score
-from creates import log, monitor_metrics
+from creates import log
 
 log.info('Loading Pre-trained BERT model for BERT SCORE calculation')
 _, _, _ = b_score(["I'm Batman"], ["I'm Spiderman"], lang='en', model_type=config.pretrained_bert_model)
 rouge_all = Rouge()
-
-
 
 class CustomSchedule(tf.keras.optimizers.schedules.LearningRateSchedule):
   def __init__(self, d_model, warmup_steps=4000):
@@ -31,8 +27,8 @@ class CustomSchedule(tf.keras.optimizers.schedules.LearningRateSchedule):
     return tf.math.rsqrt(self.d_model) * tf.math.minimum(arg1, arg2)
 
 
-def label_smoothing(inputs, epsilon=h_parms.epsilon_ls):
-    # number of channels
+def label_smoothing(inputs, epsilon=config.epsilon_ls):
+    # V <- number of channels
     V = inputs.get_shape().as_list()[-1] 
     epsilon = tf.cast(epsilon, dtype=inputs.dtype)
     V = tf.cast(V, dtype=inputs.dtype)
@@ -63,16 +59,16 @@ def get_loss_and_accuracy():
     accuracy = tf.keras.metrics.SparseCategoricalAccuracy()
     return(loss, accuracy)
     
-def write_summary(tar_real, predictions, step, write_summ):
+def write_output_sequence(tar_real, predictions, step, write_output_seq):
   ref_sents=[]
   hyp_sents=[]
   for tar, ref_hyp in zip(tar_real, predictions):
-      sum_ref = tokenizer.convert_ids_to_tokens([i for i in tf.squeeze(tar) if i not in [0, 101, 102]])
-      sum_hyp = tokenizer.convert_ids_to_tokens([i for i in tf.squeeze(ref_hyp) if i not in [0, 101, 102]])
-      sum_ref = convert_wordpiece_to_words(sum_ref)
-      sum_hyp = convert_wordpiece_to_words(sum_hyp)
-      ref_sents.append(sum_ref)
-      hyp_sents.append(sum_hyp)
+      output_seq_ref = tokenizer.convert_ids_to_tokens([i for i in tf.squeeze(tar) if i not in [config.PAD_ID, config.CLS_ID, config.SEP_ID]])
+      output_seq_hyp = tokenizer.convert_ids_to_tokens([i for i in tf.squeeze(ref_hyp) if i not in [config.PAD_ID, config.CLS_ID, config.SEP_ID]])
+      output_seq_ref = convert_wordpiece_to_words(output_seq_ref)
+      output_seq_hyp = convert_wordpiece_to_words(output_seq_hyp)
+      ref_sents.append(output_seq_ref)
+      hyp_sents.append(output_seq_hyp)
   try:
     rouges = rouge_all.get_scores(ref_sents , hyp_sents)
     avg_rouge_f1 = np.mean([np.mean([rouge_scores['rouge-1']["f"], 
@@ -85,29 +81,28 @@ def write_summary(tar_real, predictions, step, write_summ):
     avg_rouge_f1 = 0
     avg_bert_f1 = 0
   
-  if write_summ:
-    with tf.io.gfile.GFile(file_path.summary_write_path+str(step.numpy()), 'w') as f:
+  if write_output_seq:
+    with tf.io.gfile.GFile(config.output_sequence_write_path+str(step.numpy()), 'w') as f:
       for ref, hyp in zip(ref_sents, hyp_sents):
         f.write(ref+'\t'+hyp+'\n')
   return (avg_rouge_f1, avg_bert_f1)
   
   
-def tf_write_summary(tar_real, predictions, step, write_summ):
-  return tf.py_function(write_summary, [tar_real, predictions, step, write_summ], Tout=[tf.float32, tf.float32])
+def tf_write_output_sequence(tar_real, predictions, step, write_output_seq):
+  return tf.py_function(write_output_sequence, [tar_real, predictions, step, write_output_seq], Tout=[tf.float32, tf.float32])
     
 
-def monitor_run(latest_ckpt, 
-                ckpt_save_path, 
+def monitor_run(ckpt_save_path, 
                 val_acc,
                 bert_score, 
                 rouge_score, 
-                valid_summary_writer,
+                valid_output_sequence_writer,
                 step,
                 to_monitor=config.monitor_metric):
   
   ckpt_fold, ckpt_string = os.path.split(ckpt_save_path)
   if config.run_tensorboard:
-    with valid_summary_writer.as_default():
+    with valid_output_sequence_writer.as_default():
       tf.summary.scalar('validation_total_accuracy', val_acc, step=step)
       tf.summary.scalar('ROUGE_f1', rouge_score, step=step)
       tf.summary.scalar('BERT_f1', bert_score, step=step)
@@ -122,7 +117,7 @@ def monitor_run(latest_ckpt,
                                         )
   # multiply with the weights                                    
   monitor_metrics['combined_metric'] = round(tf.reduce_sum([(i*j) for i,j in zip(monitor_metrics['combined_metric'],  
-                                                                                 h_parms.combined_metric_weights)]).numpy(), 2)
+                                                                                 config.combined_metric_weights)]).numpy(), 2)
   log.info(f"combined_metric {monitor_metrics['combined_metric']:4f}")
   if config.last_recorded_value < monitor_metrics[to_monitor]:
     # reset tolerance to zero if the monitor_metric decreases before the tolerance threshold
@@ -133,28 +128,27 @@ def monitor_run(latest_ckpt,
     log.info(f'{to_monitor} is {monitor_metrics[to_monitor]:4f} so checkpoint files {ckpt_string}           \
              will be copied to best checkpoint directory')
     # copy the best checkpoints
-    shutil.copy2(os.path.join(ckpt_fold, 'checkpoint'), file_path.best_ckpt_path)
+    shutil.copy2(os.path.join(ckpt_fold, 'checkpoint'), config.best_ckpt_path)
     for files in ckpt_files_tocopy:
-        shutil.copy2(os.path.join(ckpt_fold, files), file_path.best_ckpt_path)
+        shutil.copy2(os.path.join(ckpt_fold, files), config.best_ckpt_path)
   else:
     tolerance+=1
   # Warn and early stop
   if tolerance > config.tolerance_threshold:
     log.warning('Tolerance exceeded')
-  if config.early_stop and tolerance > config.tolerance_threshold:
-    log.info(f'Early stopping since the {to_monitor} reached the tolerance threshold')
-    return False
-  else:
-    return True
+    if config.early_stop:
+      log.info(f'Early stopping since the {to_monitor} reached the tolerance threshold')
+      return False
+    else:
+      return True
 
-lr = h_parms.learning_rate if h_parms.learning_rate else CustomSchedule(config.d_model)    
-
-if h_parms.grad_clipnorm:
+lr = config.learning_rate if config.learning_rate else CustomSchedule(config.d_model)    
+if config.grad_clipnorm:
   optimizer = tf.keras.optimizers.Adam(
                              learning_rate=lr, 
                              beta_1=0.9, 
                              beta_2=0.98, 
-                             clipnorm=h_parms.grad_clipnorm,
+                             clipnorm=config.grad_clipnorm,
                              epsilon=1e-9
                              )
 else:
@@ -164,7 +158,6 @@ else:
                              beta_2=0.98, 
                              epsilon=1e-9
                              )
-
 loss_object = tf.keras.losses.CategoricalCrossentropy(
                                                       from_logits=True, 
                                                       reduction='none'

@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import tensorflow as tf
 import numpy as np
-from hyper_parameters import h_parms
 from configuration import config
 
 '''Positional encoding is added to give the model some information about the 
@@ -120,19 +119,19 @@ class MultiHeadAttention(tf.keras.layers.Layer):
     self.depth = d_model // self.num_heads
     self.wq = tf.keras.layers.Dense(
                                     d_model, 
-                                    kernel_regularizer = tf.keras.regularizers.l2(h_parms.l2_norm),
+                                    kernel_regularizer = tf.keras.regularizers.l2(config.l2_norm),
                                     )
     self.wk = tf.keras.layers.Dense(
                                     d_model, 
-                                    kernel_regularizer = tf.keras.regularizers.l2(h_parms.l2_norm),
+                                    kernel_regularizer = tf.keras.regularizers.l2(config.l2_norm),
                                     )
     self.wv = tf.keras.layers.Dense(
                                     d_model, 
-                                    kernel_regularizer = tf.keras.regularizers.l2(h_parms.l2_norm),
+                                    kernel_regularizer = tf.keras.regularizers.l2(config.l2_norm),
                                     )
     self.dense = tf.keras.layers.Dense(
                                        d_model, 
-                                       kernel_regularizer = tf.keras.regularizers.l2(h_parms.l2_norm),
+                                       kernel_regularizer = tf.keras.regularizers.l2(config.l2_norm),
                                        )
         
   def split_heads(self, x, batch_size):
@@ -180,16 +179,16 @@ def point_wise_feed_forward_network(d_model, dff):
   return tf.keras.Sequential([
       tf.keras.layers.Dense(dff, 
                             activation='relu', 
-                            kernel_regularizer = tf.keras.regularizers.l2(h_parms.l2_norm),
+                            kernel_regularizer = tf.keras.regularizers.l2(config.l2_norm),
                             ),
       tf.keras.layers.Dense(d_model, 
-                            kernel_regularizer = tf.keras.regularizers.l2(h_parms.l2_norm),
+                            kernel_regularizer = tf.keras.regularizers.l2(config.l2_norm),
                             )
   ])
 
 
 class DecoderLayer(tf.keras.layers.Layer):
-  def __init__(self, d_model, num_heads, dff, rate=h_parms.dropout_rate):
+  def __init__(self, d_model, num_heads, dff, rate=config.dropout_rate):
     super(DecoderLayer, self).__init__()
 
     self.mha1 = MultiHeadAttention(d_model, num_heads)
@@ -242,7 +241,7 @@ class Pointer_Generator(tf.keras.layers.Layer):
     
     self.pointer_generator_layer = tf.keras.layers.Dense(
                                                          1, 
-                                                         kernel_regularizer = tf.keras.regularizers.l2(h_parms.l2_norm)
+                                                         kernel_regularizer = tf.keras.regularizers.l2(config.l2_norm)
                                                          )
     self.pointer_generator_vec   = tf.keras.layers.Activation('sigmoid', dtype='float32')
     
@@ -257,7 +256,7 @@ class Pointer_Generator(tf.keras.layers.Layer):
     vocab_dist_ = tf.math.softmax(final_output, axis=-1)
     vocab_dist = p_gen * vocab_dist_ 
     # attention_weights is 4D so taking mean of the second dimension(i.e num_heads)
-    if h_parms.mean_attention_heads:
+    if config.mean_attention_heads:
       attention_weights_ = tf.reduce_mean(attention_weights, axis=1)
     else:
       attention_weights_ = attention_weights[:, -1, :, :]
@@ -284,7 +283,7 @@ class Pointer_Generator(tf.keras.layers.Layer):
 
 class Decoder(tf.keras.layers.Layer):
   def __init__(self, num_layers, d_model, num_heads, dff, target_vocab_size, 
-               rate=h_parms.dropout_rate):
+               rate=config.dropout_rate):
     super(Decoder, self).__init__()
 
     self.d_model = d_model
@@ -296,7 +295,7 @@ class Decoder(tf.keras.layers.Layer):
     self.final_layer = tf.keras.layers.Dense(
                                              target_vocab_size, 
                                              dtype='float32',
-                                             kernel_regularizer=tf.keras.regularizers.l2(h_parms.l2_norm),                                                      
+                                             kernel_regularizer=tf.keras.regularizers.l2(config.l2_norm),                                                      
                                              name='final_dense_layer'
                                              )
     if config.copy_gen:
@@ -319,7 +318,7 @@ class Decoder(tf.keras.layers.Layer):
       attention_weights['decoder_layer{}_block1'.format(i+1)] = block1
       attention_weights['decoder_layer{}_block2'.format(i+1)] = block2
     
-    if h_parms.mean_parameters_of_layers:
+    if config.mean_parameters_of_layers:
       # take mean of the block 2 attention heads of all the layers
       block2_attention_weights = tf.reduce_mean(
                                                 [(attention_weights[key]) for key in attention_weights.keys() if 'block2' in key], 

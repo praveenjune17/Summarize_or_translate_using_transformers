@@ -6,9 +6,8 @@ import os
 from create_tokenizer import tokenizer
 from preprocess import map_batch_shuffle
 from configuration import config
-from input_path import file_path
 from preprocess import infer_data_from_df
-from metrics import convert_wordpiece_to_words
+from calculate_metrics import convert_wordpiece_to_words
 from rouge import Rouge
 from bert_score import score as b_score
 from decode_text import *

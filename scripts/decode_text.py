@@ -2,23 +2,11 @@
 #                  b)https://github.com/raufer/bert-summarization/tree/master/models
 import tensorflow as tf
 tf.random.set_seed(100)
-import numpy as np
-import time
 import tensorflow_addons as tfa
-from hyper_parameters import h_parms
 from configuration import config
-from input_path import file_path
-from creates import log, train_summary_writer, valid_summary_writer
-from create_tokenizer import tokenizer
-from local_tf_ops import *
+from creates import log
 from beam_search import beam_search
 from transformer import create_masks
-
-
-UNK_ID = 100
-CLS_ID = 101
-SEP_ID = 102
-MASK_ID = 103
 
 
 def with_column(x, i, column):
@@ -34,10 +22,10 @@ def with_column(x, i, column):
 
 def mask_timestamp(x, i, mask_with):
     """
-    Masks each word in the summary draft one by one with the [MASK] token
-    At t-th time step the t-th word of input summary is
+    Masks each word in the output_sequence draft one by one with the [MASK] token
+    At t-th time step the t-th word of input output_sequence is
     masked, and the decoder predicts the refined word given other
-    words of the summary.
+    words of the output_sequence.
     
     x :: (N, T)
     return :: (N, T)
@@ -79,7 +67,7 @@ def top_k_sampling(logits, k=25):
         logits < min_value,
         tf.ones_like(logits, dtype=logits.dtype) * -1e10,
         logits)
-    logits = tf.reshape(logits, (h_parms.validation_batch_size, -1))
+    logits = tf.reshape(logits, (config.validation_batch_size, -1))
     sample = tf.random.categorical(logits, num_samples=1, dtype=tf.int32, seed=1)
     return sample
   
@@ -100,7 +88,7 @@ def nucleus_sampling(logits, p=0.9):
         tf.ones_like(logits, dtype=logits.dtype) * -1e10,
         logits
     )
-    logits = tf.reshape(logits, (h_parms.validation_batch_size, -1))
+    logits = tf.reshape(logits, (config.validation_batch_size, -1))
     sample = tf.random.categorical(logits, num_samples=1, dtype=tf.int32, seed=1)
     return sample
 
@@ -127,11 +115,11 @@ def topp_topk(logits, p, k):
       logits < min_value,
       tf.ones_like(logits, dtype=logits.dtype) * -1e10,
       logits)
-  logits = tf.reshape(logits, (h_parms.validation_batch_size, -1))
+  logits = tf.reshape(logits, (config.validation_batch_size, -1))
   sample = tf.random.categorical(logits, num_samples=1, dtype=tf.int32, seed=1)
   return sample
 
-def draft_summary_sampling(model,
+def draft_output_sequence_sampling(model,
                            inp, 
                            enc_output, 
                            look_ahead_mask, 
@@ -143,17 +131,16 @@ def draft_summary_sampling(model,
                            training=False
                            ):
     """
-    Inference call, builds a draft summary auto-regressively
+    Inference call, builds a draft output_sequence auto-regressively
     """
     log.info(f"Building: 'Draft {sampling_type} decoder'")
     N = tf.shape(enc_output)[0]
-    T = tf.shape(enc_output)[1]
 
     # (batch_size, 1)
-    dec_input = tf.ones([N, 1], dtype=tf.int32) * CLS_ID
-    summary, dec_outputs, dec_logits, attention_dists = [], [], [], []
-    summary += [dec_input]
-    for i in (range(0, config.summ_length)):
+    dec_input = tf.ones([N, 1], dtype=tf.int32) * config.CLS_ID
+    output_sequence, dec_outputs, dec_logits, attention_dists = [], [], [], []
+    output_sequence += [dec_input]
+    for i in (range(0, config.target_seq_length)):
         _, _, dec_padding_mask = create_masks(inp, dec_input)
         # (batch_size, i+1, d_bert)
         embeddings = model.embedding(dec_input)    
@@ -170,25 +157,25 @@ def draft_summary_sampling(model,
         # (batch_size, 1, vocab)
         dec_output_i = dec_output[:, -1: ,:]
         if sampling_type == 'nucleus':
-          preds = tf.cast(nucleus_sampling(((dec_output_i)/ temperature), p=p), tf.int32)
+          predictions = tf.cast(nucleus_sampling(((dec_output_i)/ temperature), p=p), tf.int32)
         elif sampling_type == 'topk':
-          preds = tf.cast(top_k_sampling(((dec_output_i)/ temperature), k=k), tf.int32)
+          predictions = tf.cast(top_k_sampling(((dec_output_i)/ temperature), k=k), tf.int32)
         elif sampling_type == 'random_sampling':
-          preds = tf.cast(sampling((dec_output_i)/ temperature), tf.int32)
+          predictions = tf.cast(sampling((dec_output_i)/ temperature), tf.int32)
         elif sampling_type == 'topktopp':
-              preds = tf.cast(topp_topk(((dec_output_i)/ temperature), p=p,k=k), tf.int32)
+          predictions = tf.cast(topp_topk(((dec_output_i)/ temperature), p=p,k=k), tf.int32)
         else:
-          preds = tf.cast(tf.argmax(dec_output_i, axis=-1), tf.int32)
+          predictions = tf.cast(tf.argmax(dec_output_i, axis=-1), tf.int32)
         dec_outputs += [dec_output_i]
         #dec_logits_i = dec_logits_i[:, -1:, :]
         #dec_logits += [dec_logits_i]
-        summary += [preds]
-        dec_input = with_column(dec_input, i+1, preds)
-    summary = tf.concat(summary, axis=1)  
+        output_sequence += [predictions]
+        dec_input = with_column(dec_input, i+1, predictions)
+    output_sequence = tf.concat(output_sequence, axis=1)  
     # (batch_size, seq_len, vocab_len), (batch_size, seq_len), (_)
-    return summary, attention_dist
+    return output_sequence, attention_dist
 
-def draft_summary_beam_search(model,
+def draft_output_sequence_beam_search(model,
                               input_ids, 
                               enc_output, 
                               dec_padding_mask, 
@@ -213,20 +200,20 @@ def draft_summary_beam_search(model,
       return (predictions[:,-1:,:])
     return beam_search(
                         beam_search_decoder, 
-                        [CLS_ID] * h_parms.batch_size, 
+                        [config.CLS_ID] * config.train_batch_size, 
                         beam_size, 
-                        config.summ_length, 
+                        config.target_seq_length, 
                         config.input_vocab_size, 
-                        h_parms.length_penalty, 
+                        config.length_penalty, 
                         stop_early=False, 
-                        eos_id=[[SEP_ID]]
+                        eos_id=[[config.SEP_ID]]
                         )
             
 
-def refined_summary_sampling(model,
+def refined_output_sequence_sampling(model,
                              inp, 
                              enc_output, 
-                             draft_summary, 
+                             draft_output_sequence, 
                              padding_mask, 
                              sampling_type='greedy', 
                              temperature=0.9, 
@@ -234,26 +221,22 @@ def refined_summary_sampling(model,
                              k=25,
                              training=False):
         """
-        Inference call, builds a refined summary
+        Inference call, builds a refined output_sequence
         
-        It first masks each word in the summary draft one by one,
+        It first masks each word in the output_sequence draft one by one,
         then feeds the draft to BERT to generate context vectors.
         """
         
         log.info(f"Building: 'Refined {sampling_type} decoder'")
-        N = tf.shape(enc_output)[0]
-        refined_summary = draft_summary
-        batch = tf.shape(draft_summary)[0]
-        dec_outputs = []
-        dec_logits = []
-        attention_dists = []
-        for i in (range(1, config.summ_length)):
+        tf.shape(enc_output)[0]
+        refined_output_sequence = draft_output_sequence
+        for i in (range(1, config.target_seq_length)):
             
             # (batch_size, seq_len)
-            refined_summary_ = mask_timestamp(refined_summary, i, MASK_ID)
+            refined_output_sequence_ = mask_timestamp(refined_output_sequence, i, config.MASK_ID)
             
             # (batch_size, seq_len, d_bert)
-            context_vectors = model.bert_model(refined_summary_)[0]
+            context_vectors = model.bert_model(refined_output_sequence_)[0]
             
             # (batch_size, seq_len, d_bert), (_)
             dec_output,  attention_dist =  model.decoder(inp,
@@ -267,18 +250,18 @@ def refined_summary_sampling(model,
             # (batch_size, 1, vocab_len)
             dec_output_i = dec_output[:, i:i+1 ,:]
             if sampling_type == 'nucleus':
-              preds = tf.cast(nucleus_sampling((dec_output_i/ temperature), p=p), tf.int32)
+              predictions = tf.cast(nucleus_sampling((dec_output_i/ temperature), p=p), tf.int32)
             elif sampling_type == 'topk':
-              preds = tf.cast(top_k_sampling(((dec_output_i)/ temperature), k=k), tf.int32)
+              predictions = tf.cast(top_k_sampling(((dec_output_i)/ temperature), k=k), tf.int32)
             elif sampling_type == 'topktopp':
-              preds = tf.cast(topp_topk(((dec_output_i)/ temperature), p=p,k=k), tf.int32)
+              predictions = tf.cast(topp_topk(((dec_output_i)/ temperature), p=p,k=k), tf.int32)
             elif sampling_type == 'random_sampling':
-              preds = tf.cast(sampling((dec_output_i)/ temperature), tf.int32)
+              predictions = tf.cast(sampling((dec_output_i)/ temperature), tf.int32)
             else:
-              preds = tf.cast(tf.argmax(dec_output_i, axis=-1), tf.int32)
-            refined_summary = with_column(refined_summary, i, preds)
+              predictions = tf.cast(tf.argmax(dec_output_i, axis=-1), tf.int32)
+            refined_output_sequence = with_column(refined_output_sequence, i, predictions)
         # (batch_size, seq_len, vocab_len), (_)        
-        return refined_summary, attention_dist
+        return refined_output_sequence, attention_dist
 
 def predict_using_sampling(
                            model,
@@ -297,7 +280,7 @@ def predict_using_sampling(
   # (batch_size, seq_len, d_bert)
   enc_output = model.bert_model(inp)[0]
   # (batch_size, seq_len, vocab_len), (_)
-  preds_draft_summary, draft_attention_dist = draft_summary_sampling( model,
+  predicted_draft_output_sequence, draft_attention_dist = draft_output_sequence_sampling( model,
                                                                       inp,
                                                                       enc_output=enc_output,
                                                                       look_ahead_mask=None,
@@ -308,11 +291,11 @@ def predict_using_sampling(
                                                                       k=k,
                                                                     )
   # (batch_size, seq_len, vocab_len), ()
-  preds_refined_summary, refined_attention_dist = refined_summary_sampling( model,
+  predicted_refined_output_sequence, refined_attention_dist = refined_output_sequence_sampling( model,
                                                                             inp,
                                                                             enc_output=enc_output,
                                                                             padding_mask=dec_padding_mask,
-                                                                            draft_summary=preds_draft_summary,
+                                                                            draft_output_sequence=predicted_draft_output_sequence,
                                                                             sampling_type=refine_decoder_sampling_type, 
                                                                             temperature=temperature, 
                                                                             p=p, 
@@ -320,7 +303,7 @@ def predict_using_sampling(
                                                                             )
 
 
-  return preds_draft_summary, draft_attention_dist, preds_refined_summary, refined_attention_dist
+  return predicted_draft_output_sequence, draft_attention_dist, predicted_refined_output_sequence, refined_attention_dist
 
 def predict_using_beam_search(
                               model,
@@ -336,7 +319,7 @@ def predict_using_beam_search(
   enc_output = model.bert_model(inp)[0]
   
   #[batch_size*beam_size, input_Seq_len, d_bert]
-  translated_output_temp = draft_summary_beam_search(
+  translated_output_temp = draft_output_sequence_beam_search(
                                                       model, 
                                                       inp, 
                                                       enc_output, 
@@ -344,16 +327,16 @@ def predict_using_beam_search(
                                                       beam_size
                                                       )
   # Take the sequence with high score (the last one)
-  preds_draft_summary = translated_output_temp[0][:,0,:] 
+  predicted_draft_output_sequence = translated_output_temp[0][:,0,:] 
   
-  preds_refined_summary, refined_attention_dist = refined_summary_sampling(model,
+  predicted_refined_output_sequence, refined_attention_dist = refined_output_sequence_sampling(model,
                                                                           inp,
                                                                           enc_output=enc_output,
                                                                           padding_mask=dec_padding_mask,
-                                                                          draft_summary=preds_draft_summary, 
+                                                                          draft_output_sequence=predicted_draft_output_sequence, 
                                                                           sampling_type=refine_decoder_sampling_type, 
                                                                           temperature=temperature, 
                                                                           p=p, 
                                                                           k=k
                                                                           )
-  return preds_draft_summary, preds_refined_summary, refined_attention_dist
+  return predicted_draft_output_sequence, predicted_refined_output_sequence, refined_attention_dist

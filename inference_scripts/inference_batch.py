@@ -4,33 +4,19 @@ tf.random.set_seed(100)
 import time
 import os
 import numpy as np
-from create_tokenizer import tokenizer, model
 from transformer import create_masks
-from hyper_parameters import h_parms
 from configuration import config
-from input_path import file_path
-from abstractive_summarizer_v2 import AbstractiveSummarization
+from create_model import Model, tokenizer
 from beam_search import beam_search
 from preprocess import infer_data_from_df
-from metrics import convert_wordpiece_to_words
+from calculate_metrics import convert_wordpiece_to_words
 from rouge import Rouge
 from bert_score import score as b_score
 
-MASK_ID = 103
 rouge_all = Rouge()
 infer_template = '''Beam size <--- {}\
                     ROUGE-f1  <--- {}\
                     BERT-f1   <--- {}'''
-
-model = AbstractiveSummarization(
-                                num_layers=config.num_layers, 
-                                d_model=config.d_model, 
-                                num_heads=config.num_heads, 
-                                dff=config.dff, 
-                                vocab_size=config.input_vocab_size,
-                                output_seq_len=config.summ_length, 
-                                rate=h_parms.dropout_rate
-                                )
 
 def with_column(x, i, column):
     """
@@ -70,7 +56,7 @@ def mask_timestamp(x, i, mask_with):
 
 def restore_chkpt(checkpoint_path):
     ckpt = tf.train.Checkpoint(
-                               model=model
+                               Model=Model
                                )
     assert tf.train.latest_checkpoint(os.path.split(checkpoint_path)[0]), 'Incorrect checkpoint direcotry'
     ckpt.restore(checkpoint_path).expect_partial()
@@ -104,7 +90,7 @@ def draft_decoded_summary(model, input_ids, target_ids, beam_size):
                     beam_size, 
                     config.summ_length, 
                     config.input_vocab_size, 
-                    h_parms.length_penalty, 
+                    config.length_penalty, 
                     stop_early=True, 
                     eos_id=[end]
                     ),
@@ -128,7 +114,7 @@ def refined_summary_greedy(model, input_ids, enc_output, draft_summary, padding_
         for i in range(1, model.output_seq_len):
             
             # (batch_size, seq_len)
-            refined_summary_ = mask_timestamp(refined_summary, i, MASK_ID)
+            refined_summary_ = mask_timestamp(refined_summary, i, config.MASK_ID)
             
             # (batch_size, seq_len, d_bert)
             context_vectors = model.bert_model(refined_summary_)[0]
@@ -158,7 +144,7 @@ def refined_summary_greedy(model, input_ids, enc_output, draft_summary, padding_
         # (batch_size, seq_len), (_)        
         return refined_summary, attention_dist
 
-def run_inference(dataset, beam_sizes_to_try=h_parms.beam_sizes):
+def run_inference(model, dataset, beam_sizes_to_try=config.beam_sizes):
     for beam_size in beam_sizes_to_try:
       ref_sents = []
       hyp_sents = []
@@ -191,6 +177,6 @@ def run_inference(dataset, beam_sizes_to_try=h_parms.beam_sizes):
 
 if __name__ == '__main__':
   #Restore the model's checkpoints
-  restore_chkpt(file_path.infer_ckpt_path)
+  restore_chkpt(config.infer_ckpt_path)
   infer_dataset = infer_data_from_df()
-  run_inference(infer_dataset)
+  run_inference(Model, infer_dataset)

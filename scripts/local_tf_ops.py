@@ -1,9 +1,8 @@
 import tensorflow as tf
 import time
-from hyper_parameters import h_parms
 from configuration import config
 from creates import log
-from metrics import label_smoothing
+from calculate_metrics import label_smoothing
 
 train_step_signature = [
                       tf.TensorSpec(shape=(None, None), dtype=tf.int32),
@@ -54,7 +53,7 @@ def count_recs(batch, epoch, num_of_train_examples):
   if epoch == 0:
     try:
       if batch > 0:
-        num_of_recs_post_filter_atmost = ((batch)*h_parms.batch_size)/num_of_train_examples
+        num_of_recs_post_filter_atmost = ((batch)*config.batch_size)/num_of_train_examples
         log.info(f'Percentage of records used for training should be close to {num_of_recs_post_filter_atmost*100 :.2f}')
     except NameError:
       log.info('End of epoch')
@@ -67,7 +66,7 @@ def calc_validation_loss(validation_dataset,
   rouge_score_total = 0
   bert_score_total = 0
   total_val_acc_avg = tf.keras.metrics.Mean()
-  for (batch, (input_ids, target_ids_)) in enumerate(validation_dataset.take(config.valid_samples_to_eval//h_parms.validation_batch_size)):
+  for (batch, (input_ids, target_ids_)) in enumerate(validation_dataset.take(config.valid_samples_to_eval//config.validation_batch_size)):
     # calculate rouge and bert score for only the first batch
     if batch == 0:
       draft_mask = tf.math.logical_not(tf.math.equal(target_ids_[:, 1:], 0))

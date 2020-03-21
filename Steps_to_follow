@@ -1,11 +1,10 @@
-*) Add l2 regularization loss during loss calculation in the triaing loop
 *) create preprocessing pipeline with spell check or code telling possible mispelled words
-*) visulaize a sample from the dataset and create a BAR plot of the tokens.Visualize the frequent tokens
-*) Download and convert the dataset as tfds
-*) Visualize the source and target lengths
 *) Generalize the text summarization BERT script to suit Machine translation
 *) Encoder part should be BERT_base. 
 *) Decoder part should be multilingual BERT. Embeddings for Tamil words are extracted from it.
-*) Seperate english and tamil vocab should be used
-*) Decode the source and target sentences using BERT tokenizer
+*) Seperate BERT-BASE and BERT-multilingual vocab should be used
+*) Add the text summarization model to Hugging face.
+*) evaluate the model
+*) Client script creation (spell check, preprocess) 
+
 

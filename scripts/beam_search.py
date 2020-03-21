@@ -29,7 +29,7 @@ from tensorflow.python.ops import inplace_ops
 from tensorflow.python.util import nest
 
 # Assuming EOS_ID is 1
-EOS_ID = 1
+EOS_ID = config.SEP_ID
 # Default value for INF
 INF = 1. * 1e7
 

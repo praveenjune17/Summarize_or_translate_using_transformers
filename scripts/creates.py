@@ -3,10 +3,10 @@ import datetime
 import tensorflow as tf
 import os
 import logging
-from hyper_parameters import h_parms
 from configuration import config
-from input_path import file_path
 
+
+gpu_devices = tf.config.experimental.list_physical_devices('GPU')
 
 def check_and_create_dir(path):
     if not os.path.exists(path):
@@ -15,33 +15,38 @@ def check_and_create_dir(path):
         
 # create folder in input_path if they don't exist
 if not config.use_tfds:
-  assert (os.path.exists(file_path['train_csv_path'])), 'Training dataset not available'
-for key in file_path.keys():
-  if key in ['subword_vocab_path', 'summary_write_path', 'tensorboard_log']:
-    check_and_create_dir(file_path[key])
+  assert (os.path.exists(config.train_csv_path)), 'Training dataset not available'
+for key in config.keys():
+  if key in ['output_sequence_write_path', 'tensorboard_log']:
+    check_and_create_dir(config.key)
               
-# get TF logger
+# Create logger
 log = logging.getLogger('tensorflow')
 log.setLevel(logging.DEBUG)
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-fh = logging.FileHandler(file_path.log_path)
+fh = logging.FileHandler(config.log_path)
 fh.setLevel(logging.DEBUG)
 fh.setFormatter(formatter)
 log.addHandler(fh)
 log.propagate = False
 
-if not tf.config.experimental.list_physical_devices('GPU'):
-    log.warning("GPU Not available so Running in CPU")
+# Set GPU memory growth
+if not gpu_devices:
+    log.warning("GPU not available so Running in CPU")
+else:
+  for device in gpu_devices:
+      tf.config.experimental.set_memory_growth(device, True)
+      log.info('GPU memory growth set')
 
 if config.run_tensorboard:
     current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-    train_log_dir = file_path.tensorboard_log + current_time + '/train'
-    validation_log_dir = file_path.tensorboard_log + current_time + '/validation'
-    train_summary_writer = tf.summary.create_file_writer(train_log_dir)
-    valid_summary_writer = tf.summary.create_file_writer(validation_log_dir)
+    train_log_dir = config.tensorboard_log + current_time + '/train'
+    validation_log_dir = config.tensorboard_log + current_time + '/validation'
+    train_output_sequence_writer = tf.summary.create_file_writer(train_log_dir)
+    valid_output_sequence_writer = tf.summary.create_file_writer(validation_log_dir)
 else:
-    train_summary_writer = None
-    valid_summary_writer = None
+    train_output_sequence_writer = None
+    valid_output_sequence_writer = None
         
 # create metrics dict
 monitor_metrics = dict()
@@ -55,4 +60,22 @@ monitor_metrics['combined_metric'] = (
                                       monitor_metrics['validation_accuracy']
                                       )
 assert (config.monitor_metric in monitor_metrics.keys()), f'Available metrics to monitor are {monitor_metrics.keys()}'
-assert (tf.reduce_sum(h_parms.combined_metric_weights) == 1), 'weights should sum to 1'
+assert (tf.reduce_sum(config.combined_metric_weights) == 1), 'weights should sum to 1'
+
+# Get last_recorded_value of monitor_metric from the log
+try:
+  with open(config.log_path) as f:
+    for line in reversed(f.readlines()):
+        if ('- tensorflow - INFO - '+ config.monitor_metric in line) and \
+          (line[[i for i,char in enumerate((line)) if char.isdigit()][-1]+1] == '\n'):          
+          config['last_recorded_value'] = float(line.split(config.monitor_metric)[1].split('\n')[0].strip())
+          print(f"last_recorded_value of {config.monitor_metric} retained from last run {config['last_recorded_value']}")
+          break
+        else:
+          continue
+  if not config['last_recorded_value']:
+    print('setting default value to the last_recorded_value since not able to find the metrics from the log')
+    config['last_recorded_value'] = 0 if config.monitor_metric != 'validation_loss' else float('inf')
+except FileNotFoundError:
+  print('setting default value to the last_recorded_value since file was not found')
+  config['last_recorded_value'] = 0 if config.monitor_metric != 'validation_loss' else float('inf')

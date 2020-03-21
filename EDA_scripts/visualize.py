@@ -10,7 +10,6 @@ plt.style.use('seaborn-deep')
 import numpy as np
 import pandas as pd
 import time
-from hyper_parameters import h_parms
 from create_tokenizer import tokenizer
 from configuration import config
 from preprocess import tf_encode
@@ -25,8 +24,8 @@ def create_temp_file( text):
 # arg1 :- must be a padded_batch dataset
 def hist_tokens_per_batch(tf_dataset, num_of_examples, samples_to_try=0.1, split='valid'):
     x=[]
-    samples_per_batch = int((samples_to_try*(num_of_examples))//h_parms.batch_size)
-    tf_dataset = tf_dataset.padded_batch(h_parms.batch_size, padded_shapes=([-1], [-1]))
+    samples_per_batch = int((samples_to_try*(num_of_examples))//config.batch_size)
+    tf_dataset = tf_dataset.padded_batch(config.batch_size, padded_shapes=([-1], [-1]))
     tf_dataset = tf_dataset.take(samples_per_batch).cache()
     tf_dataset = tf_dataset.prefetch(buffer_size=samples_per_batch)
     for (i, j) in (tf_dataset):
@@ -34,7 +33,7 @@ def hist_tokens_per_batch(tf_dataset, num_of_examples, samples_to_try=0.1, split
     print(f'Descriptive statistics on tokens per batch for {split}')
     print(pd.Series(x).describe())
     if config.create_hist:
-      print(f'creating histogram for {samples_per_batch*h_parms.batch_size} samples')
+      print(f'creating histogram for {samples_per_batch*config.batch_size} samples')
       plt.hist(x, bins=20)
       plt.xlabel('Total tokens per batch')
       plt.ylabel('No of times')
