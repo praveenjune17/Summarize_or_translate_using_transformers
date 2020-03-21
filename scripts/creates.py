@@ -61,6 +61,7 @@ monitor_metrics['combined_metric'] = (
                                       )
 assert (config.monitor_metric in monitor_metrics.keys()), f'Available metrics to monitor are {monitor_metrics.keys()}'
 assert (tf.reduce_sum(config.combined_metric_weights) == 1), 'weights should sum to 1'
+assert config.PAD_ID == 0, 'Change the padding values in the tf_dataset.padded_batch line of preprocess script'
 
 # Get last_recorded_value of monitor_metric from the log
 try:
