@@ -91,7 +91,7 @@ class AbstractiveSummarization(tf.keras.Model):
         T = self.output_seq_len
         # since we are using teacher forcing we do not need an autoregressice mechanism here
         # (batch_size x (seq_len - 1), seq_len) 
-        dec_inp_ids = tile_and_mask_diagonal(target, mask_with=MASK_ID)
+        dec_inp_ids = tile_and_mask_diagonal(target, mask_with=config.MASK_ID)
         # (batch_size x (seq_len - 1), seq_len, d_bert) 
         enc_output = tf.tile(enc_output, [T-1, 1, 1])
         # (batch_size x (seq_len - 1), 1, 1, seq_len) 
@@ -124,7 +124,7 @@ class AbstractiveSummarization(tf.keras.Model):
         dec_outputs = tf.reshape(dec_outputs, [N, T-1, -1])
         # (batch_size, seq_len, vocab_len)
         refine_logits = tf.concat(
-                           [tf.tile(tf.expand_dims(tf.one_hot([CLS_ID], self.vocab_size), axis=0), [N, 1, 1]), dec_outputs],
+                           [tf.tile(tf.expand_dims(tf.one_hot([config.CLS_ID], self.vocab_size), axis=0), [N, 1, 1]), dec_outputs],
                            axis=1
                            )
 
