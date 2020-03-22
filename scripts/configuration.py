@@ -68,15 +68,15 @@ h_parms = {
 
 
 file_path = {
-        'best_ckpt_path' : "/content/drive/My Drive/Text_summarization/BERT_text_summarisation/created_files/training_summarization_model_ckpts/cnn/best_checkpoints",  
-        'checkpoint_path' : "/content/cnn_checkpoints",
+        'best_ckpt_path' : f"/content/drive/My Drive/Text_summarization/BERT_text_summarisation/created_files/training_summarization_model_ckpts/{training_parms['tfds_name']}/best_checkpoints",  
+        'checkpoint_path' : f"/content/{training_parms['tfds_name']}_checkpoints",
         'infer_csv_path' : None,
-        'infer_ckpt_path' : "/content/drive/My Drive/Text_summarization/BERT_text_summarisation/cnn_checkpoints/ckpt-1",
+        'infer_ckpt_path' : f"/content/drive/My Drive/Text_summarization/BERT_text_summarisation/{training_parms['tfds_name']}_checkpoints/ckpt-1",
         'log_path' : "/content/drive/My Drive/Text_summarization/BERT_text_summarisation/created_files/tensorflow.log",
         'subword_vocab_path' : os.path.join(core_path, "input_files/vocab_file_summarization_"+training_parms['tfds_name']),
         'output_sequence_write_path' : os.path.join(core_path, "created_files/summaries/"+training_parms['tfds_name']+"/"),
         'tensorboard_log' : os.path.join(core_path, "created_files/tensorboard_logs/"+training_parms['tfds_name']+"/"),
-        'tfds_data_dir' : '/content/drive/My Drive/Text_summarization/cnn_dataset',
+        'tfds_data_dir' : f'/content/drive/My Drive/Text_summarization/{training_parms['tfds_name']}_dataset',
         'tfds_data_version' : None,#{"version": "2.0.0"},
         'train_csv_path' : None,
         
