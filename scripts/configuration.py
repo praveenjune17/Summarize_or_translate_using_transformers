@@ -7,14 +7,15 @@ dataset_name = 'cnn'
 
 model_parms = {
      'copy_gen':True,
-     'input_seq_length': 512,
+     'input_seq_length': 60,
      'd_model': 768,                  # the projected word vector dimension
      'dff': 2048,                      # feed forward network hidden parameters
      'input_vocab_size': 30522,        # total vocab size + start and end token
      'num_heads': 8,                  # the number of heads in the multi-headed attention unit
      'num_layers': 8,                 # number of transformer blocks
-     'pretrained_bert_model': 'bert-base-uncased',
-     'target_seq_length': 72,
+     'input_pretrained_bert_model': 'bert-base-uncased',
+     'target_pretrained_bert_model' : 'bert-base-multilingual-cased',
+     'target_seq_length': 40,
      'target_vocab_size': 119547,       # total vocab size + start and end token
      }                                    
 training_parms = {
@@ -26,7 +27,7 @@ training_parms = {
      'print_chks': 50,                  # print training progress per number of batches specified
      'run_tensorboard': False,
      'show_detokenized_samples' : False,
-     'tfds_name' : 'cnn_dailymail',     # tfds dataset to be used
+     'tfds_name' : 'para_crawl',     # tfds dataset to be used
      'tolerance_threshold': 5,          # Stop training after the threshold is reached
      'use_tfds' : True,                 # use tfds datasets as to train the model else use the given csv file
      'valid_samples_to_eval' : 100,     # number of samples used for validation
@@ -62,7 +63,7 @@ h_parms = {
    'learning_rate': None,                # change to None to set learning rate decay
    'length_penalty' : 1,                       # Beam search hyps . Used only during inference                                                 
    'mean_attention_heads':True,                # if False then the attention parameters of the last head will be used
-   'mean_parameters_of_layers':True,           # if False then the attention parameters of the last layer will be used
+   'mean_attention_parameters_of_layers':True,           # if False then the attention parameters of the last layer will be used
    'validation_batch_size' : 8
    }                                    
 

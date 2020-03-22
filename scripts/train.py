@@ -11,7 +11,7 @@ from preprocess import create_dataset
 from configuration import config
 from calculate_metrics import get_loss_and_accuracy, label_smoothing, loss_function, monitor_run, optimizer, tf_write_output_sequence
 from creates import log, train_output_sequence_writer, valid_output_sequence_writer
-from create_model import tokenizer, Model
+from create_model import source_tokenizer, target_tokenizer, Model
 from decode_text import predict_using_sampling
 from local_tf_ops import *
 
@@ -20,8 +20,32 @@ policy = mixed_precision.Policy('mixed_float16')
 mixed_precision.set_policy(policy)
 optimizer = mixed_precision.LossScaleOptimizer(optimizer, loss_scale='dynamic')
 
-train_dataset = create_dataset('train', True, False, 90, 100, 287113, None, None, config.train_batch_size)
-val_dataset = create_dataset('validation', True, False, 0, 100, 13368, None, None, config.validation_batch_size)
+train_dataset = create_dataset(
+                              'train', 
+                              source_tokenizer, 
+                              target_tokenizer, 
+                              True, 
+                              False, 
+                              90, 
+                              100, 
+                              287113, 
+                              None, 
+                              None, 
+                              config.train_batch_size
+                              )
+val_dataset = create_dataset(
+                            'validation', 
+                             source_tokenizer, 
+                             target_tokenizer, 
+                             True, 
+                             False, 
+                             0, 
+                             100, 
+                             13368, 
+                             None, 
+                             None, 
+                             config.validation_batch_size
+                             )
 train_loss, train_accuracy = get_loss_and_accuracy()
 _, validation_accuracy = get_loss_and_accuracy()
 gradient_accumulators = []
@@ -130,8 +154,8 @@ for (step, (input_ids, target_ids_)) in tqdm(enumerate(train_dataset)):
                   )
   eval_frequency = ((step+1) * config.train_batch_size) % config.eval_after
   if eval_frequency == 0:
-    predicted = tokenizer.decode([i for i in tf.squeeze(tf.argmax(refine_predictions,axis=-1)) if i not in [config.CLS_ID, config.SEP_ID, config.PAD_ID]])
-    target = tokenizer.decode([i for i in tf.squeeze(target_ids_[:, :-1]) if i not in [config.CLS_ID, config.SEP_ID, config.PAD_ID]])
+    predicted = target_tokenizer.decode([i for i in tf.squeeze(tf.argmax(refine_predictions,axis=-1)) if i not in [config.CLS_ID, config.SEP_ID, config.PAD_ID]])
+    target = target_tokenizer.decode([i for i in tf.squeeze(target_ids_[:, :-1]) if i not in [config.CLS_ID, config.SEP_ID, config.PAD_ID]])
     log.info(f'the true output_sequence is {target}')
     log.info(f'the predicted output_sequence with teacher forcing is {predicted if predicted else "EMPTY"}')
     ckpt_save_path = ck_pt_mgr.save()

@@ -5,9 +5,6 @@ from transformer import create_masks, Decoder
 from creates import log
 from configuration import config
 
-
-
-
 def tile_and_mask_diagonal(x, mask_with):
     """    
     Masks each word in the summary draft one by one with the [MASK] token
@@ -35,9 +32,9 @@ def tile_and_mask_diagonal(x, mask_with):
 def _embedding_from_bert():
 
   log.info("Extracting pretrained word embeddings weights from BERT")  
-  encoder = TFBertModel.from_pretrained(config.pretrained_bert_model, trainable=False)
+  encoder = TFBertModel.from_pretrained(config.input_pretrained_bert_model, trainable=False)
   encoder_embedding = encoder.get_weights()[0]
-  decoder = TFBertModel.from_pretrained('bert-base-multilingual-cased', trainable=False)
+  decoder = TFBertModel.from_pretrained(config.target_pretrained_bert_model, trainable=False)
   decoder_embedding = decoder.get_weights()[0]
   log.info(f"Encoder_Embedding matrix shape '{encoder_embedding.shape}'")
   log.info(f"Decoder_Embedding matrix shape '{decoder_embedding.shape}'")
@@ -183,4 +180,5 @@ Model = AbstractiveSummarization(
                                 rate=config.dropout_rate
                                 )
 
-tokenizer = BertTokenizer.from_pretrained(config.pretrained_bert_model)
+source_tokenizer = BertTokenizer.from_pretrained(config.input_pretrained_bert_model)
+target_tokenizer = BertTokenizer.from_pretrained(config.target_pretrained_bert_model)

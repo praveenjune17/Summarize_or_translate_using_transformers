@@ -5,12 +5,12 @@ import shutil
 import os
 from configuration import config
 from rouge import Rouge
-from create_model import tokenizer
+from create_model import target_tokenizer 
 from bert_score import score as b_score
 from creates import log
 
 log.info('Loading Pre-trained BERT model for BERT SCORE calculation')
-_, _, _ = b_score(["I'm Batman"], ["I'm Spiderman"], lang='en', model_type='bert-base-uncased')
+_, _, _ = b_score(["I'm Batman"], ["I'm Spiderman"], lang='en', model_type=config.target_pretrained_bert_model)
 rouge_all = Rouge()
 
 class CustomSchedule(tf.keras.optimizers.schedules.LearningRateSchedule):
@@ -63,8 +63,8 @@ def write_output_sequence(tar_real, predictions, step, write_output_seq):
   ref_sents=[]
   hyp_sents=[]
   for tar, ref_hyp in zip(tar_real, predictions):
-      output_seq_ref = tokenizer.convert_ids_to_tokens([i for i in tf.squeeze(tar) if i not in [config.PAD_ID, config.CLS_ID, config.SEP_ID]])
-      output_seq_hyp = tokenizer.convert_ids_to_tokens([i for i in tf.squeeze(ref_hyp) if i not in [config.PAD_ID, config.CLS_ID, config.SEP_ID]])
+      output_seq_ref = target_tokenizer.convert_ids_to_tokens([i for i in tf.squeeze(tar) if i not in [config.PAD_ID, config.CLS_ID, config.SEP_ID]])
+      output_seq_hyp = target_tokenizer.convert_ids_to_tokens([i for i in tf.squeeze(ref_hyp) if i not in [config.PAD_ID, config.CLS_ID, config.SEP_ID]])
       output_seq_ref = convert_wordpiece_to_words(output_seq_ref)
       output_seq_hyp = convert_wordpiece_to_words(output_seq_hyp)
       ref_sents.append(output_seq_ref)
@@ -74,7 +74,7 @@ def write_output_sequence(tar_real, predictions, step, write_output_seq):
     avg_rouge_f1 = np.mean([np.mean([rouge_scores['rouge-1']["f"], 
                                     rouge_scores['rouge-2']["f"], 
                                     rouge_scores['rouge-l']["f"]]) for rouge_scores in rouges])
-    _, _, bert_f1 = b_score(ref_sents, hyp_sents, lang='en', model_type=config.pretrained_bert_model)
+    _, _, bert_f1 = b_score(ref_sents, hyp_sents, lang='en', model_type=config.target_pretrained_bert_model)
     avg_bert_f1 = np.mean(bert_f1.numpy())
   except:
     log.warning('Some problem while calculating ROUGE so setting ROUGE and BERT scores to zero')

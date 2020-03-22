@@ -5,7 +5,6 @@ import pandas as pd
 import tensorflow_datasets as tfds
 from functools import partial
 from configuration import config
-from create_model import tokenizer
 from creates import log
 
 AUTOTUNE = tf.data.experimental.AUTOTUNE
@@ -18,10 +17,10 @@ def pad(l, n, pad=config.PAD_ID):
     return np.pad(l, pad_with, mode='constant', constant_values=pad)
 
 
-def encode(sent_1, sent_2, tokenizer, input_seq_len, output_seq_len):
+def encode(sent_1, sent_2, source_tokenizer, target_tokenizer, input_seq_len, output_seq_len):
     
-    input_ids = tokenizer.encode(sent_1.numpy().decode('utf-8'))
-    target_ids = tokenizer.encode(sent_2.numpy().decode('utf-8'))
+    input_ids = source_tokenizer.encode(sent_1.numpy().decode('utf-8'))
+    target_ids = target_tokenizer.encode(sent_2.numpy().decode('utf-8'))
     # Account for [CLS] and [SEP] with "- 2"
     if len(input_ids) > input_seq_len - 2:
         input_ids = input_ids[0:(input_seq_len - 2)]
@@ -32,7 +31,7 @@ def encode(sent_1, sent_2, tokenizer, input_seq_len, output_seq_len):
     return input_ids, target_ids
 
 
-def tf_encode(tokenizer, input_seq_len, output_seq_len):
+def tf_encode(source_tokenizer, target_tokenizer, input_seq_len, output_seq_len):
     """
     Operations inside `.map()` run in graph mode and receive a graph
     tensor that do not have a `numpy` attribute.
@@ -41,7 +40,13 @@ def tf_encode(tokenizer, input_seq_len, output_seq_len):
     which receives an eager tensor having a numpy attribute that contains the string value.
     """    
     def f(s1, s2):
-        encode_ = partial(encode, tokenizer=tokenizer, input_seq_len=input_seq_len, output_seq_len=output_seq_len)
+        encode_ = partial(
+                          encode, 
+                          source_tokenizer=source_tokenizer, 
+                          target_tokenizer=target_tokenizer, 
+                          input_seq_len=input_seq_len, 
+                          output_seq_len=output_seq_len
+                          )
         return tf.py_function(encode_, [s1, s2], [tf.int32, tf.int32])
     return f
 
@@ -73,7 +78,17 @@ def read_csv(path, num_examples):
     assert not df.isnull().any().any(), 'dataset contains  nans'
     return (df["input_sequence"].values, df["output_sequence"].values)
 
-def create_dataset(split, use_tfds, shuffle, from_, to, buffer_size, csv_path, num_examples_to_select, batch_size):
+def create_dataset(split, 
+                   source_tokenizer, 
+                   target_tokenizer, 
+                   use_tfds, 
+                   shuffle, 
+                   from_, 
+                   to, 
+                   buffer_size, 
+                   csv_path, 
+                   num_examples_to_select, 
+                   batch_size):
 
   if use_tfds:
       raw_dataset, _ = tfds.load(
@@ -90,7 +105,8 @@ def create_dataset(split, use_tfds, shuffle, from_, to, buffer_size, csv_path, n
     buffer_size = len(input_seq)
   tf_dataset = raw_dataset.map(
                                tf_encode(
-                                        tokenizer, 
+                                        source_tokenizer,
+                                        target_tokenizer, 
                                         config.input_seq_length, 
                                         config.target_seq_length
                                         ), 
