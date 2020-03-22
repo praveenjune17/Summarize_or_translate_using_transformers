@@ -1,0 +1,12 @@
+train_batch_size = 1
+grad_accu = train_batch_size
+epoch = 10000
+
+#################3
+create config using the settings
+a) Randomness check
+b) turn off regularization, reduce the model parameters to minimum, set d_model, dff, '#' layers to minimum
+c) test whether loss reaches to zero with dataset size = 1
+d) zero the inputs 
+e) compute estimated memory consumption
+

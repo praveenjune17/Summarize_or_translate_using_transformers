@@ -22,7 +22,7 @@ training_parms = {
      'eval_after' : 5000,              # Evaluate once this many samples are trained 
      'last_recorded_value': None,
      'monitor_metric' : 'combined_metric',
-     'max_tokens_per_line' : 1763,      # filter documents based on this many tokens
+     'max_tokens_per_line' : model_parms['input_seq_length']+model_parms['target_seq_length'],      # filter documents based on this many tokens
      'print_chks': 50,                  # print training progress per number of batches specified
      'run_tensorboard': False,
      'show_detokenized_samples' : False,
@@ -50,9 +50,9 @@ special_tokens = {
 
 
 h_parms = {
-   'gradient_accumulation_steps': 36,                                                                                   
+   'gradient_accumulation_steps': 1,                                                                                   
    'train_batch_size': 1,
-   'beam_sizes': [2, 3, 4],              # Used only during inference                                                 
+   'beam_sizes': [2, 3, 4],              # Used  during inference                                                 
    'combined_metric_weights': [0.4, 0.3, 0.3], #(bert_score, rouge, validation accuracy)
    'dropout_rate': 0.0,
    'epochs': 4,
@@ -60,23 +60,23 @@ h_parms = {
    'grad_clipnorm':None,
    'l2_norm':0,
    'learning_rate': None,                # change to None to set learning rate decay
-   'length_penalty' : 1,                       # Beam search hyps . Used only during inference                                                 
+   'length_penalty' : 1,                       # Beam search hyps . Used  during inference                                                 
    'mean_attention_heads':True,                # if False then the attention parameters of the last head will be used
    'mean_attention_parameters_of_layers':True,           # if False then the attention parameters of the last layer will be used
    'validation_batch_size' : 8
    }                                    
 
-
+dataset_name = training_parms['tfds_name']
 file_path = {
-        'best_ckpt_path' : f"/content/drive/My Drive/Text_summarization/BERT_text_summarisation/created_files/training_summarization_model_ckpts/{training_parms['tfds_name']}/best_checkpoints",  
-        'checkpoint_path' : f"/content/{training_parms['tfds_name']}_checkpoints",
+        'best_ckpt_path' : f"/content/drive/My Drive/Text_summarization/BERT_text_summarisation/created_files/training_summarization_model_ckpts/{dataset_name}/best_checkpoints",  
+        'checkpoint_path' : f"/content/{dataset_name}_checkpoints",
         'infer_csv_path' : None,
-        'infer_ckpt_path' : f"/content/drive/My Drive/Text_summarization/BERT_text_summarisation/{training_parms['tfds_name']}_checkpoints/ckpt-1",
+        'infer_ckpt_path' : f"/content/drive/My Drive/Text_summarization/BERT_text_summarisation/{dataset_name}_checkpoints/ckpt-1",
         'log_path' : "/content/drive/My Drive/Text_summarization/BERT_text_summarisation/created_files/tensorflow.log",
-        'subword_vocab_path' : os.path.join(core_path, "input_files/vocab_file_summarization_"+training_parms['tfds_name']),
-        'output_sequence_write_path' : os.path.join(core_path, "created_files/summaries/"+training_parms['tfds_name']+"/"),
-        'tensorboard_log' : os.path.join(core_path, "created_files/tensorboard_logs/"+training_parms['tfds_name']+"/"),
-        'tfds_data_dir' : f'/content/drive/My Drive/Text_summarization/{training_parms['tfds_name']}_dataset',
+        'subword_vocab_path' : os.path.join(core_path, f"input_files/vocab_file_summarization_{dataset_name}"),
+        'output_sequence_write_path' : os.path.join(core_path, f"created_files/summaries/{dataset_name}/"),
+        'tensorboard_log' : os.path.join(core_path, f"created_files/tensorboard_logs/{dataset_name}/"),
+        'tfds_data_dir' : f'/content/drive/My Drive/Text_summarization/{dataset_name}_dataset',
         'tfds_data_version' : None,#{"version": "2.0.0"},
         'train_csv_path' : None,
         

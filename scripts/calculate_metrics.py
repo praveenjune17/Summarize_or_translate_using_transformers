@@ -7,7 +7,7 @@ from configuration import config
 from rouge import Rouge
 from create_model import target_tokenizer 
 from bert_score import score as b_score
-from creates import log
+from creates import log, valid_output_sequence_writer
 
 log.info('Loading Pre-trained BERT model for BERT SCORE calculation')
 _, _, _ = b_score(["I'm Batman"], ["I'm Spiderman"], lang='en', model_type=config.target_pretrained_bert_model)
@@ -33,6 +33,12 @@ def label_smoothing(inputs, epsilon=config.epsilon_ls):
     epsilon = tf.cast(epsilon, dtype=inputs.dtype)
     V = tf.cast(V, dtype=inputs.dtype)
     return ((1-epsilon) * inputs) + (epsilon / V)
+
+def mask_and_smooth_labels(target):
+  draft_mask = tf.math.logical_not(tf.math.equal(target[:, 1:], 0))
+  refine_mask = tf.math.logical_not(tf.math.equal(target[:, :-1], 0))
+  target_ids = label_smoothing(tf.one_hot(target, depth=config.target_vocab_size))
+  return (draft_mask, refine_mask, target_ids)
 
 def convert_wordpiece_to_words(w_piece):
   new=[]
@@ -96,7 +102,6 @@ def monitor_run(ckpt_save_path,
                 val_acc,
                 bert_score, 
                 rouge_score, 
-                valid_output_sequence_writer,
                 step,
                 to_monitor=config.monitor_metric):
   
