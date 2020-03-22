@@ -3,7 +3,6 @@ import os
 from bunch import Bunch
 
 core_path = os.getcwd() 
-dataset_name = 'cnn'
 
 model_parms = {
      'copy_gen':True,
@@ -74,11 +73,11 @@ file_path = {
         'infer_csv_path' : None,
         'infer_ckpt_path' : "/content/drive/My Drive/Text_summarization/BERT_text_summarisation/cnn_checkpoints/ckpt-1",
         'log_path' : "/content/drive/My Drive/Text_summarization/BERT_text_summarisation/created_files/tensorflow.log",
-        'subword_vocab_path' : os.path.join(core_path, "input_files/vocab_file_summarization_"+dataset_name),
-        'output_sequence_write_path' : os.path.join(core_path, "created_files/summaries/"+dataset_name+"/"),
-        'tensorboard_log' : os.path.join(core_path, "created_files/tensorboard_logs/"+dataset_name+"/"),
+        'subword_vocab_path' : os.path.join(core_path, "input_files/vocab_file_summarization_"+training_parms['tfds_name']),
+        'output_sequence_write_path' : os.path.join(core_path, "created_files/summaries/"+training_parms['tfds_name']+"/"),
+        'tensorboard_log' : os.path.join(core_path, "created_files/tensorboard_logs/"+training_parms['tfds_name']+"/"),
         'tfds_data_dir' : '/content/drive/My Drive/Text_summarization/cnn_dataset',
-        'tfds_data_version' : {"version": "2.0.0"},
+        'tfds_data_version' : None,#{"version": "2.0.0"},
         'train_csv_path' : None,
         
     }

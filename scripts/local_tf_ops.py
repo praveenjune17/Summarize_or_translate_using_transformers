@@ -58,7 +58,7 @@ def count_recs(batch, epoch, num_of_train_examples):
     except NameError:
       log.info('End of epoch')
 
-def calc_validation_loss(validation_dataset, 
+def evaluate_validation_set(validation_dataset, 
                          step, 
                          val_step, 
                          valid_summary_writer, 
