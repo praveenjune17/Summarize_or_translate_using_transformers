@@ -15,7 +15,7 @@ model_parms = {
      'num_layers': 8,                 # number of transformer blocks
      'pretrained_bert_model': 'bert-base-uncased',
      'target_seq_length': 72,
-     'target_vocab_size': 30522,       # total vocab size + start and end token
+     'target_vocab_size': 119547,       # total vocab size + start and end token
      }                                    
 training_parms = {
      'early_stop' : False,
@@ -77,6 +77,7 @@ file_path = {
         'output_sequence_write_path' : os.path.join(core_path, "created_files/summaries/"+dataset_name+"/"),
         'tensorboard_log' : os.path.join(core_path, "created_files/tensorboard_logs/"+dataset_name+"/"),
         'tfds_data_dir' : '/content/drive/My Drive/Text_summarization/cnn_dataset',
+        'tfds_data_version' : {"version": "2.0.0"},
         'train_csv_path' : None,
         
     }

@@ -95,7 +95,7 @@ def val_step(
                                                   )
   
   
-  validation_accuracy(target_ids_[:, 1:], tf.one_hot(refine_predictions[:, 1:], depth=config.input_vocab_size))  
+  validation_accuracy(target_ids_[:, 1:], tf.one_hot(refine_predictions[:, 1:], depth=config.target_vocab_size))  
   rouge, bert = tf_write_output_sequence(target_ids_[:, 1:], refine_predictions[:, 1:], step, write_output_seq)  
   return (rouge, bert)
 
@@ -109,7 +109,7 @@ for (step, (input_ids, target_ids_)) in tqdm(enumerate(train_dataset)):
   start=time.time()
   draft_mask = tf.math.logical_not(tf.math.equal(target_ids_[:, 1:], 0))
   refine_mask = tf.math.logical_not(tf.math.equal(target_ids_[:, :-1], 0))
-  target_ids = label_smoothing(tf.one_hot(target_ids_, depth=config.input_vocab_size))
+  target_ids = label_smoothing(tf.one_hot(target_ids_, depth=config.target_vocab_size))
   grad_accum_flag = True if (step+1)%config.gradient_accumulation_steps == 0 else False
   refine_predictions = train_step(
                                   input_ids,  

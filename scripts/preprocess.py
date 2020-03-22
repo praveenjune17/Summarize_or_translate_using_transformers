@@ -81,7 +81,7 @@ def create_dataset(split, use_tfds, shuffle, from_, to, buffer_size, csv_path, n
                                  with_info=True,
                                  as_supervised=True, 
                                  data_dir=config.tfds_data_dir,
-                                 builder_kwargs={"version": "2.0.0"},
+                                 builder_kwargs=config.tfds_data_version,
                                  split=tfds.core.ReadInstruction(split, from_=from_, to=to, unit='%')
                                 )        
   else:

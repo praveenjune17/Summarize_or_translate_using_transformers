@@ -35,28 +35,36 @@ def tile_and_mask_diagonal(x, mask_with):
 def _embedding_from_bert():
 
   log.info("Extracting pretrained word embeddings weights from BERT")  
-  vocab_of_BERT = TFBertModel.from_pretrained(config.pretrained_bert_model, trainable=False)
-  embedding_matrix = vocab_of_BERT.get_weights()[0]
-  log.info(f"Embedding matrix shape '{embedding_matrix.shape}'")
-  return (embedding_matrix, vocab_of_BERT)
+  encoder = TFBertModel.from_pretrained(config.pretrained_bert_model, trainable=False)
+  encoder_embedding = encoder.get_weights()[0]
+  decoder = TFBertModel.from_pretrained('bert-base-multilingual-cased', trainable=False)
+  decoder_embedding = decoder.get_weights()[0]
+  log.info(f"Encoder_Embedding matrix shape '{encoder_embedding.shape}'")
+  log.info(f"Decoder_Embedding matrix shape '{decoder_embedding.shape}'")
+  return (encoder_embedding, decoder_embedding, encoder, decoder)
 
 class AbstractiveSummarization(tf.keras.Model):
     """
     Pretraining-Based Natural Language Generation for Text Summarization 
     https://arxiv.org/pdf/1902.09243.pdf
     """
-    def __init__(self, num_layers, d_model, num_heads, dff, vocab_size, output_seq_len, rate=0.1):
+    def __init__(self, num_layers, d_model, num_heads, dff, input_vocab_size, target_vocab_size, output_seq_len, rate=0.1):
         super(AbstractiveSummarization, self).__init__()
         
         self.output_seq_len = output_seq_len
-        self.vocab_size = vocab_size
-        embedding_matrix, self.bert_model = _embedding_from_bert()
-        self.embedding = tf.keras.layers.Embedding(
-                                                    vocab_size, d_model, trainable=False,
-                                                    embeddings_initializer=Constant(embedding_matrix)
+        self.input_vocab_size = input_vocab_size
+        self.target_vocab_size = target_vocab_size
+        encoder_embedding, decoder_embedding, self.encoder_bert_model, self.decoder_bert_model = _embedding_from_bert()
+        self.encoder_embedding = tf.keras.layers.Embedding(
+                                                    input_vocab_size, d_model, trainable=False,
+                                                    embeddings_initializer=Constant(encoder_embedding)
+                                                   )
+        self.decoder_embedding = tf.keras.layers.Embedding(
+                                                    target_vocab_size, d_model, trainable=False,
+                                                    embeddings_initializer=Constant(decoder_embedding)
                                                    )
         
-        self.decoder = Decoder(num_layers, d_model, num_heads, dff, vocab_size, rate)
+        self.decoder = Decoder(num_layers, d_model, num_heads, dff, target_vocab_size, rate)
         self.d_model = d_model
 
     def draft_summary(self,
@@ -67,7 +75,7 @@ class AbstractiveSummarization(tf.keras.Model):
                       target_ids,
                       training):
         # (batch_size, seq_len, d_bert)
-        embeddings = self.embedding(target_ids) 
+        embeddings = self.decoder_embedding(target_ids) 
         # (batch_size, seq_len, vocab_len), (_)            
         draft_logits, draft_attention_dist = self.decoder(
                                                           input_ids,
@@ -97,7 +105,7 @@ class AbstractiveSummarization(tf.keras.Model):
         # (batch_size x (seq_len - 1), 1, 1, seq_len) 
         padding_mask = tf.tile(padding_mask, [T-1, 1, 1, 1])
         # (batch_size x (seq_len - 1), seq_len, d_bert)
-        context_vectors = self.bert_model(dec_inp_ids)[0]
+        context_vectors = self.decoder_bert_model(dec_inp_ids)[0]                #tamil bert context
 
         # (batch_size x (seq_len - 1), seq_len, vocab_len), (_)
         dec_outputs, refine_attention_dist = self.decoder(
@@ -124,7 +132,7 @@ class AbstractiveSummarization(tf.keras.Model):
         dec_outputs = tf.reshape(dec_outputs, [N, T-1, -1])
         # (batch_size, seq_len, vocab_len)
         refine_logits = tf.concat(
-                           [tf.tile(tf.expand_dims(tf.one_hot([config.CLS_ID], self.vocab_size), axis=0), [N, 1, 1]), dec_outputs],
+                           [tf.tile(tf.expand_dims(tf.one_hot([config.CLS_ID], self.target_vocab_size), axis=0), [N, 1, 1]), dec_outputs],
                            axis=1
                            )
 
@@ -141,7 +149,7 @@ class AbstractiveSummarization(tf.keras.Model):
         _, combined_mask, dec_padding_mask = create_masks(input_ids, target_ids[:, :-1])
 
         # (batch_size, seq_len, d_bert)
-        enc_output = self.bert_model(input_ids)[0]
+        enc_output = self.encoder_bert_model(input_ids)[0]             #Eng bert
 
         # (batch_size, seq_len, vocab_len), _
         draft_logits, draft_attention_dist = self.draft_summary(
@@ -169,7 +177,8 @@ Model = AbstractiveSummarization(
                                 d_model=config.d_model, 
                                 num_heads=config.num_heads, 
                                 dff=config.dff, 
-                                vocab_size=config.input_vocab_size,
+                                input_vocab_size=config.input_vocab_size,
+                                target_vocab_size=config.target_vocab_size,
                                 output_seq_len=config.target_seq_length, 
                                 rate=config.dropout_rate
                                 )

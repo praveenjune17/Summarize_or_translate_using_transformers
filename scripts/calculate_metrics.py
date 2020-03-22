@@ -10,7 +10,7 @@ from bert_score import score as b_score
 from creates import log
 
 log.info('Loading Pre-trained BERT model for BERT SCORE calculation')
-_, _, _ = b_score(["I'm Batman"], ["I'm Spiderman"], lang='en', model_type=config.pretrained_bert_model)
+_, _, _ = b_score(["I'm Batman"], ["I'm Spiderman"], lang='en', model_type='bert-base-uncased')
 rouge_all = Rouge()
 
 class CustomSchedule(tf.keras.optimizers.schedules.LearningRateSchedule):
