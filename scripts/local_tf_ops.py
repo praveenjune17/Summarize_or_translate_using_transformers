@@ -121,19 +121,19 @@ def val_step(
 
 
 # run every batch
-def batch_run_check(batch, start, train_loss, train_accuracy, model):
+def batch_run_check(batch, start, model):
   if config.run_tensorboard:
     with train_output_sequence_writer.as_default():
-      tf.summary.scalar('train_loss', train_loss, step=batch)
-      tf.summary.scalar('train_accuracy', train_accuracy, step=batch)
+      tf.summary.scalar('train_loss', train_loss.result(), step=batch)
+      tf.summary.scalar('train_accuracy', train_accuracy.result(), step=batch)
   if batch==0:
     log.info(model.summary())
     log.info(batch_zero.format(time.time()-start))
   log.info(
            batch_run_details.format(
                                    batch, 
-                                   train_loss, 
-                                   train_accuracy
+                                   train_loss.result(), 
+                                   train_accuracy.result()
                                    )
           )
 
@@ -182,8 +182,6 @@ def train_sanity_check(tokenizer, predictions, target_id):
 
 def post_training_results(
                           step, 
-                          train_loss_op, 
-                          train_accuracy_op, 
                           val_acc,
                           rouge_score, 
                           bert_score,
@@ -194,8 +192,8 @@ def post_training_results(
       log.info(
                 model_metrics.format(
                                     step, 
-                                    train_loss_op, 
-                                    train_accuracy_op, 
+                                    train_loss.result(), 
+                                    train_accuracy.result(), 
                                     val_acc,
                                     rouge_score, 
                                     bert_score

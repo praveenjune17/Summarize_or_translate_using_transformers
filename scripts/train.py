@@ -8,7 +8,7 @@ import time
 from tqdm import tqdm
 from preprocess import create_dataset
 from configuration import config
-from calculate_metrics import mask_and_smooth, monitor_run
+from calculate_metrics import mask_and_smooth_labels, monitor_run
 from creates import log, valid_output_sequence_writer
 from create_model import source_tokenizer, target_tokenizer, Model
 from decode_text import predict_using_sampling
@@ -55,8 +55,6 @@ for (step, (input_ids, target_ids_)) in tqdm(enumerate(train_dataset)):
     batch_run_check(
                   step+1,  
                   start, 
-                  train_loss.result(), 
-                  train_accuracy.result(), 
                   Model
                   )
   evaluate = ((step+1) * config.train_batch_size) % config.eval_after
@@ -69,18 +67,18 @@ for (step, (input_ids, target_ids_)) in tqdm(enumerate(train_dataset)):
                                                                   )
     post_training_results(
                           step+1, 
-                          train_loss.result(), 
-                          train_accuracy.result(), 
                           val_acc,
                           rouge_score, 
                           bert_score,
                           (time.time() - start),
                           ckpt_save_path
                           )
-    if not monitor_run(
-                        ckpt_save_path, 
-                        val_acc, 
-                        bert_score, 
-                        rouge_score, 
-                        step+1):
+    monitor_early_stop=monitor_run(
+                                  ckpt_save_path, 
+                                  val_acc, 
+                                  bert_score, 
+                                  rouge_score, 
+                                  step+1
+                                  )
+    if not monitor_early_stop:
       break
