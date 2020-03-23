@@ -21,7 +21,6 @@ train_dataset = create_dataset(
                               target_tokenizer=target_tokenizer, 
                               from_=90, 
                               to=100, 
-                              buffer_size=287113, 
                               batch_size=config.train_batch_size
                               )
 val_dataset = create_dataset(
@@ -30,7 +29,6 @@ val_dataset = create_dataset(
                              target_tokenizer=target_tokenizer, 
                              from_=0, 
                              to=100, 
-                             buffer_size=13368, 
                              batch_size=config.validation_batch_size                          
                              )
 
