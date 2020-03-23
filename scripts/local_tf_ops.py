@@ -108,7 +108,7 @@ def val_step(
    refine_predictions, _) = predict_using_sampling( 
                                                     Model,
                                                     input_ids, 
-                                                    refine_decoder_sampling_type='greedy', 
+                                                    refine_decoder_type='greedy', 
                                                     temperature=0.9, 
                                                     p=0.8, 
                                                     k=7

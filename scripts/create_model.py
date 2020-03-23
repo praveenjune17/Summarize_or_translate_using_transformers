@@ -45,20 +45,33 @@ class AbstractiveSummarization(tf.keras.Model):
     Pretraining-Based Natural Language Generation for Text Summarization 
     https://arxiv.org/pdf/1902.09243.pdf
     """
-    def __init__(self, num_layers, d_model, num_heads, dff, input_vocab_size, target_vocab_size, output_seq_len, rate=0.1):
+    def __init__(
+                  self, 
+                  num_layers, 
+                  d_model, 
+                  num_heads, 
+                  dff, 
+                  input_vocab_size, 
+                  target_vocab_size, 
+                  output_seq_len, rate=0.1):
         super(AbstractiveSummarization, self).__init__()
         
         self.output_seq_len = output_seq_len
         self.input_vocab_size = input_vocab_size
         self.target_vocab_size = target_vocab_size
-        encoder_embedding, decoder_embedding, self.encoder_bert_model, self.decoder_bert_model = _embedding_from_bert()
+        (encoder_embedding, decoder_embedding, 
+          self.encoder_bert_model, self.decoder_bert_model) = _embedding_from_bert()
         self.encoder_embedding = tf.keras.layers.Embedding(
-                                                    input_vocab_size, d_model, trainable=False,
-                                                    embeddings_initializer=Constant(encoder_embedding)
-                                                   )
+                                                          input_vocab_size, 
+                                                          d_model, 
+                                                          trainable=False,
+                                                          embeddings_initializer=Constant(encoder_embedding)
+                                                          )
         self.decoder_embedding = tf.keras.layers.Embedding(
-                                                    target_vocab_size, d_model, trainable=False,
-                                                    embeddings_initializer=Constant(decoder_embedding)
+                                                           target_vocab_size, 
+                                                           d_model, 
+                                                           trainable=False,
+                                                           embeddings_initializer=Constant(decoder_embedding)
                                                    )
         
         self.decoder = Decoder(num_layers, d_model, num_heads, dff, target_vocab_size, rate)
@@ -105,7 +118,7 @@ class AbstractiveSummarization(tf.keras.Model):
         context_vectors = self.decoder_bert_model(dec_inp_ids)[0]                #tamil bert context
 
         # (batch_size x (seq_len - 1), seq_len, vocab_len), (_)
-        dec_outputs, refine_attention_dist = self.decoder(
+        refined_logits, refine_attention_dist = self.decoder(
                                                            tf.tile(input_ids, [T-1, 1]),
                                                            context_vectors,
                                                            enc_output,
@@ -114,7 +127,7 @@ class AbstractiveSummarization(tf.keras.Model):
                                                            padding_mask=padding_mask
                                                          )
         # (batch_size x (seq_len - 1), seq_len - 1, vocab_len)
-        dec_outputs = dec_outputs[:, 1:, :]
+        refined_logits = refined_logits[:, 1:, :]
         # (batch_size x (seq_len - 1), (seq_len - 1))
         diag = tf.linalg.set_diag(tf.zeros([T-1, T-1]), tf.ones([T-1]))
         diag = tf.tile(diag, [N, 1])
@@ -123,15 +136,25 @@ class AbstractiveSummarization(tf.keras.Model):
         indices = tf.where(where)
         
         # (batch_size x (seq_len - 1), vocab_len)
-        dec_outputs = tf.gather_nd(dec_outputs, indices)
+        refined_logits = tf.gather_nd(refined_logits, indices)
         
         # (batch_size, seq_len - 1, vocab_len)
-        dec_outputs = tf.reshape(dec_outputs, [N, T-1, -1])
+        refined_logits = tf.reshape(refined_logits, [N, T-1, -1])
         # (batch_size, seq_len, vocab_len)
         refine_logits = tf.concat(
-                           [tf.tile(tf.expand_dims(tf.one_hot([config.CLS_ID], self.target_vocab_size), axis=0), [N, 1, 1]), dec_outputs],
-                           axis=1
-                           )
+                           [tf.tile(
+                                    tf.expand_dims(
+                                                  tf.one_hot(
+                                                    [config.CLS_ID], 
+                                                    self.target_vocab_size
+                                                            ), 
+                                                  axis=0
+                                                  ), 
+                                                  [N, 1, 1]
+                                    ), 
+                                    refined_logits],
+                                    axis=1
+                                  )
 
 
         # (batch_size, seq_len, vocab_len)

@@ -2,6 +2,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import tensorflow as tf
+tf.keras.backend.clear_session()
 tf.random.set_seed(100)
 tf.config.optimizer.set_jit(True)
 import time
@@ -11,7 +12,6 @@ from configuration import config
 from calculate_metrics import mask_and_smooth_labels, monitor_run
 from creates import log, valid_output_sequence_writer
 from create_model import source_tokenizer, target_tokenizer, Model
-from decode_text import predict_using_sampling
 from local_tf_ops import (check_ckpt, train_step, batch_run_check, 
                           train_sanity_check, evaluate_validation_set)
 

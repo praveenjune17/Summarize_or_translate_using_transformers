@@ -12,7 +12,10 @@ from creates import log, valid_output_sequence_writer
 log.info('Loading Pre-trained BERT model for BERT SCORE calculation')
 _, _, _ = b_score(["I'm Batman"], ["I'm Spiderman"], lang='en', model_type=config.target_pretrained_bert_model)
 rouge_all = Rouge()
-
+loss_object = tf.keras.losses.CategoricalCrossentropy(
+                                                      from_logits=True, 
+                                                      reduction='none'
+                                                      )
 class CustomSchedule(tf.keras.optimizers.schedules.LearningRateSchedule):
   def __init__(self, d_model, warmup_steps=4000):
     super(CustomSchedule, self).__init__()
@@ -163,7 +166,3 @@ else:
                              beta_2=0.98, 
                              epsilon=1e-9
                              )
-loss_object = tf.keras.losses.CategoricalCrossentropy(
-                                                      from_logits=True, 
-                                                      reduction='none'
-                                                      )

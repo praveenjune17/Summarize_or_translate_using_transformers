@@ -1,0 +1,7 @@
+a) 
+Fix to enusure numerical stability in pointer_gen
+
+input_ = [1000.0, 1, 8, 0, -0.01, -1, -1000]
+print(tf.math.log(input_))
+print(tf.math.log(tf.math.maximum(input_, 0.0000000001)))
+##########################################################################################################################################

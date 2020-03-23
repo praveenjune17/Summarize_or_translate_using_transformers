@@ -253,7 +253,7 @@ class Pointer_Generator(tf.keras.layers.Layer):
     # p_gen (batch_size, tar_seq_len, 1)
     p_gen = self.pointer_generator_vec(self.pointer_generator_layer(dec_output))
     # vocab_dist (batch_size, tar_seq_len, target_vocab_size)   
-    vocab_dist_ = tf.math.softmax(final_output, axis=-1)
+    vocab_dist_ = tf.math.softmax(final_output, axis=-1)              #cand1
     vocab_dist = p_gen * vocab_dist_ 
     # attention_weights is 4D so taking mean of the second dimension(i.e num_heads)
     if config.mean_attention_heads:
@@ -278,6 +278,8 @@ class Pointer_Generator(tf.keras.layers.Layer):
     # copy_probs (batch_size, tar_seq_len, target_vocab_size)
     copy_probs = tf.scatter_nd(indices, updates, shape)   
     combined_probs = vocab_dist + copy_probs
+    # ensures numerical stability
+    combined_probs = tf.math.maximum(combined_probs, 0.0000000001)
     combined_logits = tf.math.log(combined_probs)
     return combined_logits
 
@@ -341,4 +343,5 @@ class Decoder(tf.keras.layers.Layer):
                                         training=training
                                         )
     # (batch_size, target_seq_len, target_vocab_size)
+    tf.debugging.check_numerics(predictions, 'undesirable values found :( ', name='Assert_at_decoder')
     return predictions, block2_attention_weights

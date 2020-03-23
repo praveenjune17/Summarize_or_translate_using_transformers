@@ -124,7 +124,7 @@ def draft_output_sequence_sampling(model,
                            enc_output, 
                            look_ahead_mask, 
                            padding_mask, 
-                           sampling_type='greedy', 
+                           decoder_type='greedy', 
                            temperature=0.9, 
                            p=0.9, 
                            k=25, 
@@ -133,7 +133,7 @@ def draft_output_sequence_sampling(model,
     """
     Inference call, builds a draft output_sequence auto-regressively
     """
-    log.info(f"Building: 'Draft {sampling_type} decoder'")
+    log.info(f"Building: 'Draft {decoder_type} decoder'")
     N = tf.shape(enc_output)[0]
 
     # (batch_size, 1)
@@ -156,16 +156,18 @@ def draft_output_sequence_sampling(model,
 
         # (batch_size, 1, vocab)
         dec_output_i = dec_output[:, -1: ,:]
-        if sampling_type == 'nucleus':
+        if decoder_type == 'nucleus':
           predictions = tf.cast(nucleus_sampling(((dec_output_i)/ temperature), p=p), tf.int32)
-        elif sampling_type == 'topk':
+        elif decoder_type == 'topk':
           predictions = tf.cast(top_k_sampling(((dec_output_i)/ temperature), k=k), tf.int32)
-        elif sampling_type == 'random_sampling':
+        elif decoder_type == 'random_sampling':
           predictions = tf.cast(sampling((dec_output_i)/ temperature), tf.int32)
-        elif sampling_type == 'topktopp':
+        elif decoder_type == 'topktopp':
           predictions = tf.cast(topp_topk(((dec_output_i)/ temperature), p=p,k=k), tf.int32)
-        else:
+        elif decoder_type == 'greedy':
           predictions = tf.cast(tf.argmax(dec_output_i, axis=-1), tf.int32)
+        else:
+          raise RuntimeError('Incorrect Decoder type specified')
         dec_outputs += [dec_output_i]
         #dec_logits_i = dec_logits_i[:, -1:, :]
         #dec_logits += [dec_logits_i]
@@ -215,7 +217,7 @@ def refined_output_sequence_sampling(model,
                              enc_output, 
                              draft_output_sequence, 
                              padding_mask, 
-                             sampling_type='greedy', 
+                             decoder_type='greedy', 
                              temperature=0.9, 
                              p=0.9, 
                              k=25,
@@ -227,7 +229,7 @@ def refined_output_sequence_sampling(model,
         then feeds the draft to BERT to generate context vectors.
         """
         
-        log.info(f"Building: 'Refined {sampling_type} decoder'")
+        log.info(f"Building: 'Refined {decoder_type} decoder'")
         tf.shape(enc_output)[0]
         refined_output_sequence = draft_output_sequence
         for i in (range(1, config.target_seq_length)):
@@ -249,13 +251,13 @@ def refined_output_sequence_sampling(model,
             
             # (batch_size, 1, vocab_len)
             dec_output_i = dec_output[:, i:i+1 ,:]
-            if sampling_type == 'nucleus':
+            if decoder_type == 'nucleus':
               predictions = tf.cast(nucleus_sampling((dec_output_i/ temperature), p=p), tf.int32)
-            elif sampling_type == 'topk':
+            elif decoder_type == 'topk':
               predictions = tf.cast(top_k_sampling(((dec_output_i)/ temperature), k=k), tf.int32)
-            elif sampling_type == 'topktopp':
+            elif decoder_type == 'topktopp':
               predictions = tf.cast(topp_topk(((dec_output_i)/ temperature), p=p,k=k), tf.int32)
-            elif sampling_type == 'random_sampling':
+            elif decoder_type == 'random_sampling':
               predictions = tf.cast(sampling((dec_output_i)/ temperature), tf.int32)
             else:
               predictions = tf.cast(tf.argmax(dec_output_i, axis=-1), tf.int32)
@@ -267,7 +269,7 @@ def predict_using_sampling(
                            model,
                            inp, 
                            draft_decoder_sampling_type='topk',
-                           refine_decoder_sampling_type='topk', 
+                           refine_decoder_type='topk', 
                            temperature=0.9, 
                            p=0.9, 
                            k=25):
@@ -285,7 +287,7 @@ def predict_using_sampling(
                                                                       enc_output=enc_output,
                                                                       look_ahead_mask=None,
                                                                       padding_mask=dec_padding_mask,
-                                                                      sampling_type=draft_decoder_sampling_type,
+                                                                      decoder_type=draft_decoder_sampling_type,
                                                                       temperature=temperature,
                                                                       p=p, 
                                                                       k=k,
@@ -296,7 +298,7 @@ def predict_using_sampling(
                                                                             enc_output=enc_output,
                                                                             padding_mask=dec_padding_mask,
                                                                             draft_output_sequence=predicted_draft_output_sequence,
-                                                                            sampling_type=refine_decoder_sampling_type, 
+                                                                            decoder_type=refine_decoder_type, 
                                                                             temperature=temperature, 
                                                                             p=p, 
                                                                             k=k
@@ -309,7 +311,7 @@ def predict_using_beam_search(
                               model,
                               inp, 
                               beam_size=3, 
-                              refine_decoder_sampling_type='nucleus', 
+                              refine_decoder_type='nucleus', 
                               temperature=0.9, 
                               p=0.9, 
                               k=25):
@@ -334,7 +336,7 @@ def predict_using_beam_search(
                                                                           enc_output=enc_output,
                                                                           padding_mask=dec_padding_mask,
                                                                           draft_output_sequence=predicted_draft_output_sequence, 
-                                                                          sampling_type=refine_decoder_sampling_type, 
+                                                                          decoder_type=refine_decoder_type, 
                                                                           temperature=temperature, 
                                                                           p=p, 
                                                                           k=k
