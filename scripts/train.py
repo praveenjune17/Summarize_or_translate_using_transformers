@@ -9,8 +9,8 @@ from tqdm import tqdm
 from preprocess import create_dataset
 from configuration import config
 from calculate_metrics import mask_and_smooth_labels, monitor_run
-from creates import log, valid_output_sequence_writer
-from create_model import source_tokenizer, target_tokenizer, Model
+from creates import log
+from create_model import source_tokenizer, target_tokenizer
 from local_tf_ops import (check_ckpt, train_step, batch_run_check, 
                           train_sanity_check, evaluate_validation_set)
 
@@ -51,8 +51,7 @@ for (step, (input_ids, target_ids_)) in tqdm(enumerate(train_dataset)):
   if grad_accum_flag:
     batch_run_check(
                   step+1,  
-                  start, 
-                  Model
+                  start
                   )
   evaluate = ((step+1) * config.train_batch_size) % config.eval_after
   if evaluate == 0:
@@ -77,5 +76,5 @@ for (step, (input_ids, target_ids_)) in tqdm(enumerate(train_dataset)):
                                     rouge_score, 
                                     step+1
                                     )
-    if not monitor_early_stop:
-      break
+  if not monitor_early_stop:
+    break

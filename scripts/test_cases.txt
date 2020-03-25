@@ -21,3 +21,13 @@ if __name__ == '__main__':
 !python temp.py
 !python temp.py --example 5
 ##########################################################################################################################################
+c) Speed test by enabling and disabling JIT
+
+With JIT :- 
+3102it [18:29,  2.97it/s]INFO:tensorflow:Step 3103 Train_Loss 1.0424 Train_Accuracy 0.5206
+
+Without JIT :-
+3175it [21:40,  2.48it/s]INFO:tensorflow:Step 3176 Train_Loss 1.0424 Train_Accuracy 0.5344
+
+enable jit since it converges fast
+##########################################################################################################################################

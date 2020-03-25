@@ -121,13 +121,13 @@ def val_step(
 
 
 # run every batch
-def batch_run_check(batch, start, model):
+def batch_run_check(batch, start):
   if config.run_tensorboard:
     with train_output_sequence_writer.as_default():
       tf.summary.scalar('train_loss', train_loss.result(), step=batch)
       tf.summary.scalar('train_accuracy', train_accuracy.result(), step=batch)
   if batch==0:
-    log.info(model.summary())
+    log.info(Model.summary())
     log.info(batch_zero.format(time.time()-start))
   log.info(
            batch_run_details.format(

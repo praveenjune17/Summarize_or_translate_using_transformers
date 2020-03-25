@@ -63,6 +63,8 @@ assert (config.monitor_metric in monitor_metrics.keys()), f'Available metrics to
 assert (tf.reduce_sum(config.combined_metric_weights) == 1), 'weights should sum to 1'
 assert config.PAD_ID == 0, 'Change the padding values in the tf_dataset.padded_batch line of preprocess script'
 log.info(f'Configuration used \n {config}')
+if config.test_script:
+  log.info(f'Setting Low Configuration to the model parameters since test_script is enabled')
 # Get last_recorded_value of monitor_metric from the log
 try:
   with open(config.log_path) as f:
