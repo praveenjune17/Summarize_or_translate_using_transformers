@@ -96,7 +96,7 @@ config.update(h_parms)
 config.update(file_path)
 
 if config.test_script:
-  config.gradient_accumulation_steps =  config.train_batch_size = config.samples_to_test
+  config.gradient_accumulation_steps =  config.train_batch_size
   config.epochs = 100000
   config.dff = 512                      # feed forward network hidden parameters
   config.num_heads = 4                  # the number of heads in the multi-headed attention unit
