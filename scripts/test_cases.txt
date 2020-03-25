@@ -5,3 +5,19 @@ input_ = [1000.0, 1, 8, 0, -0.01, -1, -1000]
 print(tf.math.log(input_))
 print(tf.math.log(tf.math.maximum(input_, 0.0000000001)))
 ##########################################################################################################################################
+b) unit test script
+
+import argparse
+
+if __name__ == '__main__':
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--example', help="An integer used to test", type=int, default=1)
+    parser.add_argument('--exle', help="An integer used to test", type=int, default=1)
+    parser.add_argument('--exam', help="An integer used to test", type=int, default=1)
+    args = parser.parse_args()
+    print(args.example)
+
+!python temp.py
+!python temp.py --example 5
+##########################################################################################################################################
