@@ -40,21 +40,6 @@ val_dataset = create_dataset(
                              batch_size=config.validation_batch_size                          
                              )
 
-# Unit test cases
-if args.test_script:
-  no_of_samples_to_test = args.no_of_samples_to_test
-  train_dataset = train_dataset.take(no_of_samples_to_test)
-  val_dataset = val_dataset.take(no_of_samples_to_test)
-  config.gradient_accumulation_steps =  config.train_batch_size = no_of_samples_to_test
-  config.epochs = 100000
-  config.dff = 512                      # feed forward network hidden parameters
-  config.num_heads = 4                  # the number of heads in the multi-headed attention unit
-  config.num_layers = 2                 # number of transformer blocks
-  assert config.d_model % config.num_heads == 0, 'd_model should be a multiple of num_heads'
-  if args.turnoff_regularizers:
-    config.dropout_rate = config.epsilon_ls = 0.0
-    config.grad_clipnorm = None
-    config.l2_norm = 0.0
 
 # if a checkpoint exists, restore the latest checkpoint.
 ck_pt_mgr = check_ckpt(config.checkpoint_path)

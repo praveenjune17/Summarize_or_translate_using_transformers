@@ -4,6 +4,10 @@ from bunch import Bunch
 
 core_path = os.getcwd() 
 
+unit_test = {
+      'test_script' : True,
+      'samples_to_test' : 1 
+      } 
 model_parms = {
      'copy_gen':True,
      'input_seq_length': 60,
@@ -82,9 +86,23 @@ file_path = {
         
     }
 
+
 config = Bunch(model_parms)
+config.update(unit_test)
 config.update(training_parms)
 config.update(special_tokens)
 config.update(h_parms)
 config.update(file_path)
 
+if config.test_script:
+  config.gradient_accumulation_steps =  config.train_batch_size = no_of_samples_to_test
+  config.epochs = 100000
+  config.dff = 512                      # feed forward network hidden parameters
+  config.num_heads = 4                  # the number of heads in the multi-headed attention unit
+  config.num_layers = 2                 # number of transformer blocks
+  assert config.d_model % config.num_heads == 0, 'd_model should be a multiple of num_heads'
+  config.dropout_rate = config.epsilon_ls = 0.0
+  config.grad_clipnorm = None
+  config.l2_norm = 0.0
+else:
+  config.samples_to_test = -1

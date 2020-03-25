@@ -119,4 +119,4 @@ def create_dataset(split,
   tf_dataset = tf_dataset.padded_batch(batch_size, padded_shapes=([-1], [-1]))
   tf_dataset = tf_dataset.prefetch(buffer_size=AUTOTUNE)
   log.info(f'{split} tf_dataset created')
-  return tf_dataset
+  return tf_dataset.take(config.samples_to_test)
