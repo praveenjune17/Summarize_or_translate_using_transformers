@@ -259,8 +259,10 @@ def refined_output_sequence_sampling(model,
               predictions = tf.cast(topp_topk(((dec_output_i)/ temperature), p=p,k=k), tf.int32)
             elif decoder_type == 'random_sampling':
               predictions = tf.cast(sampling((dec_output_i)/ temperature), tf.int32)
-            else:
+            elif decoder_type == 'greedy':
               predictions = tf.cast(tf.argmax(dec_output_i, axis=-1), tf.int32)
+            else:
+              raise RuntimeError('Incorrect decoder_type given')
             refined_output_sequence = with_column(refined_output_sequence, i, predictions)
         # (batch_size, seq_len, vocab_len), (_)        
         return refined_output_sequence, attention_dist

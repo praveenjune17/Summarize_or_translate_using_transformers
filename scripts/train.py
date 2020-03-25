@@ -4,7 +4,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import tensorflow as tf
 tf.keras.backend.clear_session()
 tf.random.set_seed(100)
-tf.config.optimizer.set_jit(True)
 import time
 from tqdm import tqdm
 from preprocess import create_dataset
@@ -71,12 +70,12 @@ for (step, (input_ids, target_ids_)) in tqdm(enumerate(train_dataset)):
                           (time.time() - start),
                           ckpt_save_path
                           )
-    monitor_early_stop=monitor_run(
-                                  ckpt_save_path, 
-                                  val_acc, 
-                                  bert_score, 
-                                  rouge_score, 
-                                  step+1
-                                  )
+    monitor_early_stop = monitor_run(
+                                    ckpt_save_path, 
+                                    val_acc, 
+                                    bert_score, 
+                                    rouge_score, 
+                                    step+1
+                                    )
     if not monitor_early_stop:
       break

@@ -23,6 +23,7 @@ model_parms = {
      }                                    
 training_parms = {
      'early_stop' : False,
+     'enable_jit' : True,
      'eval_after' : 5000,              # Evaluate once this many samples are trained 
      'last_recorded_value': None,
      'monitor_metric' : 'combined_metric',
@@ -104,5 +105,6 @@ if config.test_script:
   config.dropout_rate = config.epsilon_ls = 0.0
   config.grad_clipnorm = None
   config.l2_norm = 0.0
+  config.eval_after = float('nan')
 else:
   config.samples_to_test = -1

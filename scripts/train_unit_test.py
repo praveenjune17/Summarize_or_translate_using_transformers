@@ -16,12 +16,6 @@ from create_model import source_tokenizer, target_tokenizer, Model
 from local_tf_ops import (check_ckpt, train_step, batch_run_check, 
                           train_sanity_check, evaluate_validation_set)
 
-parser = argparse.ArgumentParser('Set Low Config')
-parser.add_argument("--test_script", help="An integer will be increased by 1 and printed.", type=bool, default=True)
-parser.add_argument("--no_of_samples_to_test", help="# of samples to test", type=int, default=1)
-parser.add_argument("--turnoff_regularizers", help="turns off regularizers.", type=bool, default=True)
-args = parser.parse_args()
-
 
 train_dataset = create_dataset(
                               split='train', 

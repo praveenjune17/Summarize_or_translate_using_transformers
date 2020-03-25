@@ -8,7 +8,7 @@ from creates import log, train_output_sequence_writer, valid_output_sequence_wri
 from create_model import source_tokenizer, target_tokenizer, Model
 from decode_text import predict_using_sampling
 
-
+tf.config.optimizer.set_jit(config.enable_jit)
 
 # initialize the policy and the optimizer
 policy = mixed_precision.Policy('mixed_float16')
