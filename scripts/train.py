@@ -8,10 +8,10 @@ import time
 from tqdm import tqdm
 from preprocess import create_dataset
 from configuration import config
-from calculate_metrics import mask_and_smooth_labels, monitor_run
+from calculate_metrics import mask_and_one_hot_labels, monitor_run
 from creates import log
 from create_model import source_tokenizer, target_tokenizer
-from local_tf_ops import (check_ckpt, train_step, batch_run_check, 
+from local_tf_ops import (check_ckpt, eval_step, train_step, batch_run_check, 
                           train_sanity_check, evaluate_validation_set)
 
 train_dataset = create_dataset(
@@ -36,9 +36,23 @@ ck_pt_mgr = check_ckpt(config.checkpoint_path)
 total_steps = int(config.epochs * (config.gradient_accumulation_steps))
 train_dataset = train_dataset.repeat(total_steps)
 
+if config.run_init_eval:
+  input_ids, target_ids_ = next(iter(train_dataset))
+  draft_mask, refine_mask, target_ids = mask_and_one_hot_labels(target_ids_)
+  loss =  eval_step(
+                    input_ids,  
+                    target_ids_, 
+                    target_ids, 
+                    draft_mask,
+                    refine_mask
+                    )
+  log.info(f"Model's Initial loss {loss}")
+  # 2:- Draft and Refine
+  log.info(f'Expected initial loss {tf.math.log(tf.cast(config.target_vocab_size, dtype=tf.float32))*2}')
+
 for (step, (input_ids, target_ids_)) in tqdm(enumerate(train_dataset)):
   start=time.time()
-  draft_mask, refine_mask, target_ids = mask_and_smooth_labels(target_ids_)
+  draft_mask, refine_mask, target_ids = mask_and_one_hot_labels(target_ids_)
   grad_accum_flag = True if (step+1)%config.gradient_accumulation_steps == 0 else False
   refine_predictions = train_step(
                                   input_ids,  
@@ -76,5 +90,5 @@ for (step, (input_ids, target_ids_)) in tqdm(enumerate(train_dataset)):
                                     rouge_score, 
                                     step+1
                                     )
-  if not monitor_early_stop:
-    break
+    if not monitor_early_stop:
+      break

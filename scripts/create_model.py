@@ -53,7 +53,8 @@ class AbstractiveSummarization(tf.keras.Model):
                   dff, 
                   input_vocab_size, 
                   target_vocab_size, 
-                  output_seq_len, rate=0.1):
+                  output_seq_len, 
+                  rate=0.1):
         super(AbstractiveSummarization, self).__init__()
         
         self.output_seq_len = output_seq_len
@@ -115,7 +116,7 @@ class AbstractiveSummarization(tf.keras.Model):
         # (batch_size x (seq_len - 1), 1, 1, seq_len) 
         padding_mask = tf.tile(padding_mask, [T-1, 1, 1, 1])
         # (batch_size x (seq_len - 1), seq_len, d_bert)
-        context_vectors = self.decoder_bert_model(dec_inp_ids)[0]                #tamil bert context
+        context_vectors = self.decoder_bert_model(dec_inp_ids)[0]                
 
         # (batch_size x (seq_len - 1), seq_len, vocab_len), (_)
         refined_logits, refine_attention_dist = self.decoder(

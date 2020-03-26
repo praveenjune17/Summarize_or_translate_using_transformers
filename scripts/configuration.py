@@ -6,6 +6,7 @@ core_path = os.getcwd()
 
 unit_test = {
       'test_script' : True,
+      'run_init_eval' : True,
       'samples_to_test' : 1 
       } 
 model_parms = {

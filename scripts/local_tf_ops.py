@@ -119,7 +119,26 @@ def val_step(
   rouge, bert = tf_write_output_sequence(target_ids_[:, 1:], refine_predictions[:, 1:], step, write_output_seq)  
   return (rouge, bert)
 
-
+def eval_step(input_ids, 
+               target_ids_, 
+               target_ids, 
+               draft_mask, 
+               refine_mask
+               ):
+  
+  (draft_predictions, draft_attention_weights, 
+    refine_predictions, refine_attention_weights) = Model(
+                                                          input_ids,  
+                                                          target_ids_,
+                                                          False
+                                                          )
+  draft_output_sequence_loss = loss_function(target_ids[:, 1:, :], draft_predictions, draft_mask)
+  refine_output_sequence_loss = loss_function(target_ids[:, :-1, :], refine_predictions, refine_mask)
+  regularization_loss = tf.add_n(Model.losses)
+  loss = draft_output_sequence_loss + refine_output_sequence_loss 
+  loss = tf.reduce_mean(loss) + regularization_loss
+  return loss
+  
 # run every batch
 def batch_run_check(batch, start):
   if config.run_tensorboard:
