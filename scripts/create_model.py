@@ -33,12 +33,10 @@ def _embedding_from_bert():
 
   log.info("Extracting pretrained word embeddings weights from BERT")  
   encoder = TFBertModel.from_pretrained(config.input_pretrained_bert_model, trainable=False)
-  encoder_embedding = encoder.get_weights()[0]
   decoder = TFBertModel.from_pretrained(config.target_pretrained_bert_model, trainable=False)
   decoder_embedding = decoder.get_weights()[0]
-  log.info(f"Encoder_Embedding matrix shape '{encoder_embedding.shape}'")
   log.info(f"Decoder_Embedding matrix shape '{decoder_embedding.shape}'")
-  return (encoder_embedding, decoder_embedding, encoder, decoder)
+  return (decoder_embedding, encoder, decoder)
 
 class AbstractiveSummarization(tf.keras.Model):
     """
@@ -51,32 +49,22 @@ class AbstractiveSummarization(tf.keras.Model):
                   d_model, 
                   num_heads, 
                   dff, 
-                  input_vocab_size, 
                   target_vocab_size, 
                   output_seq_len, 
                   rate=0.1):
         super(AbstractiveSummarization, self).__init__()
         
         self.output_seq_len = output_seq_len
-        self.input_vocab_size = input_vocab_size
         self.target_vocab_size = target_vocab_size
-        (encoder_embedding, decoder_embedding, 
-          self.encoder_bert_model, self.decoder_bert_model) = _embedding_from_bert()
-        self.encoder_embedding = tf.keras.layers.Embedding(
-                                                          input_vocab_size, 
-                                                          d_model, 
-                                                          trainable=False,
-                                                          embeddings_initializer=Constant(encoder_embedding)
-                                                          )
+        (decoder_embedding, self.encoder_bert_model, 
+          self.decoder_bert_model) = _embedding_from_bert()
         self.decoder_embedding = tf.keras.layers.Embedding(
                                                            target_vocab_size, 
                                                            d_model, 
                                                            trainable=False,
                                                            embeddings_initializer=Constant(decoder_embedding)
-                                                   )
-        
+                                                           )        
         self.decoder = Decoder(num_layers, d_model, num_heads, dff, target_vocab_size, rate)
-        self.d_model = d_model
 
     def draft_summary(self,
                       input_ids,
@@ -198,7 +186,6 @@ Model = AbstractiveSummarization(
                                 d_model=config.d_model, 
                                 num_heads=config.num_heads, 
                                 dff=config.dff, 
-                                input_vocab_size=config.input_vocab_size,
                                 target_vocab_size=config.target_vocab_size,
                                 output_seq_len=config.target_seq_length, 
                                 rate=config.dropout_rate
