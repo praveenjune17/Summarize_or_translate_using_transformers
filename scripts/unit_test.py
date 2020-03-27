@@ -58,7 +58,8 @@ def training_loop(dataset):
     if train_loss < config.min_train_loss:
       log.info('Minimum training loss reached')
     else:
-      log.info("Loss didn't reach upto the min_train_loss specified, try to increase the parameters of the model and check the run again")
+      log.info("Loss didn't reach upto the min_train_loss specified, try to increase \
+                the parameters of the model and check the run again")
 
 if config.random_results_check:
   training_loop(train_dataset.take(2))
@@ -92,7 +93,10 @@ if config.input_independent_baseline_check:
   zeroed_train_dataset = zeroed_train_dataset.repeat(100)
   for (step, (input_ids, target_ids_)) in tqdm(enumerate(zeroed_train_dataset), initial=1):
     start=time.time()
+    input_ids = tf.reshape(input_ids, [1, -1])
+    target_ids_ = tf.reshape(target_ids_, [1, -1])
     draft_mask, refine_mask, target_ids = mask_and_one_hot_labels(target_ids_)
+    grad_accum_flag = True if (step+1)%config.gradient_accumulation_steps == 0 else False
     refine_predictions = train_step(
                                     input_ids,  
                                     target_ids_, 
@@ -111,5 +115,4 @@ if config.input_independent_baseline_check:
 if config.check_model_capacity:
   training_loop(train_dataset)
   sys.exit()
-
   
