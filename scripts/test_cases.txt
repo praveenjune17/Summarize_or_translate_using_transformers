@@ -5,21 +5,34 @@ input_ = [1000.0, 1, 8, 0, -0.01, -1, -1000]
 print(tf.math.log(input_))
 print(tf.math.log(tf.math.maximum(input_, 0.0000000001)))
 ##########################################################################################################################################
-b) unit test script
+b) Input independent baseline check
 
-import argparse
-
-if __name__ == '__main__':
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--example', help="An integer used to test", type=int, default=1)
-    parser.add_argument('--exle', help="An integer used to test", type=int, default=1)
-    parser.add_argument('--exam', help="An integer used to test", type=int, default=1)
-    args = parser.parse_args()
-    print(args.example)
-
-!python temp.py
-!python temp.py --example 5
+if config.input_independent_baseline_check:
+  input_seq = [[0]*config.input_seq_length]
+  output_seq = [[0]*(config.target_seq_length+1)]
+  zeroed_train_dataset=tf.data.Dataset.from_tensor_slices((
+                                                           tf.convert_to_tensor(input_seq), 
+                                                           tf.convert_to_tensor(output_seq)
+                                                           )
+                                                          )
+  zeroed_train_dataset = zeroed_train_dataset.repeat(100)
+  for (step, (input_ids, target_ids_)) in tqdm(enumerate(zeroed_train_dataset)):
+    start=time.time()
+    draft_mask, refine_mask, target_ids = mask_and_one_hot_labels(target_ids_)
+    refine_predictions = train_step(
+                                    input_ids,  
+                                    target_ids_, 
+                                    target_ids, 
+                                    draft_mask,
+                                    refine_mask,
+                                    grad_accum_flag
+                                    )
+    batch_run_check(
+                  step+1,  
+                  start
+                  )
+  log.info('Input Independent baseline run completed')
+  sys.exit()
 ##########################################################################################################################################
 c) Speed test by enabling and disabling JIT
 
@@ -31,3 +44,27 @@ Without JIT :-
 
 enable jit since it converges fast
 ##########################################################################################################################################
+d) Initial loss check
+
+if config.init_loss_check:
+  input_ids, target_ids_ = next(iter(train_dataset))
+  draft_mask, refine_mask, target_ids = mask_and_one_hot_labels(target_ids_)
+  loss =  eval_step(
+                    input_ids,  
+                    target_ids_, 
+                    target_ids, 
+                    draft_mask,
+                    refine_mask
+                    )
+  log.info(f"Model's Initial loss {loss}")
+  # 2:- Draft and Refine decoders
+  log.info(f'Expected initial loss {tf.math.log(tf.cast(config.target_vocab_size, dtype=tf.float32))*2}')
+  log.info(f'Initial Loss check run completed')
+  sys.exit()
+ #########################################################################################################################################
+ e) Random results check
+
+ if config.random_results_check:
+  training_loop(train_dataset.take(2))
+  log.info('First run over. Restart the run time and run the script again')
+  sys.exit()

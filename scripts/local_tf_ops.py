@@ -160,6 +160,7 @@ def batch_run_check(batch, start):
                                    train_accuracy.result()
                                    )
           )
+  return train_loss.result()
 
 # run after each epoch
 def count_recs(batch, epoch, num_of_train_examples):

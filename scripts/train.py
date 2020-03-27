@@ -35,21 +35,6 @@ val_dataset = create_dataset(
 ck_pt_mgr = check_ckpt(config.checkpoint_path)
 total_steps = int(config.epochs * (config.gradient_accumulation_steps))
 train_dataset = train_dataset.repeat(total_steps)
-
-if config.run_init_eval:
-  input_ids, target_ids_ = next(iter(train_dataset))
-  draft_mask, refine_mask, target_ids = mask_and_one_hot_labels(target_ids_)
-  loss =  eval_step(
-                    input_ids,  
-                    target_ids_, 
-                    target_ids, 
-                    draft_mask,
-                    refine_mask
-                    )
-  log.info(f"Model's Initial loss {loss}")
-  # 2:- Draft and Refine
-  log.info(f'Expected initial loss {tf.math.log(tf.cast(config.target_vocab_size, dtype=tf.float32))*2}')
-
 for (step, (input_ids, target_ids_)) in tqdm(enumerate(train_dataset)):
   start=time.time()
   draft_mask, refine_mask, target_ids = mask_and_one_hot_labels(target_ids_)
@@ -63,10 +48,10 @@ for (step, (input_ids, target_ids_)) in tqdm(enumerate(train_dataset)):
                                   grad_accum_flag
                                   )
   if grad_accum_flag:
-    batch_run_check(
-                  step+1,  
-                  start
-                  )
+    _ = batch_run_check(
+                        step+1,  
+                        start
+                        )
   evaluate = ((step+1) * config.train_batch_size) % config.eval_after
   if evaluate == 0:
     train_sanity_check(target_tokenizer, refine_predictions, target_ids_)

@@ -6,9 +6,13 @@ core_path = os.getcwd()
 
 unit_test = {
       'test_script' : True,
-      'run_init_eval' : True,
+      'init_loss_check' : True,
       'samples_to_test' : 1,
-      'save_initial_weights' : False 
+      'save_initial_weights' : False,
+      'input_independent_baseline_check' : True, 
+      'check_model_capacity' : True,
+      'min_train_loss' : 0.2,
+      'random_results_check' : True
       } 
 model_parms = {
      'copy_gen':True,
@@ -98,7 +102,7 @@ config.update(file_path)
 
 if config.test_script:
   config.gradient_accumulation_steps =  config.train_batch_size
-  config.epochs = 100000
+  config.epochs = 1000
   config.dff = 512                      # feed forward network hidden parameters
   config.num_heads = 4                  # the number of heads in the multi-headed attention unit
   config.num_layers = 2                 # number of transformer blocks
@@ -106,9 +110,12 @@ if config.test_script:
   config.dropout_rate = config.epsilon_ls = 0.0
   config.grad_clipnorm = None
   config.l2_norm = 0.0
-  config.eval_after = float('nan')
   config.copy_gen = False
 else:
   config.samples_to_test = -1
   config.save_initial_weights = False
   config.run_init_eval = False
+  config.init_loss_check = False
+  config.input_independent_baseline_check = False
+  config.check_model_capacity = False
+  config.random_results_check = False
