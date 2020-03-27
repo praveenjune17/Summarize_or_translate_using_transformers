@@ -136,10 +136,11 @@ def eval_step(input_ids,
   refine_output_sequence_loss = loss_function(target_ids[:, :-1, :], refine_predictions, refine_mask)
   regularization_loss = tf.add_n(Model.losses)
   loss = draft_output_sequence_loss + refine_output_sequence_loss 
-  loss = tf.reduce_mean(loss) + regularization_loss
+  denominator = tf.cast(tf.math.count_nonzero(loss), dtype=tf.float32)
+  loss = (tf.reduce_sum(loss)/denominator) + regularization_loss
   log.info(Model.summary())
   return loss
-  
+
 # run every batch
 def batch_run_check(batch, start):
   if config.run_tensorboard:
