@@ -48,14 +48,17 @@ def training_loop(dataset):
                                   step+1,  
                                   start
                                   )
-    if max_loss < train_loss:
-      max_loss = train_loss
+    if config.check_model_capacity:
+      if max_loss < train_loss:
+        max_loss = train_loss
+      else:
+        log.warning('Loss not decreasing watch out')
+
+  if config.check_model_capacity:
+    if train_loss < config.min_train_loss:
+      log.info('Minimum training loss reached')
     else:
-      log.warning('Loss not decreasing watch out')
-  if train_loss < config.min_train_loss:
-    log.info('Minimum training loss reached')
-  else:
-    log.info("Loss didn't reach upto the min_train_loss specified, try to increase the parameters of the model and check the run again")
+      log.info("Loss didn't reach upto the min_train_loss specified, try to increase the parameters of the model and check the run again")
 
 if config.random_results_check:
   training_loop(train_dataset.take(2))
