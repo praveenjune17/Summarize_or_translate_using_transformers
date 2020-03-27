@@ -80,7 +80,6 @@ if config.init_loss_check:
   # 2:- Draft and Refine decoders
   log.info(f'Expected initial loss {tf.math.log(tf.cast(config.target_vocab_size, dtype=tf.float32))*2}')
   log.info(f'Initial Loss check run completed')
-  sys.exit()
 
 if config.input_independent_baseline_check:
   input_seq = [[0]*config.input_seq_length]
