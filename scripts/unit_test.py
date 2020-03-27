@@ -51,7 +51,7 @@ def training_loop(dataset):
     if max_loss < train_loss:
       max_loss = train_loss
     else:
-      log.Warning('Loss not decreasing watch out')
+      log.warning('Loss not decreasing watch out')
   if train_loss < config.min_train_loss:
     log.info('Minimum training loss reached')
   else:
