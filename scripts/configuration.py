@@ -7,7 +7,8 @@ core_path = os.getcwd()
 unit_test = {
       'test_script' : True,
       'run_init_eval' : True,
-      'samples_to_test' : 1 
+      'samples_to_test' : 1,
+      'save_initial_weights' : False 
       } 
 model_parms = {
      'copy_gen':True,
@@ -76,10 +77,10 @@ dataset_name = training_parms['tfds_name']
 file_path = {
         'best_ckpt_path' : f"/content/drive/My Drive/Text_summarization/BERT_text_summarisation/created_files/training_summarization_model_ckpts/{dataset_name}/best_checkpoints",  
         'checkpoint_path' : f"/content/{dataset_name}_checkpoints",
+        'initial_weights' : f"/content/drive/My Drive/{dataset_name}/initial_weights/"
         'infer_csv_path' : None,
         'infer_ckpt_path' : f"/content/drive/My Drive/Text_summarization/BERT_text_summarisation/{dataset_name}_checkpoints/ckpt-1",
         'log_path' : "/content/drive/My Drive/Text_summarization/BERT_text_summarisation/created_files/tensorflow.log",
-        'subword_vocab_path' : os.path.join(core_path, f"input_files/vocab_file_summarization_{dataset_name}"),
         'output_sequence_write_path' : os.path.join(core_path, f"created_files/summaries/{dataset_name}/"),
         'tensorboard_log' : os.path.join(core_path, f"created_files/tensorboard_logs/{dataset_name}/"),
         'tfds_data_dir' : f'/content/drive/My Drive/Text_summarization/{dataset_name}_dataset',
@@ -87,7 +88,6 @@ file_path = {
         'train_csv_path' : None,
         
     }
-
 
 config = Bunch(model_parms)
 config.update(unit_test)
@@ -110,3 +110,5 @@ if config.test_script:
   config.copy_gen = False
 else:
   config.samples_to_test = -1
+  config.save_initial_weights = False
+  config.run_init_eval = False

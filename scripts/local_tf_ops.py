@@ -139,6 +139,9 @@ def eval_step(input_ids,
   denominator = tf.cast(tf.math.count_nonzero(loss), dtype=tf.float32)
   loss = (tf.reduce_sum(loss)/denominator) + regularization_loss
   log.info(Model.summary())
+  if config.save_initial_weights:
+    initial_weights = os.path.join(config.initial_weights,'initial_weights')
+    model.save_weights(initial_weights)
   return loss
 
 # run every batch
