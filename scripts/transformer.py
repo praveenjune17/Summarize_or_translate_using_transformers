@@ -343,5 +343,4 @@ class Decoder(tf.keras.layers.Layer):
                                         training=training
                                         )
     # (batch_size, target_seq_len, target_vocab_size)
-    tf.debugging.check_numerics(predictions, 'undesirable values found :( ', name='Assert_at_decoder')
     return predictions, block2_attention_weights
