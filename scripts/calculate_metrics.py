@@ -39,8 +39,8 @@ def label_smoothing(inputs, epsilon=config.epsilon_ls):
 
 def mask_and_one_hot_labels(target):
   draft_mask = tf.math.logical_not(tf.math.equal(target[:, 1:], config.PAD_ID))
-  refine_mask = tf.math.logical_not(tf.math.logical_or(tf.math.equal(target_ids_[:, :-1], config.CLS_ID), 
-                                                       tf.math.equal(target_ids_[:, :-1], config.PAD_ID)
+  refine_mask = tf.math.logical_not(tf.math.logical_or(tf.math.equal(target[:, :-1], config.CLS_ID), 
+                                                       tf.math.equal(target[:, :-1], config.PAD_ID)
                                                        )
                                     )
   target_ids = label_smoothing(tf.one_hot(target, depth=config.target_vocab_size))

@@ -107,5 +107,6 @@ if config.test_script:
   config.grad_clipnorm = None
   config.l2_norm = 0.0
   config.eval_after = float('nan')
+  config.copy_gen = False
 else:
   config.samples_to_test = -1

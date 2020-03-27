@@ -32,8 +32,8 @@ def tile_and_mask_diagonal(x, mask_with):
 def _embedding_from_bert():
 
   log.info("Extracting pretrained word embeddings weights from BERT")  
-  encoder = TFBertModel.from_pretrained(config.input_pretrained_bert_model, trainable=False)
-  decoder = TFBertModel.from_pretrained(config.target_pretrained_bert_model, trainable=False)
+  encoder = TFBertModel.from_pretrained(config.input_pretrained_bert_model, trainable=False, name='Encoder-BERT-embeddings')
+  decoder = TFBertModel.from_pretrained(config.target_pretrained_bert_model, trainable=False, name='Decoder-BERT-embeddings')
   decoder_embedding = decoder.get_weights()[0]
   log.info(f"Decoder_Embedding matrix shape '{decoder_embedding.shape}'")
   return (decoder_embedding, encoder, decoder)
@@ -62,7 +62,8 @@ class AbstractiveSummarization(tf.keras.Model):
                                                            target_vocab_size, 
                                                            d_model, 
                                                            trainable=False,
-                                                           embeddings_initializer=Constant(decoder_embedding)
+                                                           embeddings_initializer=Constant(decoder_embedding),
+                                                           name='Decoder Embedding'
                                                            )        
         self.decoder = Decoder(num_layers, d_model, num_heads, dff, target_vocab_size, rate)
 

@@ -137,6 +137,7 @@ def eval_step(input_ids,
   regularization_loss = tf.add_n(Model.losses)
   loss = draft_output_sequence_loss + refine_output_sequence_loss 
   loss = tf.reduce_mean(loss) + regularization_loss
+  log.info(Model.summary())
   return loss
   
 # run every batch
