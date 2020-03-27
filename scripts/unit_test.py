@@ -31,7 +31,7 @@ train_dataset = train_dataset.repeat(total_steps)
 
 def training_loop(dataset):
   for (step, (input_ids, target_ids_)) in tqdm(enumerate(dataset), initial=1):
-    max_loss = 10000000
+    min_loss = 10000000
     start=time.time()
     draft_mask, refine_mask, target_ids = mask_and_one_hot_labels(target_ids_)
     grad_accum_flag = True if (step+1)%config.gradient_accumulation_steps == 0 else False
@@ -49,8 +49,8 @@ def training_loop(dataset):
                                   start
                                   )
     if config.check_model_capacity:
-      if max_loss < train_loss:
-        max_loss = train_loss
+      if min_loss > train_loss:
+        min_loss = train_loss
       else:
         log.warning('Loss not decreasing watch out')
 
