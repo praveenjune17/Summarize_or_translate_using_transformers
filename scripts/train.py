@@ -35,7 +35,7 @@ val_dataset = create_dataset(
 ck_pt_mgr = check_ckpt(config.checkpoint_path)
 total_steps = int(config.epochs * (config.gradient_accumulation_steps))
 train_dataset = train_dataset.repeat(total_steps)
-for (step, (input_ids, target_ids_)) in tqdm(enumerate(train_dataset)):
+for (step, (input_ids, target_ids_)) in tqdm(enumerate(train_dataset), initial=1):
   start=time.time()
   draft_mask, refine_mask, target_ids = mask_and_one_hot_labels(target_ids_)
   grad_accum_flag = True if (step+1)%config.gradient_accumulation_steps == 0 else False

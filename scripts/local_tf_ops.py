@@ -40,7 +40,7 @@ model_metrics = 'Step {}\n,\
 evaluation_step  = 'Time taken for {} step : {} secs' 
 checkpoint_details = 'Saving checkpoint at step {} on {}'
 batch_zero = 'Time taken to feed the input data to the model {} seconds'
-batch_run_details = 'Step {} Train_Loss {:.4f} Train_Accuracy {:.4f}'
+batch_run_details = 'Train_Loss {:.4f} Train_Accuracy {:.4f}'
 
 train_loss, train_accuracy = get_loss_and_accuracy()
 _, validation_accuracy = get_loss_and_accuracy()
@@ -155,7 +155,6 @@ def batch_run_check(batch, start):
     log.info(batch_zero.format(time.time()-start))
   log.info(
            batch_run_details.format(
-                                   batch, 
                                    train_loss.result(), 
                                    train_accuracy.result()
                                    )
