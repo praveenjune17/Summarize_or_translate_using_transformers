@@ -178,7 +178,7 @@ def point_wise_feed_forward_network(d_model, dff):
   # dff (batch_size, seq_len, d_model)
   return tf.keras.Sequential([
       tf.keras.layers.Dense(dff, 
-                            activation='relu', 
+                            activation=config.activation, 
                             kernel_regularizer = tf.keras.regularizers.l2(config.l2_norm),
                             ),
       tf.keras.layers.Dense(d_model, 

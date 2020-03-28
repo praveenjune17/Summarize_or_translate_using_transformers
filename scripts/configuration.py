@@ -15,6 +15,7 @@ unit_test = {
       'random_results_check' : True
       } 
 model_parms = {
+     'activation' : 'relu',
      'copy_gen':True,
      'input_seq_length': 60,
      'd_model': 768,                  # the projected word vector dimension
