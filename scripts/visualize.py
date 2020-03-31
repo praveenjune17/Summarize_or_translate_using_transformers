@@ -71,6 +71,7 @@ if __name__== '__main__':
   splits = examples.keys()
   number_of_samples = 500
   batch_size = 2
+  show_detokenized_samples = True
   tf_datasets = {}
   for split in splits:
     tf_datasets[split] = examples[split].map(
@@ -87,7 +88,7 @@ if __name__== '__main__':
     hist_summary_length(tf_datasets[split], split=split)
     hist_tokens_per_batch(tf_datasets[split], batch_size=batch_size, split=split)
 
-  if config.show_detokenized_samples:
+  if show_detokenized_samples:
     inp, tar = next(iter(examples['train']))
     print(source_tokenizer.decode([i for i in inp.numpy() if i < source_tokenizer.vocab_size]))
     print(target_tokenizer.decode([i for i in tar.numpy() if i < target_tokenizer.vocab_size]))
