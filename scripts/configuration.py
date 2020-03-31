@@ -37,7 +37,6 @@ training_parms = {
      'max_tokens_per_line' : model_parms['input_seq_length']+model_parms['target_seq_length'],      # filter documents based on this many tokens
      'print_chks': 50,                  # print training progress per number of batches specified
      'run_tensorboard': False,
-     'show_detokenized_samples' : True,
      'tfds_name' : 'para_crawl',     # tfds dataset to be used
      'tolerance_threshold': 5,          # Stop training after the threshold is reached
      'use_tfds' : True,                 # use tfds datasets as to train the model else use the given csv file

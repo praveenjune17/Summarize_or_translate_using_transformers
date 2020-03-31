@@ -61,7 +61,13 @@ def hist_summary_length(tf_dataset, samples_to_try=1000, split='valid', create_h
       plt.close() 
  
 if __name__== '__main__':
-  examples, metadata = tfds.load(config.tfds_name, with_info=True, as_supervised=True)   
+  examples, metadata = tfds.load(
+                                 config.tfds_name, 
+                                 with_info=True,
+                                 as_supervised=True, 
+                                 data_dir=config.tfds_data_dir,
+                                 builder_kwargs=config.tfds_data_version
+                                ) 
   splits = examples.keys()
   number_of_samples = 500
   batch_size = 2
@@ -83,8 +89,5 @@ if __name__== '__main__':
 
   if config.show_detokenized_samples:
     inp, tar = next(iter(examples['train']))
-    for ip,ta in zip(inp.numpy(), tar.numpy()):
-      print(tokenizer.decode([i for i in ta if i < tokenizer.vocab_size]))
-      print(tokenizer.decode([i for i in ip if i < tokenizer.vocab_size]))
-      break    
-
+    print(source_tokenizer.decode([i for i in inp.numpy() if i < source_tokenizer.vocab_size]))
+    print(target_tokenizer.decode([i for i in tar.numpy() if i < target_tokenizer.vocab_size]))
