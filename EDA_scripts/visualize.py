@@ -63,7 +63,7 @@ def hist_summary_length(tf_dataset, samples_to_try=1000, split='valid', create_h
 if __name__== '__main__':
   examples, metadata = tfds.load(config.tfds_name, with_info=True, as_supervised=True)   
   splits = examples.keys()
-  number_of_samples = 1000
+  number_of_samples = 500
   batch_size = 2
   tf_datasets = {}
   for split in splits:
@@ -76,7 +76,7 @@ if __name__== '__main__':
                                         ), 
                                num_parallel_calls=-1
                                )
-    number_of_samples = 500 if number_of_samples 'train'
+    number_of_samples = 1000 if split == 'train' else number_of_samples
     #create histogram for summary_lengths and token
     hist_summary_length(tf_datasets[split], split=split)
     hist_tokens_per_batch(tf_datasets[split], batch_size=batch_size, split=split)
