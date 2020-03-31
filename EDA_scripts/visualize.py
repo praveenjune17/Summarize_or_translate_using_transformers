@@ -10,30 +10,24 @@ plt.style.use('seaborn-deep')
 import numpy as np
 import pandas as pd
 import time
-from create_tokenizer import tokenizer
-from configuration import config
-from preprocess import tf_encode
+from scripts.create_tokenizer import source_tokenizer, target_tokenizer
+from scripts.configuration import config
+from scripts.preprocess import tf_encode
   
-def create_temp_file( text):
-    temp_file = tempfile.NamedTemporaryFile(delete=False)
-    with tf.io.gfile.GFile(temp_file.name, "w") as w:
-      w.write(text)
-    return temp_file.name
-
 # histogram of tokens per batch_size
 # arg1 :- must be a padded_batch dataset
-def hist_tokens_per_batch(tf_dataset, num_of_examples, samples_to_try=0.1, split='valid'):
+def hist_tokens_per_batch(tf_dataset, batch_size, samples_to_try=1000, split='valid', create_hist=True):
     x=[]
-    samples_per_batch = int((samples_to_try*(num_of_examples))//config.batch_size)
-    tf_dataset = tf_dataset.padded_batch(config.batch_size, padded_shapes=([-1], [-1]))
+    samples_per_batch = int(samples_to_try)//batch_size
+    tf_dataset = tf_dataset.padded_batch(batch_size, padded_shapes=([-1], [-1]))
     tf_dataset = tf_dataset.take(samples_per_batch).cache()
-    tf_dataset = tf_dataset.prefetch(buffer_size=samples_per_batch)
+    tf_dataset = tf_dataset.prefetch(buffer_size=samples_to_try)
     for (i, j) in (tf_dataset):
         x.append((tf.size(i) + tf.size(j)).numpy())
     print(f'Descriptive statistics on tokens per batch for {split}')
     print(pd.Series(x).describe())
-    if config.create_hist:
-      print(f'creating histogram for {samples_per_batch*config.batch_size} samples')
+    if create_hist:
+      print(f'creating histogram for {samples_to_try} samples')
       plt.hist(x, bins=20)
       plt.xlabel('Total tokens per batch')
       plt.ylabel('No of times')
@@ -42,76 +36,54 @@ def hist_tokens_per_batch(tf_dataset, num_of_examples, samples_to_try=0.1, split
 
 # histogram of Summary_lengths
 # arg1 :- must be a padded_batch dataset
-def hist_summary_length(tf_dataset, num_of_examples, samples_to_try=0.1, split='valid'):
-    summary=[]
-    document=[]
-    samples = int((samples_to_try*(num_of_examples)))
-    tf_dataset = tf_dataset.take(samples).cache()
-    tf_dataset = tf_dataset.prefetch(buffer_size=samples)
-    for (doc, summ) in (tf_dataset):
-        summary.append(summ.shape[0])
-        document.append(doc.shape[0])
-    combined = [i+j for i,j in zip(summary, document)]
-    print(f'Descriptive statistics on Summary length based for {split} set')
-    print(pd.Series(summary).describe(percentiles=[0.25, 0.5, 0.8, 0.9, 0.95, 0.97] ))
-    print(f'Descriptive statistics on Document length based for {split} set')
-    print(pd.Series(document).describe(percentiles=[0.25, 0.5, 0.8, 0.9, 0.95, 0.97] ))
-    print(f'Descriptive statistics for the combined length of docs and summs based for {split} set')
+def hist_summary_length(tf_dataset, samples_to_try=1000, split='valid', create_hist=True):
+    output_sequence=[]
+    input_sequence=[]
+    tf_dataset = tf_dataset.take(samples_to_try).cache()
+    tf_dataset = tf_dataset.prefetch(buffer_size=samples_to_try)
+    for (ip_sequence, op_sequence) in (tf_dataset):
+      input_sequence.append(ip_sequence.shape[0])
+      output_sequence.append(op_sequence.shape[0])  
+    combined = [i+j for i,j in zip(input_sequence, output_sequence)]
+    print(f'Descriptive statistics on input_sequence length based for {split} set')
+    print(pd.Series(input_sequence).describe(percentiles=[0.25, 0.5, 0.8, 0.9, 0.95, 0.97] ))
+    print(f'Descriptive statistics on output_sequence length based for {split} set')
+    print(pd.Series(output_sequence).describe(percentiles=[0.25, 0.5, 0.8, 0.9, 0.95, 0.97] ))
+    print(f'Descriptive statistics for the combined length of input sequences and output sequences based for {split} set')
     print(pd.Series(combined).describe(percentiles=[0.25, 0.5, 0.8, 0.9, 0.95, 0.97] ))
-    if config.create_hist:
-      print(f'creating histogram for {samples} samples')
-      plt.hist([summary, document, combined], alpha=0.5, bins=20, label=['summary', 'document', 'combined'])
-      plt.xlabel('lengths of document and summary')
+    if create_hist:
+      print(f'creating histogram for {samples_to_try} samples')
+      plt.hist([output_sequence, input_sequence, combined], alpha=0.5, bins=20, label=['output_sequence', 'input_sequence', 'combined'])
+      plt.xlabel('lengths of input_sequence and output_sequence')
       plt.ylabel('Counts')
       plt.legend(loc='upper right')
-      plt.savefig(split+'_lengths of document, summary and combined.png')
+      plt.savefig(split+'_lengths of input_sequence, output_sequence and combined.png')
       plt.close() 
-
-def beam_search_train(inp_sentences, beam_size):
-  
-  start = [tokenizer.vocab_size] * inp_sentences.shape[0]
-  end = [tokenizer.vocab_size+1]
-  encoder_input = tf.tile(inp_sentences, multiples=[beam_size, 1])
-  def decoder_query(output):
-
-    enc_padding_mask, combined_mask, dec_padding_mask = create_masks(
-          encoder_input, output)
-    predictions, attention_weights, dec_output = model(
-                                                      encoder_input, 
-                                                      output,
-                                                      False,
-                                                      enc_padding_mask,
-                                                      combined_mask,
-                                                      dec_padding_mask
-                                                      )
-    if predictions:
-      predictions = generator(dec_output, predictions, attention_weights, encoder_input, 
-                                    inp_sentences.shape[1], output.shape[1], inp_sentences.shape[0], beam_size, False)
-
-    # select the last sequence
-    # (batch_size, 1, target_vocab_size)
-    return (predictions[:,-1:,:]) 
-  return (beam_search(decoder_query, start, beam_size, summ_length, 
-                      target_vocab_size, 0.6, stop_early=True, eos_id=[end]))
  
 if __name__== '__main__':
   examples, metadata = tfds.load(config.tfds_name, with_info=True, as_supervised=True)   
   splits = examples.keys()
-  percentage_of_samples = 0.1
+  number_of_samples = 1000
+  batch_size = 2
   tf_datasets = {}
-  buffer_size = {}
   for split in splits:
-    tf_datasets[split] = examples[split].map(tf_encode, num_parallel_calls=-1)
-    buffer_size[split] = metadata.splits[split].num_examples
-  for split in tf_datasets:
+    tf_datasets[split] = examples[split].map(
+                               tf_encode(
+                                        source_tokenizer,
+                                        target_tokenizer, 
+                                        config.input_seq_length, 
+                                        config.target_seq_length
+                                        ), 
+                               num_parallel_calls=-1
+                               )
+    number_of_samples = 500 if number_of_samples 'train'
     #create histogram for summary_lengths and token
-    hist_summary_length(tf_datasets[split], buffer_size[split], percentage_of_samples, split)  
-    #hist_tokens_per_batch(tf_datasets[split], buffer_size[split], percentage_of_samples, split)
+    hist_summary_length(tf_datasets[split], split=split)
+    hist_tokens_per_batch(tf_datasets[split], batch_size=batch_size, split=split)
 
   if config.show_detokenized_samples:
     inp, tar = next(iter(examples['train']))
     for ip,ta in zip(inp.numpy(), tar.numpy()):
       print(tokenizer.decode([i for i in ta if i < tokenizer.vocab_size]))
       print(tokenizer.decode([i for i in ip if i < tokenizer.vocab_size]))
-      break
-    
+      break    
