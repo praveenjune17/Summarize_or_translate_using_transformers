@@ -16,7 +16,7 @@ unit_test = {
       } 
 model_parms = {
      'activation' : 'relu',
-     'copy_gen':True,
+     'copy_gen': True,
      'input_seq_length': 60,
      'd_model': 768,                  # the projected word vector dimension
      'dff': 2048,                      # feed forward network hidden parameters
@@ -102,7 +102,7 @@ config.update(h_parms)
 config.update(file_path)
 
 if config.test_script:
-  config.gradient_accumulation_steps =  config.train_batch_size
+  config.gradient_accumulation_steps =  config.samples_to_test
   config.epochs = 1000
   config.dff = 512                      # feed forward network hidden parameters
   config.num_heads = 4                  # the number of heads in the multi-headed attention unit

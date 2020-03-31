@@ -82,18 +82,10 @@ if config.init_loss_check:
   log.info(f'Initial Loss check run completed')
 
 if config.input_independent_baseline_check:
-  input_seq = [[0]*config.input_seq_length]
-  output_seq = [[0]*(config.target_seq_length+1)]
-  zeroed_train_dataset=tf.data.Dataset.from_tensor_slices((
-                                                           tf.convert_to_tensor(input_seq), 
-                                                           tf.convert_to_tensor(output_seq)
-                                                           )
-                                                          )
-  zeroed_train_dataset = zeroed_train_dataset.repeat(100)
-  for (step, (input_ids, target_ids_)) in tqdm(enumerate(zeroed_train_dataset), initial=1):
+  for (step, (input_ids, target_ids_)) in tqdm(enumerate(train_dataset), initial=1):
     start=time.time()
-    input_ids = tf.reshape(input_ids, [1, -1])
-    target_ids_ = tf.reshape(target_ids_, [1, -1])
+    input_ids = tf.zeros_like(input_ids)
+    target_ids_ = tf.zeros_like(target_ids_)
     draft_mask, refine_mask, target_ids = mask_and_one_hot_labels(target_ids_)
     grad_accum_flag = True if (step+1)%config.gradient_accumulation_steps == 0 else False
     refine_predictions = train_step(
