@@ -10,9 +10,9 @@ plt.style.use('seaborn-deep')
 import numpy as np
 import pandas as pd
 import time
-from scripts.create_model import source_tokenizer, target_tokenizer
-from scripts.configuration import config
-from scripts.preprocess import tf_encode
+from create_model import source_tokenizer, target_tokenizer
+from configuration import config
+from preprocess import tf_encode
   
 # histogram of tokens per batch_size
 # arg1 :- must be a padded_batch dataset
