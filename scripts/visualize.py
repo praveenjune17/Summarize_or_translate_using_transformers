@@ -10,7 +10,7 @@ plt.style.use('seaborn-deep')
 import numpy as np
 import pandas as pd
 import time
-from scripts.create_tokenizer import source_tokenizer, target_tokenizer
+from scripts.create_model import source_tokenizer, target_tokenizer
 from scripts.configuration import config
 from scripts.preprocess import tf_encode
   
@@ -87,3 +87,4 @@ if __name__== '__main__':
       print(tokenizer.decode([i for i in ta if i < tokenizer.vocab_size]))
       print(tokenizer.decode([i for i in ip if i < tokenizer.vocab_size]))
       break    
+
