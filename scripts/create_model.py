@@ -31,9 +31,10 @@ def tile_and_mask_diagonal(x, mask_with):
 
 def _embedding_from_bert():
 
-  log.info("Extracting pretrained word embeddings weights from BERT")  
-  encoder = TFBertModel.from_pretrained(config.input_pretrained_bert_model, trainable=False, name=config.input_pretrained_bert_model)
-  decoder = TFBertModel.from_pretrained(config.target_pretrained_bert_model, trainable=False, name=config.target_pretrained_bert_model)
+  log.info("Extracting pretrained word embeddings weights from BERT")
+  with tf.device("CPU:0"):  
+    encoder = TFBertModel.from_pretrained(config.input_pretrained_bert_model, trainable=False, name=config.input_pretrained_bert_model)
+    decoder = TFBertModel.from_pretrained(config.target_pretrained_bert_model, trainable=False, name=config.target_pretrained_bert_model)
   decoder_embedding = decoder.get_weights()[0]
   log.info(f"Decoder_Embedding matrix shape '{decoder_embedding.shape}'")
   return (decoder_embedding, encoder, decoder)

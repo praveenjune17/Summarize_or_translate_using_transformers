@@ -42,8 +42,8 @@ def hist_summary_length(tf_dataset, samples_to_try=1000, split='valid', create_h
     tf_dataset = tf_dataset.take(samples_to_try).cache()
     tf_dataset = tf_dataset.prefetch(buffer_size=samples_to_try)
     for (ip_sequence, op_sequence) in (tf_dataset):
-      input_sequence.append(ip_sequence.shape[0])
-      output_sequence.append(op_sequence.shape[0])  
+      input_sequence.append(tf.math.count_nonzero(ip_sequence).numpy())
+      output_sequence.append(tf.math.count_nonzero(op_sequence).numpy())  
     combined = [i+j for i,j in zip(input_sequence, output_sequence)]
     print(f'Descriptive statistics on input_sequence length based for {split} set')
     print(pd.Series(input_sequence).describe(percentiles=[0.25, 0.5, 0.8, 0.9, 0.95, 0.97] ))
@@ -90,5 +90,5 @@ if __name__== '__main__':
 
   if show_detokenized_samples:
     inp, tar = next(iter(examples['train']))
-    print(source_tokenizer.decode([i for i in inp.numpy() if i < source_tokenizer.vocab_size]))
-    print(target_tokenizer.decode([i for i in tar.numpy() if i < target_tokenizer.vocab_size]))
+    print(source_tokenizer.decode([i for i in tf.squeeze(inp).numpy() if i not in [config.CLS_ID, config.SEP_ID, config.PAD_ID]]))
+	print(target_tokenizer.decode([i for i in tf.squeeze(tar).numpy() if i not in [config.CLS_ID, config.SEP_ID, config.PAD_ID]]))
