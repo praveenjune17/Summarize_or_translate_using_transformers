@@ -125,9 +125,9 @@ def create_dataset(split,
       raw_dataset = raw_dataset.concatenate(en_tam_ds[typ][0]['train'])
     #validation and test sets are only available for a single typ
   elif split == 'validation':
-    raw_dataset = en_tam_ds['en_ta']['validation']
+    raw_dataset = en_tam_ds[('en_ta', 'metadata_en_ta')][0]['validation']
   else:
-    raw_dataset = en_tam_ds['en_ta']['test']        
+    raw_dataset = en_tam_ds[('en_ta', 'metadata_en_ta')][0]['test']        
         
   tf_dataset = raw_dataset.map(
                                tf_encode(

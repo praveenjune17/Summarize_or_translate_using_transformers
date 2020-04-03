@@ -5,7 +5,7 @@ from bunch import Bunch
 core_path = os.getcwd() 
 
 unit_test = {
-      'test_script' : True,
+      'test_script' : False,
       'init_loss_check' : True,
       'samples_to_test' : 1,
       'save_initial_weights' : False,
@@ -31,7 +31,7 @@ model_parms = {
 training_parms = {
      'early_stop' : False,
      'enable_jit' : True,
-     'eval_after' : 5000,              # Evaluate once this many samples are trained 
+     'eval_after' : 2000,              # Evaluate once this many samples are trained 
      'last_recorded_value': None,
      'monitor_metric' : 'combined_metric',
      'max_tokens_per_line' : model_parms['input_seq_length']+model_parms['target_seq_length'],      # filter documents based on this many tokens
@@ -61,15 +61,15 @@ special_tokens = {
 
 
 h_parms = {
-   'gradient_accumulation_steps': 1,                                                                                   
+   'gradient_accumulation_steps': 36,                                                                                   
    'train_batch_size': 1,
    'beam_sizes': [2, 3, 4],              # Used  during inference                                                 
-   'combined_metric_weights': [0.4, 0.3, 0.3], #(bert_score, rouge, validation accuracy)
-   'dropout_rate': 0.0,
+   'combined_metric_weights': [0.6, 0.3, 0.1], #(bert_score, rouge, validation accuracy)
+   'dropout_rate': 0.1,
    'epochs': 4,
-   'epsilon_ls': 0.0,                    # label_smoothing hyper parameter
+   'epsilon_ls': 0.1,                    # label_smoothing hyper parameter
    'grad_clipnorm':None,
-   'l2_norm':0,
+   'l2_norm':0.0001,
    'learning_rate': None,                # change to None to set learning rate decay
    'length_penalty' : 1,                       # Beam search hyps . Used  during inference                                                 
    'mean_attention_heads':True,                # if False then the attention parameters of the last head will be used

@@ -143,7 +143,7 @@ def draft_output_sequence_sampling(model,
     for i in (range(0, config.target_seq_length)):
         _, _, dec_padding_mask = create_masks(inp, dec_input)
         # (batch_size, i+1, d_bert)
-        embeddings = model.embedding(dec_input)    
+        embeddings = model.decoder_embedding(dec_input)    
 
         # (batch_size, i+1, vocab), (_)            
         dec_output, attention_dist = model.decoder(inp,
@@ -190,7 +190,7 @@ def draft_output_sequence_beam_search(model,
     dec_padding_mask = tfa.seq2seq.tile_batch(dec_padding_mask, multiplier=beam_size)
     def beam_search_decoder(output):
       # (batch_size, seq_len, d_bert)    
-      embeddings = model.embedding(output)
+      embeddings = model.decoder_embedding(output)
       predictions, attention_weights = model.decoder(input_ids,
                                                      embeddings, 
                                                      enc_output, 
@@ -238,7 +238,7 @@ def refined_output_sequence_sampling(model,
             refined_output_sequence_ = mask_timestamp(refined_output_sequence, i, config.MASK_ID)
             
             # (batch_size, seq_len, d_bert)
-            context_vectors = model.bert_model(refined_output_sequence_)[0]
+            context_vectors = model.decoder_bert_model(refined_output_sequence_)[0]
             
             # (batch_size, seq_len, d_bert), (_)
             dec_output,  attention_dist =  model.decoder(inp,
@@ -282,7 +282,7 @@ def predict_using_sampling(
   dec_padding_mask = create_padding_mask(inp)
   
   # (batch_size, seq_len, d_bert)
-  enc_output = model.bert_model(inp)[0]
+  enc_output = model.encoder_bert_model(inp)[0]
   # (batch_size, seq_len, vocab_len), (_)
   predicted_draft_output_sequence, draft_attention_dist = draft_output_sequence_sampling( model,
                                                                       inp,
@@ -320,7 +320,7 @@ def predict_using_beam_search(
   
   dec_padding_mask = create_padding_mask(inp)
   # (batch_size, seq_len, d_bert)
-  enc_output = model.bert_model(inp)[0]
+  enc_output = model.encoder_bert_model(inp)[0]
   
   #[batch_size*beam_size, input_Seq_len, d_bert]
   translated_output_temp = draft_output_sequence_beam_search(
