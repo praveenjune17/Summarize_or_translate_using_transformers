@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import tensorflow_datasets as tfds
 from functools import partial
+from collections import defaultdict
 from configuration import config
 from creates import log
 
@@ -90,6 +91,7 @@ def create_dataset(split,
 
   
   en_tam_ds = defaultdict(list)
+  record_count=0
   #List of available datasets in the package
   names = ['GNOME_v1_en_to_ta', 'GNOME_v1_en_AU_to_ta', 'GNOME_v1_en_CA_to_ta', 
            'GNOME_v1_en_GB_to_ta', 'GNOME_v1_en_US_to_ta', 'KDE4_v2_en_to_ta', 
@@ -101,22 +103,26 @@ def create_dataset(split,
            'en_ta', 'github_joshua_en_ta']
 
   for name in names:
-    en_tam_ds[(name,'metadata_'+name)] = tfds.load('en_tam_parallel_text/'+name, 
+    en_tam_ds[(name,'metadata_'+name)] = tfds.load(f'{config.tfds_name}/'+name, 
                                                     with_info=True, 
                                                     as_supervised=True,
                                                     data_dir=config.tfds_data_dir,
                                                     builder_kwargs=config.tfds_data_version,
                                                   )
 
+  
 
+  for i,j  in en_tam_ds.keys():
+    record_count+=(sum([i.num_examples for i in  list(en_tam_ds[(i, j)][1].splits.values())]))
+  log.info(f'Total record count is {record_count}')
   #initialize the first dataset to the train_examples variable
   #Concatenate all the train datasets
-  if split = 'train':
+  if split == 'train':
     raw_dataset = en_tam_ds[('GNOME_v1_en_to_ta', 'metadata_GNOME_v1_en_to_ta')][0]['train']
     for typ in list(en_tam_ds.keys())[1:]:
       raw_dataset = raw_dataset.concatenate(en_tam_ds[typ][0]['train'])
     #validation and test sets are only available for a single typ
-  elif split = 'validation':
+  elif split == 'validation':
     raw_dataset = en_tam_ds['en_ta']['validation']
   else:
     raw_dataset = en_tam_ds['en_ta']['test']        
