@@ -29,7 +29,7 @@ ck_pt_mgr = check_ckpt(config.checkpoint_path)
 total_steps = int(config.epochs * (config.gradient_accumulation_steps))
 train_dataset = train_dataset.repeat(total_steps)
 
-def training_loop(dataset):
+def training_loop(dataset, check_model_capacity):
   for (step, (input_ids, target_ids_)) in tqdm(enumerate(dataset), initial=1):
     min_loss = 10000000
     start=time.time()
@@ -48,13 +48,13 @@ def training_loop(dataset):
                                   step+1,  
                                   start
                                   )
-    if config.check_model_capacity:
+    if check_model_capacity:
       if min_loss > train_loss:
         min_loss = train_loss
       else:
         log.warning('Loss not decreasing watch out')
 
-  if config.check_model_capacity:
+  if check_model_capacity:
     if train_loss < config.min_train_loss:
       log.info('Minimum training loss reached')
     else:
@@ -62,7 +62,7 @@ def training_loop(dataset):
                 the parameters of the model and check the run again")
 
 if config.random_results_check:
-  training_loop(train_dataset.take(2))
+  training_loop(train_dataset.take(2), False)
   log.info('First run over. Restart the run time and run the script again')
   sys.exit()
 
