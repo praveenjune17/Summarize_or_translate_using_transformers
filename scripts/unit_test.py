@@ -82,7 +82,7 @@ if config.init_loss_check:
   log.info(f'Initial Loss check run completed')
 
 if config.input_independent_baseline_check:
-  for (step, (input_ids, target_ids_)) in tqdm(enumerate(train_dataset), initial=1):
+  for (step, (input_ids, target_ids_)) in tqdm(enumerate(train_dataset.take(20)), initial=1):
     start=time.time()
     input_ids = tf.zeros_like(input_ids)
     target_ids_ = tf.zeros_like(target_ids_)
@@ -104,6 +104,6 @@ if config.input_independent_baseline_check:
   sys.exit()
 
 if config.check_model_capacity:
-  training_loop(train_dataset)
+  training_loop(train_dataset, True)
   sys.exit()
   
