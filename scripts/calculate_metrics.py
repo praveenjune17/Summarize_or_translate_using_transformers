@@ -133,7 +133,7 @@ def monitor_run(ckpt_save_path,
   log.info(f"combined_metric {monitor_metrics['combined_metric']:4f}")
   if config.last_recorded_value < monitor_metrics[to_monitor]:
     # reset tolerance to zero if the monitor_metric decreases before the tolerance threshold
-    tolerance=0
+    config.tolerance=0
     config.last_recorded_value =  monitor_metrics[to_monitor]
     ckpt_files_tocopy = [files for files in os.listdir(os.path.split(ckpt_save_path)[0]) \
                          if ckpt_string in files]
@@ -144,7 +144,7 @@ def monitor_run(ckpt_save_path,
     for files in ckpt_files_tocopy:
         shutil.copy2(os.path.join(ckpt_fold, files), config.best_ckpt_path)
   else:
-    tolerance+=1
+    config.tolerance+=1
   
   # stop if minimum training loss is reached
 
@@ -152,7 +152,7 @@ def monitor_run(ckpt_save_path,
     log.info(f'Stop training since minimum training loss reached')
     return False
   # Warn and early stop
-  if tolerance > config.tolerance_threshold:
+  if config.tolerance > config.tolerance_threshold:
     log.warning('Tolerance exceeded')
     if config.early_stop:
       log.info(f'Early stopping since the {to_monitor} reached the tolerance threshold')

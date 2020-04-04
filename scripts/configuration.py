@@ -39,6 +39,7 @@ training_parms = {
      'print_chks': 50,                  # print training progress per number of batches specified
      'run_tensorboard': False,
      'tfds_name' : 'en_tam_parallel_text',     # tfds dataset to be used
+     'tolerance' : 0
      'tolerance_threshold': 5,          # Stop training after the threshold is reached
      'use_tfds' : True,                 # use tfds datasets as to train the model else use the given csv file
      'valid_samples_to_eval' : 100,     # number of samples used for validation
