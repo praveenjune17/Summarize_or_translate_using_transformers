@@ -29,12 +29,14 @@ model_parms = {
      'target_vocab_size': 119547,       # total vocab size + start and end token
      }                                    
 training_parms = {
+     'display_model_summary' : True,
      'early_stop' : False,
      'enable_jit' : True,
      'eval_after' : 5000,              # Evaluate once this many samples are trained 
      'last_recorded_value': None,
-     'monitor_metric' : 'combined_metric',
      'max_tokens_per_line' : model_parms['input_seq_length']+model_parms['target_seq_length'],      # filter documents based on this many tokens
+     'min_train_loss' : 0.2,
+     'monitor_metric' : 'combined_metric',
      'print_chks': 50,                  # print training progress per number of batches specified
      'run_tensorboard': False,
      'tfds_name' : 'para_crawl',     # tfds dataset to be used

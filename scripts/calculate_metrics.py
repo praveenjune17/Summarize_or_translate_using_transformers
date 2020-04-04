@@ -108,6 +108,7 @@ def monitor_run(ckpt_save_path,
                 val_acc,
                 bert_score, 
                 rouge_score, 
+                train_loss,
                 step,
                 to_monitor=config.monitor_metric):
   
@@ -144,6 +145,12 @@ def monitor_run(ckpt_save_path,
         shutil.copy2(os.path.join(ckpt_fold, files), config.best_ckpt_path)
   else:
     tolerance+=1
+  
+  # stop if minimum training loss is reached
+
+  if train_loss < config.min_train_loss:
+    log.info(f'Stop training since minimum training loss reached')
+    return False
   # Warn and early stop
   if tolerance > config.tolerance_threshold:
     log.warning('Tolerance exceeded')

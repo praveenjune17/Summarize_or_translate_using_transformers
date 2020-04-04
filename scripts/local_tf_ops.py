@@ -150,9 +150,10 @@ def batch_run_check(batch, start):
     with train_output_sequence_writer.as_default():
       tf.summary.scalar('train_loss', train_loss.result(), step=batch)
       tf.summary.scalar('train_accuracy', train_accuracy.result(), step=batch)
-  if batch==0:
+  if config.display_model_summary:
     log.info(Model.summary())
     log.info(batch_zero.format(time.time()-start))
+    config.display_model_summary = False
   log.info(
            batch_run_details.format(
                                    train_loss.result(), 
@@ -161,15 +162,6 @@ def batch_run_check(batch, start):
           )
   return train_loss.result()
 
-# run after each epoch
-def count_recs(batch, epoch, num_of_train_examples):
-  if epoch == 0:
-    try:
-      if batch > 0:
-        num_of_recs_post_filter_atmost = ((batch)*config.train_batch_size)/num_of_train_examples
-        log.info(f'Percentage of records used for training should be close to {num_of_recs_post_filter_atmost*100 :.2f}')
-    except NameError:
-      log.info('End of epoch')
 
 def evaluate_validation_set(
                            validation_dataset, 

@@ -11,7 +11,6 @@ unit_test = {
       'save_initial_weights' : False,
       'input_independent_baseline_check' : True, 
       'check_model_capacity' : True,
-      'min_train_loss' : 0.2,
       'random_results_check' : True
       } 
 model_parms = {
@@ -29,12 +28,14 @@ model_parms = {
      'target_vocab_size': 119547,       # total vocab size + start and end token
      }                                    
 training_parms = {
+     'display_model_summary' : True,
      'early_stop' : False,
      'enable_jit' : True,
-     'eval_after' : 2000,              # Evaluate once this many samples are trained 
+     'eval_after' : 73,              # Evaluate once this many samples are trained 
      'last_recorded_value': None,
-     'monitor_metric' : 'combined_metric',
      'max_tokens_per_line' : model_parms['input_seq_length']+model_parms['target_seq_length'],      # filter documents based on this many tokens
+     'min_train_loss' : 0.5,
+     'monitor_metric' : 'combined_metric',
      'print_chks': 50,                  # print training progress per number of batches specified
      'run_tensorboard': False,
      'tfds_name' : 'en_tam_parallel_text',     # tfds dataset to be used
@@ -66,7 +67,7 @@ h_parms = {
    'beam_sizes': [2, 3, 4],              # Used  during inference                                                 
    'combined_metric_weights': [0.6, 0.3, 0.1], #(bert_score, rouge, validation accuracy)
    'dropout_rate': 0.1,
-   'epochs': 4,
+   'epochs': 1,
    'epsilon_ls': 0.1,                    # label_smoothing hyper parameter
    'grad_clipnorm':None,
    'l2_norm':0.0001,
@@ -83,11 +84,11 @@ file_path = {
         'checkpoint_path' : f"/content/drive/My Drive/{dataset_name}_checkpoints",
         'initial_weights' : f"/content/drive/My Drive/{dataset_name}/initial_weights/",
         'infer_csv_path' : None,
-        'infer_ckpt_path' : f"/content/drive/My Drive/Text_summarization/BERT_text_summarisation/{dataset_name}_checkpoints/ckpt-1",
-        'log_path' : "/content/drive/My Drive/Text_summarization/BERT_text_summarisation/created_files/tensorflow.log",
-        'output_sequence_write_path' : os.path.join(core_path, f"created_files/summaries/{dataset_name}/"),
-        'tensorboard_log' : os.path.join(core_path, f"created_files/tensorboard_logs/{dataset_name}/"),
-        'tfds_data_dir' : f'/content/drive/My Drive/Text_summarization/{dataset_name}_dataset',
+        'infer_ckpt_path' : None,
+        'log_path' : f"/content/drive/My Drive/{dataset_name}/created_files/tensorflow.log",
+        'output_sequence_write_path' : f"/content/drive/My Drive/{dataset_name}/created_files/summaries/{dataset_name}/",
+        'tensorboard_log' : f"/content/drive/My Drive/{dataset_name}/tensorboard_logs/",
+        'tfds_data_dir' : f'/content/drive/My Drive/Tensorflow_datasets/{dataset_name}_dataset',
         'tfds_data_version' : None,#{"version": "2.0.0"},
         'train_csv_path' : None,
         

@@ -38,7 +38,7 @@ train_dataset = train_dataset.repeat(total_steps)
 for (step, (input_ids, target_ids_)) in tqdm(enumerate(train_dataset), initial=1):
   start=time.time()
   draft_mask, refine_mask, target_ids = mask_and_one_hot_labels(target_ids_)
-  grad_accum_flag = True if (step+1)%config.gradient_accumulation_steps == 0 else False
+  grad_accum_flag = True if (step%config.gradient_accumulation_steps) == 0 else False
   refine_predictions = train_step(
                                   input_ids,  
                                   target_ids_, 
@@ -48,20 +48,20 @@ for (step, (input_ids, target_ids_)) in tqdm(enumerate(train_dataset), initial=1
                                   grad_accum_flag
                                   )
   if grad_accum_flag:
-    _ = batch_run_check(
-                        step+1,  
-                        start
-                        )
-  evaluate = ((step+1) * config.train_batch_size) % config.eval_after
+    train_loss = batch_run_check(
+                                step,  
+                                start
+                                )
+  evaluate = ((step) * config.train_batch_size) % config.eval_after
   if evaluate == 0:
     train_sanity_check(target_tokenizer, refine_predictions, target_ids_)
     ckpt_save_path = ck_pt_mgr.save()
     (val_acc, rouge_score, bert_score) = evaluate_validation_set(
                                                                   val_dataset, 
-                                                                  step+1
+                                                                  step
                                                                   )
     post_training_results(
-                          step+1, 
+                          step, 
                           val_acc,
                           rouge_score, 
                           bert_score,
@@ -72,8 +72,9 @@ for (step, (input_ids, target_ids_)) in tqdm(enumerate(train_dataset), initial=1
                                     ckpt_save_path, 
                                     val_acc, 
                                     bert_score, 
-                                    rouge_score, 
-                                    step+1
+                                    rouge_score,
+                                    train_loss, 
+                                    step
                                     )
     if not monitor_early_stop:
       break
