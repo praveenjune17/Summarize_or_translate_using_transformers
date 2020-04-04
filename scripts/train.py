@@ -12,7 +12,7 @@ from calculate_metrics import mask_and_one_hot_labels, monitor_run
 from creates import log
 from create_model import source_tokenizer, target_tokenizer
 from local_tf_ops import (check_ckpt, eval_step, train_step, batch_run_check, 
-                          train_sanity_check, evaluate_validation_set)
+                          train_sanity_check, evaluate_validation_set, post_training_results)
 
 train_dataset = create_dataset(
                               split='train', 

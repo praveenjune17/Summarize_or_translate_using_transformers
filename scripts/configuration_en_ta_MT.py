@@ -79,8 +79,8 @@ h_parms = {
 
 dataset_name = training_parms['tfds_name']
 file_path = {
-        'best_ckpt_path' : f"/content/drive/My Drive/Text_summarization/BERT_text_summarisation/created_files/training_summarization_model_ckpts/{dataset_name}/best_checkpoints",  
-        'checkpoint_path' : f"/content/{dataset_name}_checkpoints",
+        'best_ckpt_path' : f"/content/drive/My Drive/{dataset_name}_checkpoints/best_checkpoints",  
+        'checkpoint_path' : f"/content/drive/My Drive/{dataset_name}_checkpoints",
         'initial_weights' : f"/content/drive/My Drive/{dataset_name}/initial_weights/",
         'infer_csv_path' : None,
         'infer_ckpt_path' : f"/content/drive/My Drive/Text_summarization/BERT_text_summarisation/{dataset_name}_checkpoints/ckpt-1",
