@@ -11,7 +11,6 @@ unit_test = {
       'save_initial_weights' : False,
       'input_independent_baseline_check' : True, 
       'check_model_capacity' : True,
-      'min_train_loss' : 0.2,
       'random_results_check' : True
       } 
 model_parms = {
@@ -35,11 +34,11 @@ training_parms = {
      'eval_after' : 5000,              # Evaluate once this many samples are trained 
      'last_recorded_value': None,
      'max_tokens_per_line' : model_parms['input_seq_length']+model_parms['target_seq_length'],      # filter documents based on this many tokens
-     'min_train_loss' : 0.2,
+     'min_train_loss' : 0.5,
      'monitor_metric' : 'combined_metric',
      'print_chks': 50,                  # print training progress per number of batches specified
      'run_tensorboard': False,
-     'tfds_name' : 'para_crawl',     # tfds dataset to be used
+     'tfds_name' : 'en_tam_parallel_text',     # tfds dataset to be used
      'tolerance_threshold': 5,          # Stop training after the threshold is reached
      'use_tfds' : True,                 # use tfds datasets as to train the model else use the given csv file
      'valid_samples_to_eval' : 100,     # number of samples used for validation
@@ -66,12 +65,12 @@ h_parms = {
    'gradient_accumulation_steps': 36,                                                                                   
    'train_batch_size': 1,
    'beam_sizes': [2, 3, 4],              # Used  during inference                                                 
-   'combined_metric_weights': [0.4, 0.3, 0.3], #(bert_score, rouge, validation accuracy)
+   'combined_metric_weights': [0.6, 0.3, 0.1], #(bert_score, rouge, validation accuracy)
    'dropout_rate': 0.0,
-   'epochs': 4,
+   'epochs': 1,
    'epsilon_ls': 0.0,                    # label_smoothing hyper parameter
    'grad_clipnorm':None,
-   'l2_norm':0,
+   'l2_norm':0.0,
    'learning_rate': None,                # change to None to set learning rate decay
    'length_penalty' : 1,                       # Beam search hyps . Used  during inference                                                 
    'mean_attention_heads':True,                # if False then the attention parameters of the last head will be used
@@ -81,19 +80,18 @@ h_parms = {
 
 dataset_name = training_parms['tfds_name']
 file_path = {
-        'best_ckpt_path' : f"/content/drive/My Drive/Text_summarization/BERT_text_summarisation/created_files/training_summarization_model_ckpts/{dataset_name}/best_checkpoints",  
-        'checkpoint_path' : f"/content/{dataset_name}_checkpoints",
-        'initial_weights' : f"/content/drive/My Drive/{dataset_name}/initial_weights/",
+        'best_ckpt_path' : f"/content/drive/My Drive/best_checkpoints/{dataset_name}/",  
+        'checkpoint_path' : f"/content/drive/My Drive/checkpoints/{dataset_name}/",
+        'initial_weights' : f"/content/drive/My Drive/initial_weights/{dataset_name}/",
         'infer_csv_path' : None,
-        'infer_ckpt_path' : f"/content/drive/My Drive/Text_summarization/BERT_text_summarisation/{dataset_name}_checkpoints/ckpt-1",
-        'log_path' : "/content/drive/My Drive/Text_summarization/BERT_text_summarisation/created_files/tensorflow.log",
-        'output_sequence_write_path' : os.path.join(core_path, f"created_files/summaries/{dataset_name}/"),
-        'tensorboard_log' : os.path.join(core_path, f"created_files/tensorboard_logs/{dataset_name}/"),
-        'tfds_data_dir' : f'/content/drive/My Drive/Text_summarization/{dataset_name}_dataset',
+        'infer_ckpt_path' : None,
+        'log_path' : f"/content/drive/My Drive/created_files/{dataset_name}/tensorflow.log",
+        'output_sequence_write_path' : f"/content/drive/My Drive/created_files/{dataset_name}/summaries/{dataset_name}/",
+        'tensorboard_log' : f"/content/drive/My Drive/created_files/{dataset_name}/tensorboard_logs/",
+        'tfds_data_dir' : f'/content/drive/My Drive/Tensorflow_datasets/{dataset_name}_dataset',
         'tfds_data_version' : None,#{"version": "2.0.0"},
         'train_csv_path' : None,
-        
-    }
+            }
 
 config = Bunch(model_parms)
 config.update(unit_test)

@@ -31,7 +31,7 @@ training_parms = {
      'display_model_summary' : True,
      'early_stop' : False,
      'enable_jit' : True,
-     'eval_after' : 73,              # Evaluate once this many samples are trained 
+     'eval_after' : 5000,              # Evaluate once this many samples are trained 
      'last_recorded_value': None,
      'max_tokens_per_line' : model_parms['input_seq_length']+model_parms['target_seq_length'],      # filter documents based on this many tokens
      'min_train_loss' : 0.5,
@@ -80,19 +80,18 @@ h_parms = {
 
 dataset_name = training_parms['tfds_name']
 file_path = {
-        'best_ckpt_path' : f"/content/drive/My Drive/{dataset_name}_checkpoints/best_checkpoints",  
-        'checkpoint_path' : f"/content/drive/My Drive/{dataset_name}_checkpoints",
-        'initial_weights' : f"/content/drive/My Drive/{dataset_name}/initial_weights/",
+        'best_ckpt_path' : f"/content/drive/My Drive/best_checkpoints/{dataset_name}/",  
+        'checkpoint_path' : f"/content/drive/My Drive/checkpoints/{dataset_name}/",
+        'initial_weights' : f"/content/drive/My Drive/initial_weights/{dataset_name}/",
         'infer_csv_path' : None,
         'infer_ckpt_path' : None,
-        'log_path' : f"/content/drive/My Drive/{dataset_name}/created_files/tensorflow.log",
-        'output_sequence_write_path' : f"/content/drive/My Drive/{dataset_name}/created_files/summaries/{dataset_name}/",
-        'tensorboard_log' : f"/content/drive/My Drive/{dataset_name}/tensorboard_logs/",
+        'log_path' : f"/content/drive/My Drive/created_files/{dataset_name}/tensorflow.log",
+        'output_sequence_write_path' : f"/content/drive/My Drive/created_files/{dataset_name}/summaries/{dataset_name}/",
+        'tensorboard_log' : f"/content/drive/My Drive/created_files/{dataset_name}/tensorboard_logs/",
         'tfds_data_dir' : f'/content/drive/My Drive/Tensorflow_datasets/{dataset_name}_dataset',
         'tfds_data_version' : None,#{"version": "2.0.0"},
         'train_csv_path' : None,
-        
-    }
+            }
 
 config = Bunch(model_parms)
 config.update(unit_test)

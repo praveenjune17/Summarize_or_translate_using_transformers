@@ -17,7 +17,8 @@ def check_and_create_dir(path):
 if not config.use_tfds:
   assert (os.path.exists(config.train_csv_path)), 'Training dataset not available'
 for key in config.keys():
-  if key in ['best_ckpt_path', 'output_sequence_write_path', 'tensorboard_log']:
+  if key in ['best_ckpt_path', 'initial_weights', 
+             'output_sequence_write_path', 'tensorboard_log']:
     check_and_create_dir(config[key])
               
 # Create logger
