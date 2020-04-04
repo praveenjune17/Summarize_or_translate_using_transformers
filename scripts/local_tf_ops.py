@@ -194,7 +194,8 @@ def train_sanity_check(tokenizer, predictions, target_id):
     predicted = tokenizer.decode([i for i in tf.squeeze(tf.argmax(predictions,axis=-1)) if i not in [config.CLS_ID, config.SEP_ID, config.PAD_ID]])
     target = tokenizer.decode([i for i in tf.squeeze(target_id[:, :-1]) if i not in [config.CLS_ID, config.SEP_ID, config.PAD_ID]])
     log.info(f'the true output_sequence is {target}')
-    log.info(f'the predicted output_sequence with teacher forcing is {predicted if predicted else "EMPTY"}')
+    log.info(f'the predicted output_seq with teacher forcing is {predicted if predicted else "empty hence evaluation will be skipped"}')
+    return predicted
 
 def post_training_results(
                           step, 

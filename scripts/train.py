@@ -54,12 +54,13 @@ for (step, (input_ids, target_ids_)) in tqdm(enumerate(train_dataset), initial=1
                                 )
   evaluate = ((step+1) * config.train_batch_size) % config.eval_after
   if evaluate == 0:
-    train_sanity_check(target_tokenizer, refine_predictions, target_ids_)
+    predicted = train_sanity_check(target_tokenizer, refine_predictions, target_ids_)
     ckpt_save_path = ck_pt_mgr.save()
-    (val_acc, rouge_score, bert_score) = evaluate_validation_set(
-                                                                  val_dataset, 
-                                                                  step+1
-                                                                  )
+    if predicted:
+      (val_acc, rouge_score, bert_score) = evaluate_validation_set(
+                                                                    val_dataset, 
+                                                                    step+1
+                                                                    )
     post_training_results(
                           step+1, 
                           val_acc,
