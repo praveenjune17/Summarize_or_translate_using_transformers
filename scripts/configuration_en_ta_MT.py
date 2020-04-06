@@ -80,7 +80,7 @@ h_parms = {
 
 dataset_name = training_parms['tfds_name']
 
-core_path = os.getcwd() if config.test_script else "/content/drive/My Drive/"
+core_path = os.getcwd() if unit_test['test_script'] else "/content/drive/My Drive/"
 
 file_path = {
         'best_ckpt_path' : os.path.join(core_path, f"best_checkpoints/{dataset_name}/"),  
