@@ -54,21 +54,14 @@ def tf_encode(source_tokenizer, target_tokenizer, input_seq_len, output_seq_len)
 # Set threshold for input_sequence and  output_sequence length
 def filter_max_length(x, y):
     return tf.logical_and(
-                          tf.size(x[0]) <= config.input_seq_length,
-                          tf.size(y[0]) <= config.target_seq_length
+                          tf.math.count_nonzero(x) <= config.input_seq_length,
+                          tf.math.count_nonzero(y) <= config.target_seq_length
                          )
 
 def filter_combined_length(x, y):
     return tf.math.less_equal(
                               (tf.math.count_nonzero(x) + tf.math.count_nonzero(y)), 
                               config.max_tokens_per_line
-                             )
-                        
-# this function should be added after padded batch step
-def filter_batch_token_size(x, y):
-    return tf.math.less_equal(
-                              (tf.size(x[0]) + tf.size(y[0])), 
-                              config.max_tokens_per_line*config.train_batch_size
                              )
     
 def read_csv(path, num_examples):
@@ -139,7 +132,7 @@ def create_dataset(split,
                                num_parallel_calls=AUTOTUNE
                                )
   tf_dataset = tf_dataset.filter(filter_max_length)
-  tf_dataset = tf_dataset.take(num_examples_to_select  if config.test_script else -1) 
+  tf_dataset = tf_dataset.take(num_examples_to_select) 
   tf_dataset = tf_dataset.cache()
   if shuffle:
      tf_dataset = tf_dataset.shuffle(buffer_size, seed = 100)

@@ -128,8 +128,11 @@ def monitor_run(ckpt_save_path,
                                         monitor_metrics['validation_accuracy']
                                         )
   # multiply with the weights                                    
-  monitor_metrics['combined_metric'] = round(tf.reduce_sum([(i*j) for i,j in zip(monitor_metrics['combined_metric'],  
-                                                                                 config.combined_metric_weights)]).numpy(), 2)
+  monitor_metrics['combined_metric'] = round(
+                                      tf.reduce_sum([(i*j) for i,j in zip(monitor_metrics['combined_metric'],  
+                                                                          config.combined_metric_weights)]).numpy(), 
+                                                                          2
+                                                                          )
   log.info(f"combined_metric {monitor_metrics['combined_metric']:4f}")
   if config.last_recorded_value < monitor_metrics[to_monitor]:
     # reset tolerance to zero if the monitor_metric decreases before the tolerance threshold
@@ -137,7 +140,7 @@ def monitor_run(ckpt_save_path,
     config.last_recorded_value =  monitor_metrics[to_monitor]
     ckpt_files_tocopy = [files for files in os.listdir(os.path.split(ckpt_save_path)[0]) \
                          if ckpt_string in files]
-    log.info(f'{to_monitor} is {monitor_metrics[to_monitor]:4f} so checkpoint files {ckpt_string}           \
+    log.info(f'{to_monitor} is {monitor_metrics[to_monitor]:4f} so checkpoint files {ckpt_string} \
              will be copied to best checkpoint directory')
     # copy the best checkpoints
     shutil.copy2(os.path.join(ckpt_fold, 'checkpoint'), config.best_ckpt_path)

@@ -113,7 +113,7 @@ def create_dataset(split,
                                num_parallel_calls=AUTOTUNE
                                )
   tf_dataset = tf_dataset.filter(filter_combined_length)
-  tf_dataset = tf_dataset.take(num_examples_to_select  if config.test_script else -1) 
+  tf_dataset = tf_dataset.take(num_examples_to_select) 
   tf_dataset = tf_dataset.cache()
   if shuffle:
      tf_dataset = tf_dataset.shuffle(buffer_size, seed = 100)

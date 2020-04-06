@@ -61,8 +61,14 @@ def train_step(input_ids,
                                                            True
                                                            )
     train_variables = Model.trainable_variables
-    draft_output_sequence_loss = loss_function(target_ids[:, 1:, :], draft_predictions, draft_mask)
-    refine_output_sequence_loss = loss_function(target_ids[:, :-1, :], refine_predictions, refine_mask)
+    draft_output_sequence_loss = loss_function(target_ids[:, 1:, :], 
+                                               draft_predictions, 
+                                               draft_mask
+                                               )
+    refine_output_sequence_loss = loss_function(target_ids[:, :-1, :], 
+                                                refine_predictions, 
+                                                refine_mask
+                                                )
     regularization_loss = tf.add_n(Model.losses)
     loss = draft_output_sequence_loss + refine_output_sequence_loss 
     loss = tf.reduce_mean(loss) + regularization_loss
@@ -72,7 +78,8 @@ def train_step(input_ids,
   # Initialize the shadow variables with same type as the gradients 
   if not gradient_accumulators:
     for tv in gradients:
-      gradient_accumulators.append(tf.Variable(tf.zeros_like(tv), trainable=False))
+      gradient_accumulators.append(tf.Variable(tf.zeros_like(tv), 
+                                               trainable=False))
   # accmulate the gradients to the shadow variables
   for (accumulator, grad) in zip(gradient_accumulators, gradients):
     accumulator.assign_add(grad)
@@ -90,7 +97,9 @@ def check_ckpt(checkpoint_path):
                                Model=Model,
                                optimizer=optimizer
                               )
-    ckpt_manager = tf.train.CheckpointManager(ckpt, checkpoint_path, max_to_keep=10)
+    ckpt_manager = tf.train.CheckpointManager(ckpt, 
+                                              checkpoint_path, 
+                                              max_to_keep=10)
     if tf.train.latest_checkpoint(checkpoint_path):
       ckpt.restore(ckpt_manager.latest_checkpoint)
       log.info(ckpt_manager.latest_checkpoint +' restored')
@@ -106,12 +115,12 @@ def val_step(
   validation_accuracy.reset_states()
   (predicted_draft_output_sequence, _,  
    refine_predictions, _) = predict_using_sampling( 
-                                                    Model,
-                                                    input_ids, 
-                                                    refine_decoder_type='greedy', 
-                                                    temperature=0.9, 
-                                                    p=0.8, 
-                                                    k=7
+                                                  Model,
+                                                  input_ids, 
+                                                  refine_decoder_type='greedy', 
+                                                  temperature=0.9, 
+                                                  p=0.8, 
+                                                  k=7
                                                   )
   
   
@@ -132,8 +141,12 @@ def eval_step(input_ids,
                                                           target_ids_,
                                                           False
                                                           )
-  draft_output_sequence_loss = loss_function(target_ids[:, 1:, :], draft_predictions, draft_mask)
-  refine_output_sequence_loss = loss_function(target_ids[:, :-1, :], refine_predictions, refine_mask)
+  draft_output_sequence_loss = loss_function(target_ids[:, 1:, :], 
+                                             draft_predictions, 
+                                             draft_mask)
+  refine_output_sequence_loss = loss_function(target_ids[:, :-1, :], 
+                                              refine_predictions, 
+                                              refine_mask)
   regularization_loss = tf.add_n(Model.losses)
   loss = draft_output_sequence_loss + refine_output_sequence_loss 
   denominator = tf.cast(tf.math.count_nonzero(loss), dtype=tf.float32)
@@ -170,7 +183,12 @@ def evaluate_validation_set(
   rouge_score_total = 0
   bert_score_total = 0
   total_val_acc_avg = tf.keras.metrics.Mean()
-  for (batch, (input_ids, target_ids_)) in enumerate(validation_dataset.take(config.valid_samples_to_eval//config.validation_batch_size)):
+  for (batch, 
+      (input_ids, target_ids_)) in enumerate(
+                                   validation_dataset.take(
+                                   config.valid_samples_to_eval//config.validation_batch_size
+                                                          )
+                                            ):
     # calculate rouge and bert score for only the first batch
     if batch == 0:
       rouge_score, bert_score = val_step(input_ids,
