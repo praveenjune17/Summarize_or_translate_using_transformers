@@ -13,7 +13,7 @@ unit_test = {
       'print_config' : False
       } 
 model_parms = {
-     'add_bias' : True,
+     'add_bias' : True,               # set values as True|None Increases the inital bias of Tamil vocabs
      'activation' : 'relu',
      'copy_gen': True,
      'input_seq_length': 60,
@@ -25,7 +25,7 @@ model_parms = {
      'input_pretrained_bert_model': 'bert-base-uncased',
      'target_pretrained_bert_model' : 'bert-base-multilingual-cased',
      'target_seq_length': 40,
-     'target_vocab_size': 119547,       # total vocab size + start and end token
+     'target_vocab_size': 119547,       
      }                                    
 training_parms = {
      'display_model_summary' : True,
@@ -90,7 +90,7 @@ file_path = {
         'infer_ckpt_path' : None,
         'log_path' : os.path.join(core_path, f"created_files/{dataset_name}/tensorflow.log"),
         'output_sequence_write_path' : os.path.join(core_path, f"created_files/{dataset_name}/summaries/{dataset_name}/"),
-        'serialized_tensor_path' : os.path.join("/content/drive/My Drive/", 'saved_serialized_tensor'),
+        'serialized_tensor_path' : os.path.join("/content/drive/My Drive/", 'saved_serialized_tensor_3'),
         'tensorboard_log' : os.path.join(core_path, f"created_files/{dataset_name}/tensorboard_logs/"),
         'tfds_data_dir' : os.path.join("/content/drive/My Drive/", f'Tensorflow_datasets/{dataset_name}_dataset'),
         'tfds_data_version' : None,#{"version": "2.0.0"},
@@ -110,11 +110,9 @@ if config.test_script:
   config.dff = 512                      # feed forward network hidden parameters
   config.num_heads = 4                  # the number of heads in the multi-headed attention unit
   config.num_layers = 2                 # number of transformer blocks
-  assert config.d_model % config.num_heads == 0, 'd_model should be a multiple of num_heads'
   config.dropout_rate = config.epsilon_ls = 0.0
   config.grad_clipnorm = None
   config.l2_norm = 0.0
-  config.copy_gen = False
 else:
   config.samples_to_test = -1
   config.save_initial_weights = False

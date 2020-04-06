@@ -25,7 +25,7 @@ model_parms = {
      'input_pretrained_bert_model': 'bert-base-uncased',
      'target_pretrained_bert_model' : 'bert-base-multilingual-cased',
      'target_seq_length': 40,
-     'target_vocab_size': 119547,       # total vocab size + start and end token
+     'target_vocab_size': 119547,       
      }                                    
 training_parms = {
      'display_model_summary' : True,
@@ -107,7 +107,6 @@ if config.test_script:
   config.dff = 512                      # feed forward network hidden parameters
   config.num_heads = 4                  # the number of heads in the multi-headed attention unit
   config.num_layers = 2                 # number of transformer blocks
-  assert config.d_model % config.num_heads == 0, 'd_model should be a multiple of num_heads'
   config.dropout_rate = config.epsilon_ls = 0.0
   config.grad_clipnorm = None
   config.l2_norm = 0.0

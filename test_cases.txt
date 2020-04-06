@@ -68,3 +68,16 @@ if config.init_loss_check:
   training_loop(train_dataset.take(2))
   log.info('First run over. Restart the run time and run the script again')
   sys.exit()
+
+  ###########################################################################
+  d) with and without bias after 1000 steps
+
+  1000it [09:45,  2.54it/s]INFO:tensorflow:Train_Loss 0.8294 Train_Accuracy 0.2456
+  1000it [10:31,  2.23it/s]INFO:tensorflow:Train_Loss 1.4130 Train_Accuracy 0.2404
+
+  bias info:-
+    # used 'language detect' api to detect the language in the vocab file 
+    # Add bias to the final decoder layer
+    # bias = log(minority_vocab_count/majority_vocab_count)
+      # non-tamil tokens = bias, 
+      # tamil tokens     = 0     

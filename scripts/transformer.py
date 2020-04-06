@@ -115,7 +115,6 @@ class MultiHeadAttention(tf.keras.layers.Layer):
     super(MultiHeadAttention, self).__init__()
     self.num_heads = num_heads
     self.d_model = d_model
-    assert d_model % self.num_heads == 0, 'd_model should be a multiple of num_heads'
     self.depth = d_model // self.num_heads
     self.wq = tf.keras.layers.Dense(
                                     d_model, 
