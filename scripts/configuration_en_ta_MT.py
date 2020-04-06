@@ -2,8 +2,6 @@
 import os
 from bunch import Bunch
 
-core_path = os.getcwd() 
-
 unit_test = {
       'test_script' : True,
       'init_loss_check' : True,
@@ -11,7 +9,8 @@ unit_test = {
       'save_initial_weights' : False,
       'input_independent_baseline_check' : False, 
       'check_model_capacity' : False,
-      'random_results_check' : False
+      'random_results_check' : False,
+      'print_config' : False
       } 
 model_parms = {
      'add_bias' : True,
@@ -80,17 +79,20 @@ h_parms = {
    }                                    
 
 dataset_name = training_parms['tfds_name']
+
+core_path = os.getcwd() if config.test_script else "/content/drive/My Drive/"
+
 file_path = {
-        'best_ckpt_path' : f"/content/drive/My Drive/best_checkpoints/{dataset_name}/",  
-        'checkpoint_path' : f"/content/drive/My Drive/checkpoints/{dataset_name}/",
-        'initial_weights' : f"/content/drive/My Drive/initial_weights/{dataset_name}/",
+        'best_ckpt_path' : os.path.join(core_path, f"best_checkpoints/{dataset_name}/"),  
+        'checkpoint_path' : os.path.join(core_path, f"checkpoints/{dataset_name}/"),
+        'initial_weights' : os.path.join(core_path, f"initial_weights/{dataset_name}/"),
         'infer_csv_path' : None,
         'infer_ckpt_path' : None,
-        'log_path' : f"/content/drive/My Drive/created_files/{dataset_name}/tensorflow.log",
-        'output_sequence_write_path' : f"/content/drive/My Drive/created_files/{dataset_name}/summaries/{dataset_name}/",
-        'serialized_tensor_path' : '/content/drive/My Drive/saved_serialized_tensor',
-        'tensorboard_log' : f"/content/drive/My Drive/created_files/{dataset_name}/tensorboard_logs/",
-        'tfds_data_dir' : f'/content/drive/My Drive/Tensorflow_datasets/{dataset_name}_dataset',
+        'log_path' : os.path.join(core_path, f"created_files/{dataset_name}/tensorflow.log"),
+        'output_sequence_write_path' : os.path.join(core_path, f"created_files/{dataset_name}/summaries/{dataset_name}/"),
+        'serialized_tensor_path' : os.path.join(core_path, 'saved_serialized_tensor'),
+        'tensorboard_log' : os.path.join(core_path, f"created_files/{dataset_name}/tensorboard_logs/"),
+        'tfds_data_dir' : os.path.join("/content/drive/My Drive/", f'Tensorflow_datasets/{dataset_name}_dataset'),
         'tfds_data_version' : None,#{"version": "2.0.0"},
         'train_csv_path' : None,
             }
@@ -121,3 +123,4 @@ else:
   config.input_independent_baseline_check = False
   config.check_model_capacity = False
   config.random_results_check = False
+  config.print_config = True
