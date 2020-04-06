@@ -5,15 +5,16 @@ from bunch import Bunch
 core_path = os.getcwd() 
 
 unit_test = {
-      'test_script' : False,
+      'test_script' : True,
       'init_loss_check' : True,
       'samples_to_test' : 1,
       'save_initial_weights' : False,
-      'input_independent_baseline_check' : True, 
-      'check_model_capacity' : True,
-      'random_results_check' : True
+      'input_independent_baseline_check' : False, 
+      'check_model_capacity' : False,
+      'random_results_check' : False
       } 
 model_parms = {
+     'add_bias' : True,
      'activation' : 'relu',
      'copy_gen': True,
      'input_seq_length': 60,
@@ -87,6 +88,7 @@ file_path = {
         'infer_ckpt_path' : None,
         'log_path' : f"/content/drive/My Drive/created_files/{dataset_name}/tensorflow.log",
         'output_sequence_write_path' : f"/content/drive/My Drive/created_files/{dataset_name}/summaries/{dataset_name}/",
+        'serialized_tensor_path' : '/content/drive/My Drive/saved_serialized_tensor',
         'tensorboard_log' : f"/content/drive/My Drive/created_files/{dataset_name}/tensorboard_logs/",
         'tfds_data_dir' : f'/content/drive/My Drive/Tensorflow_datasets/{dataset_name}_dataset',
         'tfds_data_version' : None,#{"version": "2.0.0"},
