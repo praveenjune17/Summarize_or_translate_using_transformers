@@ -90,7 +90,7 @@ file_path = {
         'infer_ckpt_path' : None,
         'log_path' : os.path.join(core_path, f"created_files/{dataset_name}/tensorflow.log"),
         'output_sequence_write_path' : os.path.join(core_path, f"created_files/{dataset_name}/summaries/{dataset_name}/"),
-        'serialized_tensor_path' : os.path.join(core_path, 'saved_serialized_tensor'),
+        'serialized_tensor_path' : os.path.join("/content/drive/My Drive/", 'saved_serialized_tensor'),
         'tensorboard_log' : os.path.join(core_path, f"created_files/{dataset_name}/tensorboard_logs/"),
         'tfds_data_dir' : os.path.join("/content/drive/My Drive/", f'Tensorflow_datasets/{dataset_name}_dataset'),
         'tfds_data_version' : None,#{"version": "2.0.0"},
