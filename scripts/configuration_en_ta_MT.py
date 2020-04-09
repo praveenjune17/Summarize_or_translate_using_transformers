@@ -4,17 +4,17 @@ from bunch import Bunch
 
 unit_test = {
       'test_script' : True,
-      'init_loss_check' : True,
+      'init_loss_check' : False,
       'samples_to_test' : 1,
       'save_initial_weights' : False,
       'input_independent_baseline_check' : False, 
-      'check_model_capacity' : False,
+      'check_model_capacity' : True,
       'random_results_check' : False,
       'print_config' : False
       } 
 
 model_parms = {
-     'add_bias' : True,               # set values as True|None Increases the inital bias of Tamil vocabs
+     'add_bias' : None,               # set values as True|None Increases the inital bias of Tamil vocabs
      'activation' : 'relu',
      'copy_gen': True,
      'input_seq_length': 60,
@@ -112,7 +112,7 @@ config.update(file_path)
 if config.use_BERT:
   config.CLS_ID = tokenizer_en.vocab_size
   config.SEP_ID = tokenizer_en.vocab_size + 1
-  
+
 if config.test_script:
   config.gradient_accumulation_steps =  config.samples_to_test
   config.epochs = 1000

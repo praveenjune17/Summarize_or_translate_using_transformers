@@ -2,7 +2,7 @@ import tensorflow as tf
 import tensorflow_datasets as tfds
 from transformers import TFBertModel, BertTokenizer
 from tensorflow.keras.initializers import Constant
-from transformer import create_masks, Decoder
+from transformer import create_masks, Decoder, Encoder
 from creates import log
 from configuration import config
 

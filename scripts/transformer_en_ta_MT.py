@@ -187,7 +187,7 @@ def point_wise_feed_forward_network(d_model, dff):
   ])
 
 class EncoderLayer(tf.keras.layers.Layer):
-  def __init__(self, d_model, num_heads, dff, rate=h_parms.dropout_rate):
+  def __init__(self, d_model, num_heads, dff, rate=config.dropout_rate):
     super(EncoderLayer, self).__init__()
 
     self.mha = MultiHeadAttention(d_model, num_heads)
@@ -314,7 +314,7 @@ class Pointer_Generator(tf.keras.layers.Layer):
 
 class Encoder(tf.keras.layers.Layer):
   def __init__(self, num_layers, d_model, num_heads, dff, input_vocab_size, 
-               rate=h_parms.dropout_rate):
+               rate=config.dropout_rate):
     super(Encoder, self).__init__()
 
     self.d_model = d_model

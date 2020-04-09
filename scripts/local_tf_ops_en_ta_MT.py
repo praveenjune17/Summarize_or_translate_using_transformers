@@ -132,8 +132,8 @@ def val_step(
   
   if config.use_refine_decoder:
       predictions = refine_predictions
-    else:
-      predictions = draft_predictions
+  else:
+    predictions = draft_predictions
   validation_accuracy(target_ids_[:, 1:], tf.one_hot(predictions[:, 1:], depth=config.target_vocab_size))  
   rouge, bert = tf_write_output_sequence(target_ids_[:, 1:], predictions[:, 1:], step, write_output_seq)  
   return (rouge, bert)
@@ -159,8 +159,8 @@ def eval_step(input_ids,
                                                   refine_predictions, 
                                                   refine_mask
                                                   )
-    else:
-      refine_output_sequence_loss = 0
+  else:
+    refine_output_sequence_loss = 0
   regularization_loss = tf.add_n(Model.losses)
   loss = draft_output_sequence_loss + refine_output_sequence_loss 
   denominator = tf.cast(tf.math.count_nonzero(loss), dtype=tf.float32)
