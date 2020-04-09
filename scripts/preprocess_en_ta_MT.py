@@ -20,15 +20,18 @@ def pad(l, n, pad=config.PAD_ID):
 
 def encode(sent_1, sent_2, source_tokenizer, target_tokenizer, input_seq_len, output_seq_len):
     
-    input_ids = source_tokenizer.encode(sent_1.numpy().decode('utf-8'))
-    target_ids = target_tokenizer.encode(sent_2.numpy().decode('utf-8'))
-    # Account for [CLS] and [SEP] with "- 2"
-    if len(input_ids) > input_seq_len - 2:
-        input_ids = input_ids[0:(input_seq_len - 2)]
-    if len(target_ids) > (output_seq_len + 1) - 2:
-        target_ids = target_ids[0:((output_seq_len + 1) - 2)]
-    input_ids = pad(input_ids, input_seq_len)
-    target_ids = pad(target_ids, output_seq_len + 1)    
+    if config.use_BERT:
+      input_ids = source_tokenizer.encode(sent_1.numpy().decode('utf-8'))
+      target_ids = target_tokenizer.encode(sent_2.numpy().decode('utf-8'))
+      # Account for [CLS] and [SEP] with "- 2"
+      if len(input_ids) > input_seq_len - 2:
+          input_ids = input_ids[0:(input_seq_len - 2)]
+      if len(target_ids) > (output_seq_len + 1) - 2:
+          target_ids = target_ids[0:((output_seq_len + 1) - 2)]
+      input_ids = pad(input_ids, input_seq_len)
+      target_ids = pad(target_ids, output_seq_len + 1)    
+    input_ids = [config.CLS_ID] + source_tokenizer.encode(sent_1.numpy()) + [config.SEP_ID]
+    target_ids = [config.CLS_ID] + target_tokenizer.encode(sent_2.numpy()) + [config.SEP_ID]
     return input_ids, target_ids
 
 
@@ -63,6 +66,7 @@ def filter_combined_length(x, y):
                               (tf.math.count_nonzero(x) + tf.math.count_nonzero(y)), 
                               config.max_tokens_per_line
                              )
+          
     
 def read_csv(path, num_examples):
     df = pd.read_csv(path)

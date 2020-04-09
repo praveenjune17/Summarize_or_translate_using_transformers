@@ -12,6 +12,7 @@ unit_test = {
       'random_results_check' : False,
       'print_config' : False
       } 
+
 model_parms = {
      'add_bias' : True,               # set values as True|None Increases the inital bias of Tamil vocabs
      'activation' : 'relu',
@@ -25,7 +26,9 @@ model_parms = {
      'input_pretrained_bert_model': 'bert-base-uncased',
      'target_pretrained_bert_model' : 'bert-base-multilingual-cased',
      'target_seq_length': 40,
-     'target_vocab_size': 119547,       
+     'target_vocab_size': 119547,
+     'use_BERT' : False,
+     'use_refine_decoder' : False
      }                                    
 training_parms = {
      'display_model_summary' : True,
@@ -95,6 +98,8 @@ file_path = {
         'tfds_data_dir' : os.path.join("/content/drive/My Drive/", f'Tensorflow_datasets/{dataset_name}_dataset'),
         'tfds_data_version' : None,#{"version": "2.0.0"},
         'train_csv_path' : None,
+        'input_seq_vocab_path' : '/content/drive/My Drive/TFDS_vocab_files/vocab_en',
+        'output_seq_vocab_path' : '/content/drive/My Drive/TFDS_vocab_files/vocab_ta',
             }
 
 config = Bunch(model_parms)
@@ -104,6 +109,10 @@ config.update(special_tokens)
 config.update(h_parms)
 config.update(file_path)
 
+if config.use_BERT:
+  config.CLS_ID = tokenizer_en.vocab_size
+  config.SEP_ID = tokenizer_en.vocab_size + 1
+  
 if config.test_script:
   config.gradient_accumulation_steps =  config.samples_to_test
   config.epochs = 1000
