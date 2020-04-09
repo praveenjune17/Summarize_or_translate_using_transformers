@@ -10,7 +10,7 @@ unit_test = {
       'input_independent_baseline_check' : False, 
       'check_model_capacity' : True,
       'random_results_check' : False,
-      'print_config' : False
+      'print_config' : True
       } 
 
 model_parms = {
@@ -20,16 +20,17 @@ model_parms = {
      'input_seq_length': 60,
      'd_model': 768,                  # the projected word vector dimension
      'dff': 2048,                      # feed forward network hidden parameters
-     'input_vocab_size': 30522,        # total vocab size + start and end token
+     'input_vocab_size': 8247,        # total vocab size + start and end token
      'num_heads': 8,                  # the number of heads in the multi-headed attention unit
      'num_layers': 8,                 # number of transformer blocks
      'input_pretrained_bert_model': 'bert-base-uncased',
      'target_pretrained_bert_model' : 'bert-base-multilingual-cased',
      'target_seq_length': 40,
-     'target_vocab_size': 119547,
+     'target_vocab_size': 8294,
      'use_BERT' : False,
      'use_refine_decoder' : False
-     }                                    
+     }   
+
 training_parms = {
      'display_model_summary' : True,
      'early_stop' : False,
@@ -48,12 +49,6 @@ training_parms = {
      'write_summary_op': True           # write the first batch of validation set summary to a file
      }                                    
 
-# Use the csv dataset if tfds is false
-if not training_parms['use_tfds']:
-  training_parms['num_examples_to_train'] = None     # If None then all the examples in the dataset will be used to train
-  training_parms['num_examples_to_infer'] = None
-  training_parms['test_size'] = 0.05                 # test set split size
-
 # Special Tokens
 special_tokens = {
           'CLS_ID' : 101,
@@ -63,6 +58,21 @@ special_tokens = {
           'UNK_ID' : 100
           }
 
+# Use the csv dataset if tfds is false
+if not training_parms['use_tfds']:
+  training_parms['num_examples_to_train'] = None     # If None then all the examples in the dataset will be used to train
+  training_parms['num_examples_to_infer'] = None
+  training_parms['test_size'] = 0.05                 # test set split size
+
+if not model_parms['use_BERT']:
+  model_parms['input_pretrained_bert_model'] = None
+  model_parms['target_pretrained_bert_model'] = None
+  if model_parms['target_vocab_size'] > model_parms['input_vocab_size']:
+    special_tokens['CLS_ID'] = model_parms['input_vocab_size']
+    special_tokens['SEP_ID'] = model_parms['target_vocab_size']+1
+  else:
+    special_tokens['CLS_ID'] = model_parms['target_vocab_size']
+    special_tokens['SEP_ID'] = model_parms['input_vocab_size']+1
 
 h_parms = {
    'gradient_accumulation_steps': 36,                                                                                   
@@ -82,7 +92,6 @@ h_parms = {
    }                                    
 
 dataset_name = training_parms['tfds_name']
-
 core_path = os.getcwd() if unit_test['test_script'] else "/content/drive/My Drive/"
 
 file_path = {
@@ -109,12 +118,10 @@ config.update(special_tokens)
 config.update(h_parms)
 config.update(file_path)
 
-if config.use_BERT:
-  config.CLS_ID = tokenizer_en.vocab_size
-  config.SEP_ID = tokenizer_en.vocab_size + 1
 
 if config.test_script:
-  config.gradient_accumulation_steps =  config.samples_to_test
+  if config.samples_to_test < config.gradient_accumulation_steps:
+    config.gradient_accumulation_steps =  config.samples_to_test
   config.epochs = 1000
   config.dff = 512                      # feed forward network hidden parameters
   config.num_heads = 4                  # the number of heads in the multi-headed attention unit

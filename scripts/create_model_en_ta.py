@@ -119,7 +119,10 @@ class AbstractiveSummarization(tf.keras.Model):
         # (batch_size x (seq_len - 1), 1, 1, seq_len) 
         padding_mask = tf.tile(padding_mask, [T-1, 1, 1, 1])
         # (batch_size x (seq_len - 1), seq_len, d_bert)
-        context_vectors = self.decoder_bert_model(dec_inp_ids)[0]                
+        if config.use_BERT:
+          context_vectors = self.decoder_bert_model(dec_inp_ids)[0]
+        else:
+          context_vectors = dec_inp_ids                
 
         # (batch_size x (seq_len - 1), seq_len, vocab_len), (_)
         refined_logits, refine_attention_dist = self.decoder(

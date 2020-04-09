@@ -369,7 +369,7 @@ class Decoder(tf.keras.layers.Layer):
                                              bias_initializer=config.add_bias
                                              )
     if config.copy_gen:
-      self.pointer_generator   = Pointer_Generator()
+      self.pointer_generator = Pointer_Generator()
     
   def call(self, inp, x, enc_output, training, 
            look_ahead_mask, padding_mask):
