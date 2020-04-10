@@ -126,9 +126,8 @@ if config.test_script:
   config.dff = 512                      # feed forward network hidden parameters
   config.num_heads = 4                  # the number of heads in the multi-headed attention unit
   config.num_layers = 2                 # number of transformer blocks
-  config.dropout_rate = config.epsilon_ls = 0.0
+  config.dropout_rate = config.epsilon_ls = config.l2_norm = 0.0
   config.grad_clipnorm = None
-  config.l2_norm = 0.0
 else:
   config.samples_to_test = -1
   config.save_initial_weights = False

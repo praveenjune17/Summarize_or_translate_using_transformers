@@ -48,11 +48,11 @@ def training_loop(dataset, check_model_capacity):
                                   step+1,  
                                   start
                                   )
-    if check_model_capacity:
-      if min_loss > train_loss:
-        min_loss = train_loss
-      else:
-        log.warning('Loss not decreasing watch out')
+      if check_model_capacity:
+        if min_loss > train_loss:
+          min_loss = train_loss
+        else:
+          log.warning('Loss not decreasing watch out')
 
   if check_model_capacity:
     if train_loss < config.min_train_loss:
