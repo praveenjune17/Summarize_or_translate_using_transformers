@@ -27,8 +27,7 @@ model_parms = {
      'target_pretrained_bert_model' : 'bert-base-multilingual-cased',
      'target_seq_length': 40,
      'target_vocab_size': 8294+2,
-     'use_BERT' : False,
-     'use_refine_decoder' : False
+     'use_BERT' : False
      }   
 
 training_parms = {
@@ -65,14 +64,15 @@ if not training_parms['use_tfds']:
   training_parms['test_size'] = 0.05                 # test set split size
 
 if not model_parms['use_BERT']:
+  model_parms['use_refine_decoder'] = False
   model_parms['input_pretrained_bert_model'] = None
   model_parms['target_pretrained_bert_model'] = None
-  model_parms['input_vocab_size'] -= 2 
-  model_parms['target_vocab_size'] -= 2 
-  special_tokens['input_CLS_ID'] = model_parms['input_vocab_size']
-  special_tokens['input_SEP_ID'] = model_parms['input_vocab_size']+1
-  special_tokens['target_CLS_ID'] = model_parms['target_vocab_size']
-  special_tokens['target_SEP_ID'] = model_parms['target_vocab_size']+1
+  special_tokens['input_CLS_ID'] = model_parms['input_vocab_size']-2
+  special_tokens['input_SEP_ID'] = model_parms['input_vocab_size']-2+1
+  special_tokens['target_CLS_ID'] = model_parms['target_vocab_size']-2
+  special_tokens['target_SEP_ID'] = model_parms['target_vocab_size']-2+1
+else:
+  model_parms['use_refine_decoder'] = True
 
 h_parms = {
    'gradient_accumulation_steps': 36,                                                                                   

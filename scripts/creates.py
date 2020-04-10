@@ -7,6 +7,19 @@ from configuration import config
 
 
 gpu_devices = tf.config.experimental.list_physical_devices('GPU')
+
+def check_and_create_dir(path):
+    if not os.path.exists(path):
+      os.makedirs(path)
+
+# create folder in input_path if they don't exist
+if not config.use_tfds:
+  assert (os.path.exists(config.train_csv_path)), 'Training dataset not available'
+for key in config.keys():
+  if key in ['best_ckpt_path', 'initial_weights', 
+             'output_sequence_write_path', 'tensorboard_log']:
+    check_and_create_dir(config[key])
+
 # Create logger
 log = logging.getLogger('tensorflow')
 log.setLevel(logging.DEBUG)
@@ -16,21 +29,6 @@ fh.setLevel(logging.DEBUG)
 fh.setFormatter(formatter)
 log.addHandler(fh)
 log.propagate = False
-
-
-def check_and_create_dir(path):
-    if not os.path.exists(path):
-      os.makedirs(path)
-      log.info(f'directory {path} created ')
-        
-# create folder in input_path if they don't exist
-if not config.use_tfds:
-  assert (os.path.exists(config.train_csv_path)), 'Training dataset not available'
-for key in config.keys():
-  if key in ['best_ckpt_path', 'initial_weights', 
-             'output_sequence_write_path', 'tensorboard_log']:
-    check_and_create_dir(config[key])
-              
 
 
 # Set GPU memory growth
