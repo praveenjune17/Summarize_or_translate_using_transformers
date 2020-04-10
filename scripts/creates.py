@@ -7,20 +7,6 @@ from configuration import config
 
 
 gpu_devices = tf.config.experimental.list_physical_devices('GPU')
-
-def check_and_create_dir(path):
-    if not os.path.exists(path):
-      os.makedirs(path)
-      print(f'directory {path} created ')
-        
-# create folder in input_path if they don't exist
-if not config.use_tfds:
-  assert (os.path.exists(config.train_csv_path)), 'Training dataset not available'
-for key in config.keys():
-  if key in ['best_ckpt_path', 'initial_weights', 
-             'output_sequence_write_path', 'tensorboard_log']:
-    check_and_create_dir(config[key])
-              
 # Create logger
 log = logging.getLogger('tensorflow')
 log.setLevel(logging.DEBUG)
@@ -30,6 +16,22 @@ fh.setLevel(logging.DEBUG)
 fh.setFormatter(formatter)
 log.addHandler(fh)
 log.propagate = False
+
+
+def check_and_create_dir(path):
+    if not os.path.exists(path):
+      os.makedirs(path)
+      log.info(f'directory {path} created ')
+        
+# create folder in input_path if they don't exist
+if not config.use_tfds:
+  assert (os.path.exists(config.train_csv_path)), 'Training dataset not available'
+for key in config.keys():
+  if key in ['best_ckpt_path', 'initial_weights', 
+             'output_sequence_write_path', 'tensorboard_log']:
+    check_and_create_dir(config[key])
+              
+
 
 # Set GPU memory growth
 if not gpu_devices:
@@ -76,13 +78,13 @@ try:
         if ('- tensorflow - INFO - '+ config.monitor_metric in line) and \
           (line[[i for i,char in enumerate((line)) if char.isdigit()][-1]+1] == '\n'):          
           config['last_recorded_value'] = float(line.split(config.monitor_metric)[1].split('\n')[0].strip())
-          print(f"last_recorded_value of {config.monitor_metric} retained from last run {config['last_recorded_value']}")
+          log.info(f"last recorded_value of {config.monitor_metric} retained from last run {config['last_recorded_value']}")
           break
         else:
           continue
   if not config['last_recorded_value']:
-    print('setting default value to the last_recorded_value since not able to find the metrics from the log')
+    log.info('setting default value to the last_recorded_value since not able to find the metrics from the log')
     config['last_recorded_value'] = 0 if config.monitor_metric != 'validation_loss' else float('inf')
 except FileNotFoundError:
-  print('setting default value to the last_recorded_value since file was not found')
+  log.info('setting default value to the last_recorded_value since file was not found')
   config['last_recorded_value'] = 0 if config.monitor_metric != 'validation_loss' else float('inf')

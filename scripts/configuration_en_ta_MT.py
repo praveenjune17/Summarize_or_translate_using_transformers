@@ -20,13 +20,13 @@ model_parms = {
      'input_seq_length': 60,
      'd_model': 768,                  # the projected word vector dimension
      'dff': 2048,                      # feed forward network hidden parameters
-     'input_vocab_size': 8247,        # total vocab size + start and end token
+     'input_vocab_size': 8247+2,        # total vocab size + start and end token
      'num_heads': 8,                  # the number of heads in the multi-headed attention unit
      'num_layers': 8,                 # number of transformer blocks
      'input_pretrained_bert_model': 'bert-base-uncased',
      'target_pretrained_bert_model' : 'bert-base-multilingual-cased',
      'target_seq_length': 40,
-     'target_vocab_size': 8294,
+     'target_vocab_size': 8294+2,
      'use_BERT' : False,
      'use_refine_decoder' : False
      }   
@@ -67,12 +67,12 @@ if not training_parms['use_tfds']:
 if not model_parms['use_BERT']:
   model_parms['input_pretrained_bert_model'] = None
   model_parms['target_pretrained_bert_model'] = None
-  if model_parms['target_vocab_size'] > model_parms['input_vocab_size']:
-    special_tokens['CLS_ID'] = model_parms['input_vocab_size']
-    special_tokens['SEP_ID'] = model_parms['target_vocab_size']+1
-  else:
-    special_tokens['CLS_ID'] = model_parms['target_vocab_size']
-    special_tokens['SEP_ID'] = model_parms['input_vocab_size']+1
+  model_parms['input_vocab_size'] -= 2 
+  model_parms['target_vocab_size'] -= 2 
+  special_tokens['input_CLS_ID'] = model_parms['input_vocab_size']
+  special_tokens['input_SEP_ID'] = model_parms['input_vocab_size']+1
+  special_tokens['target_CLS_ID'] = model_parms['target_vocab_size']
+  special_tokens['target_SEP_ID'] = model_parms['target_vocab_size']+1
 
 h_parms = {
    'gradient_accumulation_steps': 36,                                                                                   
