@@ -99,18 +99,19 @@ def check_recorded_metric_val():
         with open(config.log_path) as f:
             for line in reversed(f.readlines()):
                 if ('- tensorflow - INFO - '+ config.monitor_metric in line) and \
-                    (line[[i for i,char in enumerate((line)) if char.isdigit()][-1]+1] == '\n'):          
-                    config['last_recorded_value'] = float(line.split(
+                    (line[[i for i,char in enumerate((line)) if char.isdigit()][-1]+1] == '\n'):
+  
+                    config.last_recorded_value = float(line.split(
                                                     config.monitor_metric)[1].split('\n')[0].strip())
                     log.info(f"last recorded_value of {config.monitor_metric} retained from last \
-                                                            run {config['last_recorded_value']}")
+                                                            run {config.last_recorded_value}")
                     break
                 else:
                     continue
-                if not config['last_recorded_value']:
-                    log.info('setting default value to the last_recorded_value since not \
-                                able to find the metrics from the log')
-                    config['last_recorded_value'] = 0 if config.monitor_metric != 'validation_loss' else float('inf')
+        if config.last_recorded_value is None:
+            log.info('setting default value to the last_recorded_value since not \
+                        able to find the metrics from the log')
+            config.last_recorded_value = 0 if config.monitor_metric != 'validation_loss' else float('inf')
     except FileNotFoundError:
         log.info('setting default value to the last_recorded_value since file was not found')
         config['last_recorded_value'] = 0 if config.monitor_metric != 'validation_loss' else float('inf')

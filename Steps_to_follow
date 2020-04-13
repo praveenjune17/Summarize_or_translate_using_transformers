@@ -3,37 +3,32 @@
 
 ######################################################
 
+a)  create a single project
 Testing Rules
-
-Flow test
-
-for single_batch_size:
-	model_capacity check
-	input independent baseline
-	randomness check
-	initial loss check
-
-for batch_size in [single, multiple]:
-	run train pipeline
-	run eval pipeline
-
+*) estimated memory calculation
+*) seq length test
 #####################################################
+#) checkpoint test. run a model store its checkpoint and restart it
+#) gradient accumulation check
 #) remove eval_after bug
+#) tokens per batch
+#) filter function in preprocess
+#) two architecutre:- vanilla transformer, BERT_based_NLG, change the configs accordingly
+#) add decoding hyper parameters to config
+#) hyper parameter tuning
+#) BLEU score scareBLEU
+########################################################
 #) meaning full names
 #) if same code is repeated then use a function
-#) two architecutre:- vanilla transformer, BERT_based_NLG, change the configs accordingly
+#) separate script for specific functions
+#) functions should be small
+#) one method that clearly say what it does
+#) remove composite switch statements
+#) identify memory leakage
+####################################################
 #) embedding projector in tensorboard
-#) BLEU score scareBLEU
-#) tf.function to all keras objects.
 #) time taken for evaluation pipeline.
-#) run evaluation pipeline for more batches
-##########################################################
 #) GPU profiler
 #) Tensorflow graph optimizations
-##############
-a) regularize and run
-b) hyper parameter tuning
-c)separate script for python ops
-d)add decoding hyper parameters to config
-
+#) Tensorflow implementation of BERT score
 

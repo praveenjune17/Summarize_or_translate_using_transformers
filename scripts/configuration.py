@@ -72,7 +72,7 @@ h_parms = {
    'gradient_accumulation_steps': 2,                                                                                   
    'train_batch_size': 32,
    'beam_sizes': [2, 3, 4],              # Used  during inference                                                 
-   'combined_metric_weights': [0.4, 0.6], #(bert_score, rouge)
+   'combined_metric_weights': [0.7, 0.3], #(bert_score, rouge)
    'dropout_rate': 0.1,
    'epochs': 1,
    'epsilon_ls': 0.2,                    # label_smoothing hyper parameter

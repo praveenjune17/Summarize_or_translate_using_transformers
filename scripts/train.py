@@ -80,3 +80,4 @@ for (step, (input_ids, target_ids_)) in tqdm(enumerate(train_dataset), initial=1
                                         )
         if not monitor_early_stop:
             break
+log.info(f'Training completed at step {step+1}')
