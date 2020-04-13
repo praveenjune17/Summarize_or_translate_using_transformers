@@ -58,8 +58,12 @@ def run_inference(dataset, print_output=False):
           _, _, refined_output_sequence, _ = predict_using_sampling(input_ids, draft_type, refine_type, k=10)
       else:
           _, refined_output_sequence, _ = predict_using_beam_search(input_ids, refine_decoder_sampling_type=refine_type)
-      sum_ref = tokenizer.convert_ids_to_tokens([i for i in tf.squeeze(target_ids) if i not in [config.PAD_ID, config.CLS_ID, config.SEP_ID]])
-      sum_hyp = tokenizer.convert_ids_to_tokens([i for i in tf.squeeze(refined_output_sequence) if i not in [config.PAD_ID, config.CLS_ID, config.SEP_ID]])
+      sum_ref = tokenizer.convert_ids_to_tokens([i for i in tf.squeeze(target_ids) if i not in [config.PAD_ID, 
+                                                                                                config.target_CLS_ID, 
+                                                                                                config.target_SEP_ID]])
+      sum_hyp = tokenizer.convert_ids_to_tokens([i for i in tf.squeeze(refined_output_sequence) if i not in [config.PAD_ID, 
+                                                                                                             config.target_CLS_ID, 
+                                                                                                             config.target_SEP_ID]])
       sum_ref = convert_wordpiece_to_words(sum_ref)
       sum_hyp = convert_wordpiece_to_words(sum_hyp)
       if print_output:
