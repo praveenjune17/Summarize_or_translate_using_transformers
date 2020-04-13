@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import tensorflow_datasets as tfds
 from functools import partial
+from collections import defaultdict
 from configuration import config
 from creates import log
 
@@ -19,15 +20,20 @@ def pad(l, n, pad=config.PAD_ID):
 
 def encode(sent_1, sent_2, source_tokenizer, target_tokenizer, input_seq_len, output_seq_len):
     
-    input_ids = source_tokenizer.encode(sent_1.numpy().decode('utf-8'))
-    target_ids = target_tokenizer.encode(sent_2.numpy().decode('utf-8'))
-    # Account for [CLS] and [SEP] with "- 2"
-    if len(input_ids) > input_seq_len - 2:
-        input_ids = input_ids[0:(input_seq_len - 2)]
-    if len(target_ids) > (output_seq_len + 1) - 2:
-        target_ids = target_ids[0:((output_seq_len + 1) - 2)]
-    input_ids = pad(input_ids, input_seq_len)
-    target_ids = pad(target_ids, output_seq_len + 1)    
+    if config.use_BERT:
+        input_ids = [config.input_CLS_ID] + source_tokenizer.encode(sent_1.numpy().decode('utf-8'), 
+                                            add_special_tokens=False) + [config.input_SEP_ID]
+        target_ids = [config.target_CLS_ID] + target_tokenizer.encode(sent_2.numpy().decode('utf-8'), 
+                                            add_special_tokens=False) + [config.target_SEP_ID]
+        # Account for [CLS] and [SEP] with "- 2"
+        if len(input_ids) > input_seq_len - 2:
+            input_ids = input_ids[0:(input_seq_len - 2)]
+        if len(target_ids) > (output_seq_len + 1) - 2:
+            target_ids = target_ids[0:((output_seq_len + 1) - 2)]
+        input_ids = pad(input_ids, input_seq_len)
+        target_ids = pad(target_ids, output_seq_len + 1)    
+    input_ids = [config.input_CLS_ID] + source_tokenizer.encode(sent_1.numpy()) + [config.input_SEP_ID]
+    target_ids = [config.target_CLS_ID] + target_tokenizer.encode(sent_2.numpy()) + [config.target_SEP_ID]
     return input_ids, target_ids
 
 
@@ -53,8 +59,8 @@ def tf_encode(source_tokenizer, target_tokenizer, input_seq_len, output_seq_len)
 # Set threshold for input_sequence and  output_sequence length
 def filter_max_length(x, y):
     return tf.logical_and(
-                          tf.size(x[0]) <= config.input_seq_length,
-                          tf.size(y[0]) <= config.target_seq_length
+                          tf.math.count_nonzero(x) <= config.input_seq_length,
+                          tf.math.count_nonzero(y) <= config.target_seq_length
                          )
 
 def filter_combined_length(x, y):
@@ -62,13 +68,7 @@ def filter_combined_length(x, y):
                               (tf.math.count_nonzero(x) + tf.math.count_nonzero(y)), 
                               config.max_tokens_per_line
                              )
-                        
-# this function should be added after padded batch step
-def filter_batch_token_size(x, y):
-    return tf.math.less_equal(
-                              (tf.size(x[0]) + tf.size(y[0])), 
-                              config.max_tokens_per_line*config.train_batch_size
-                             )
+          
     
 def read_csv(path, num_examples):
     df = pd.read_csv(path)
@@ -88,36 +88,63 @@ def create_dataset(split,
                    use_tfds=True, 
                    shuffle=False, 
                    csv_path=None,
+                   drop_remainder=False,
                    num_examples_to_select=config.samples_to_test):
 
-  if use_tfds:
-      raw_dataset, _ = tfds.load(
-                                 config.tfds_name, 
-                                 with_info=True,
-                                 as_supervised=True, 
-                                 data_dir=config.tfds_data_dir,
-                                 builder_kwargs=config.tfds_data_version,
-                                 split=tfds.core.ReadInstruction(split, from_=from_, to=to, unit='%')
-                                )        
-  else:
-    input_seq, output_seq = read_csv(csv_path, num_examples_to_select)
-    raw_dataset = tf.data.Dataset.from_tensor_slices((input_seq, output_seq))
-    buffer_size = len(input_seq)
-  tf_dataset = raw_dataset.map(
-                               tf_encode(
-                                        source_tokenizer,
-                                        target_tokenizer, 
-                                        config.input_seq_length, 
-                                        config.target_seq_length
-                                        ), 
-                               num_parallel_calls=AUTOTUNE
-                               )
-  tf_dataset = tf_dataset.filter(filter_combined_length)
-  tf_dataset = tf_dataset.take(num_examples_to_select) 
-  tf_dataset = tf_dataset.cache()
-  if shuffle:
-     tf_dataset = tf_dataset.shuffle(buffer_size, seed = 100)
-  tf_dataset = tf_dataset.padded_batch(batch_size, padded_shapes=([-1], [-1]))
-  tf_dataset = tf_dataset.prefetch(buffer_size=AUTOTUNE)
-  log.info(f'{split} tf_dataset created')
-  return tf_dataset
+  
+    en_tam_ds = defaultdict(list)
+    record_count=0
+    #List of available datasets in the package
+    names = ['GNOME_v1_en_to_ta', 'GNOME_v1_en_AU_to_ta', 'GNOME_v1_en_CA_to_ta', 
+             'GNOME_v1_en_GB_to_ta', 'GNOME_v1_en_US_to_ta', 'KDE4_v2_en_to_ta', 
+             'KDE4_v2_en_GB_to_ta', 'Tatoeba_v20190709_en_to_ta', 'Ubuntu_v14.10_en_to_ta_LK', 
+             'Ubuntu_v14.10_en_GB_to_ta_LK', 'Ubuntu_v14.10_en_AU_to_ta_LK', 'Ubuntu_v14.10_en_CA_to_ta_LK', 
+             'Ubuntu_v14.10_en_US_to_ta_LK', 'Ubuntu_v14.10_en_to_ta', 'Ubuntu_v14.10_en_GB_to_ta', 
+             'Ubuntu_v14.10_en_AU_to_ta', 'Ubuntu_v14.10_en_CA_to_ta', 'Ubuntu_v14.10_en_NZ_to_ta', 
+             'Ubuntu_v14.10_en_US_to_ta', 'OpenSubtitles_v2018_en_to_ta', 'OpenSubtitles_v2016_en_to_ta',
+             'en_ta', 'github_joshua_en_ta']
+
+    for name in names:
+        en_tam_ds[(name,'metadata_'+name)] = tfds.load(f'{config.tfds_name}/'+name, 
+                                                      with_info=True, 
+                                                      as_supervised=True,
+                                                      data_dir=config.tfds_data_dir,
+                                                      builder_kwargs=config.tfds_data_version,
+                                                    )
+
+    
+
+    for i,j  in en_tam_ds.keys():
+        record_count+=(sum([i.num_examples for i in  list(en_tam_ds[(i, j)][1].splits.values())]))
+    if not config.test_script:
+        log.info(f'Total record count is {record_count}')
+    #initialize the first dataset to the train_examples variable
+    #Concatenate all the train datasets
+    if split == 'train':
+        raw_dataset = en_tam_ds[('GNOME_v1_en_to_ta', 'metadata_GNOME_v1_en_to_ta')][0]['train']
+        for typ in list(en_tam_ds.keys())[1:]:
+            raw_dataset = raw_dataset.concatenate(en_tam_ds[typ][0]['train'])
+      #validation and test sets are only available for a single typ
+    elif split == 'validation':
+        raw_dataset = en_tam_ds[('en_ta', 'metadata_en_ta')][0]['validation']
+    else:
+        raw_dataset = en_tam_ds[('en_ta', 'metadata_en_ta')][0]['test']        
+          
+    tf_dataset = raw_dataset.map(
+                                 tf_encode(
+                                          source_tokenizer,
+                                          target_tokenizer, 
+                                          config.input_seq_length, 
+                                          config.target_seq_length
+                                          ), 
+                                 num_parallel_calls=AUTOTUNE
+                                 )
+    tf_dataset = tf_dataset.filter(filter_max_length)
+    tf_dataset = tf_dataset.take(num_examples_to_select) 
+    tf_dataset = tf_dataset.cache()
+    if shuffle:
+        tf_dataset = tf_dataset.shuffle(buffer_size, seed = 100)
+    tf_dataset = tf_dataset.padded_batch(batch_size, padded_shapes=([-1], [-1]), drop_remainder=drop_remainder)
+    tf_dataset = tf_dataset.prefetch(buffer_size=AUTOTUNE)
+    log.info(f'{split} tf_dataset created')
+    return tf_dataset

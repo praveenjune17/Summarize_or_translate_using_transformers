@@ -15,95 +15,120 @@ from create_model import source_tokenizer, target_tokenizer
 from local_tf_ops import (check_ckpt, eval_step, train_step, batch_run_check, 
                           train_sanity_check, evaluate_validation_set)
 
-train_dataset = create_dataset(
+unit_test_dataset = create_dataset(
                               split='train', 
                               source_tokenizer=source_tokenizer, 
                               target_tokenizer=target_tokenizer, 
                               from_=90, 
                               to=100, 
-                              batch_size=config.train_batch_size
+                              batch_size=config.unit_test_dataset_batch_size
                               )
 
-# if a checkpoint exists, restore the latest checkpoint.
-ck_pt_mgr = check_ckpt(config.checkpoint_path)
-total_steps = int(config.epochs * (config.gradient_accumulation_steps))
-train_dataset = train_dataset.repeat(total_steps)
 
 def training_loop(dataset, check_model_capacity):
-  for (step, (input_ids, target_ids_)) in tqdm(enumerate(dataset), initial=1):
-    min_loss = 10000000
-    start=time.time()
-    draft_mask, refine_mask, target_ids = mask_and_one_hot_labels(target_ids_)
-    grad_accum_flag = True if (step+1)%config.gradient_accumulation_steps == 0 else False
-    refine_predictions = train_step(
-                                    input_ids,  
-                                    target_ids_, 
-                                    target_ids, 
-                                    draft_mask,
-                                    refine_mask,
-                                    grad_accum_flag
-                                    )
-    if grad_accum_flag:
-      train_loss = batch_run_check(
-                                  step+1,  
-                                  start
+    if check_model_capacity:
+        dataset = dataset.repeat(int(config.epochs))
+    for (step, (input_ids, target_ids_)) in tqdm(enumerate(dataset), initial=1):
+        min_loss = 10000000
+        start=time.time()
+        draft_mask, refine_mask, target_ids = mask_and_one_hot_labels(target_ids_)
+        grad_accum_flag = True if (step+1)%config.gradient_accumulation_steps == 0 else False
+        predictions = train_step(
+                                  input_ids,  
+                                  target_ids_, 
+                                  target_ids, 
+                                  draft_mask,
+                                  refine_mask,
+                                  grad_accum_flag
                                   )
-      if check_model_capacity:
-        if min_loss > train_loss:
-          min_loss = train_loss
-        else:
-          log.warning('Loss not decreasing watch out')
+        if grad_accum_flag:
+            train_loss = batch_run_check(
+                                      step+1,  
+                                      start
+                                      )
+            if check_model_capacity:
+                if min_loss > train_loss:
+                    min_loss = train_loss
+                else:
+                    log.warning('Loss not decreasing watch out')
 
-  if check_model_capacity:
-    if train_loss < config.min_train_loss:
-      log.info('Minimum training loss reached')
-    else:
-      log.info("Loss didn't reach upto the min_train_loss specified, try to increase \
-                the parameters of the model and check the run again")
+    if config.detokenize_samples:
+        _ = train_sanity_check(target_tokenizer, predictions, target_ids_)
+
+    if check_model_capacity:
+      
+        if train_loss < config.min_train_loss:
+            log.info('Minimum training loss reached')
+        else:
+            log.info("Loss didn't reach upto the min_train_loss specified, try to increase \
+                  the parameters of the model and check the run again")
 
 if config.random_results_check:
-  training_loop(train_dataset.take(2), False)
-  log.info('First run over. Restart the run time and run the script again')
-  sys.exit()
+    training_loop(unit_test_dataset, False)
+    log.info('First run completed')
+    training_loop(unit_test_dataset, False)
+    log.info('Second run completed')
+    training_loop(unit_test_dataset, False)
+    log.info('Third run completed')
+    log.info('Verify whether the results are same')
+    sys.exit()
 
 if config.init_loss_check:
-  input_ids, target_ids_ = next(iter(train_dataset))
-  draft_mask, refine_mask, target_ids = mask_and_one_hot_labels(target_ids_)
-  loss =  eval_step(
-                    input_ids,  
-                    target_ids_, 
-                    target_ids, 
-                    draft_mask,
-                    refine_mask
-                    )
-  log.info(f"Model's Initial loss {loss}")
-  # 2:- Draft and Refine decoders
-  log.info(f'Expected initial loss {tf.math.log(tf.cast(config.target_vocab_size, dtype=tf.float32))*2}')
-  log.info(f'Initial Loss check run completed')
+    input_ids, target_ids_ = next(iter(unit_test_dataset))
+    draft_mask, refine_mask, target_ids = mask_and_one_hot_labels(target_ids_)
+    loss =  eval_step(
+                      input_ids,  
+                      target_ids_, 
+                      target_ids, 
+                      draft_mask,
+                      refine_mask
+                      )
+    log.info(f"Model's Initial loss {loss}")
+    log.info(f'Expected initial loss {tf.math.log(tf.cast(config.target_vocab_size, dtype=tf.float32))*config.num_of_decoders}')
+    log.info(f'Initial Loss check run completed')
 
 if config.input_independent_baseline_check:
-  for (step, (input_ids, target_ids_)) in tqdm(enumerate(train_dataset.take(20)), initial=1):
-    start=time.time()
-    input_ids = tf.zeros_like(input_ids)
-    target_ids_ = tf.zeros_like(target_ids_)
-    draft_mask, refine_mask, target_ids = mask_and_one_hot_labels(target_ids_)
-    grad_accum_flag = True if (step+1)%config.gradient_accumulation_steps == 0 else False
-    refine_predictions = train_step(
-                                    input_ids,  
-                                    target_ids_, 
-                                    target_ids, 
-                                    draft_mask,
-                                    refine_mask,
-                                    grad_accum_flag
-                                    )
-    batch_run_check(
-                  step+1,  
-                  start
-                  )
-  log.info('Input Independent baseline run completed')
-  sys.exit()
+    for (step, (input_ids, target_ids_)) in tqdm(enumerate(unit_test_dataset), initial=1):
+        start=time.time()
+        input_ids = tf.zeros_like(input_ids)
+        target_ids_ = tf.zeros_like(target_ids_)
+        draft_mask, refine_mask, target_ids = mask_and_one_hot_labels(target_ids_)
+        grad_accum_flag = True if (step+1)%config.gradient_accumulation_steps == 0 else False
+        _ = train_step(
+                      input_ids,  
+                      target_ids_, 
+                      target_ids, 
+                      draft_mask,
+                      refine_mask,
+                      grad_accum_flag
+                      )
+        batch_run_check(
+                      step+1,  
+                      start
+                      )
+    log.info('Input Independent baseline run completed')
+    sys.exit()
 
 if config.check_model_capacity:
-  training_loop(train_dataset, True)
-  sys.exit()
-  
+    training_loop(unit_test_dataset, True)
+    sys.exit()
+
+if config.check_training_pipeline:
+    training_loop(unit_test_dataset, False)
+    
+if config.check_evaluation_pipeline:
+    #ck_pt_mgr = check_ckpt(config.checkpoint_path)
+    rouge, bert = evaluate_validation_set(
+                              unit_test_dataset, 
+                              1
+                              )
+    monitor_early_stop = monitor_run(
+                                    'not saving', 
+                                    bert, 
+                                    rouge,
+                                    0.0, 
+                                    1
+                                    )
+    log.info(f'Validation run completed with ROUGE-avg {rouge} and BERT-f1 {bert}\
+               Check the written summary file in {config.output_sequence_write_path}')
+    sys.exit()

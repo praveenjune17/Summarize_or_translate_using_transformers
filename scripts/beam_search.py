@@ -30,7 +30,7 @@ from tensorflow.python.util import nest
 from configuration import config
 
 # Assuming EOS_ID is 1
-EOS_ID = config.SEP_ID
+EOS_ID = config.target_SEP_ID
 # Default value for INF
 INF = 1. * 1e7
 
