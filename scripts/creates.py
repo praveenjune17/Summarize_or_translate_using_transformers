@@ -117,9 +117,9 @@ def check_recorded_metric_val():
         config['last_recorded_value'] = 0 if config.monitor_metric != 'validation_loss' else float('inf')
 
 
+check_and_create_dir()
 log = create_logger()
 set_memory_growth(log)
-check_and_create_dir()
 validate_config_parameters()
 (train_output_sequence_writer,
 valid_output_sequence_writer) = create_tensorboard_parms()

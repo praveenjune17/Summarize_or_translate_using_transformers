@@ -2,7 +2,6 @@
 #                  b)https://github.com/raufer/bert-summarization/tree/master/models
 import tensorflow as tf
 tf.random.set_seed(100)
-import tensorflow_addons as tfa
 from configuration import config
 from creates import log
 from beam_search import beam_search

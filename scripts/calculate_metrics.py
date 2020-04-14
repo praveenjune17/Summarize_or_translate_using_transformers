@@ -62,11 +62,11 @@ def loss_function(real, pred, mask):
     loss_  = loss_object(real, pred)
     mask   = tf.cast(mask, dtype=loss_.dtype)
     loss_ *= mask
-    return loss_
+    return tf.reduce_sum(loss_)/tf.reduce_sum(mask)
 
 def get_loss_and_accuracy():
     loss = tf.keras.metrics.Mean()
-    accuracy = tf.keras.metrics.SparseCategoricalAccuracy()
+    accuracy = tf.keras.metrics.SparseCategoricalAccuracy(name='Accuracy')
     return(loss, accuracy)
     
 def write_output_sequence(tar_real, predictions, step, write_output_seq):

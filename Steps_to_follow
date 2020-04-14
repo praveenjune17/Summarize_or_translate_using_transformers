@@ -16,12 +16,12 @@ for batch_size in [single, multiple]:
 	run train pipeline
 	run eval pipeline
 
-#) create the same model and test modify config
-#) beam_search 1 == greedy?
+#) Shuffle it in the next run
+#) tokens per batch :- when GPU runs out of memory
+#) print checks required
 #) gradient accumulation test
 #) remove eval_after bug
 #) early monitor check
-#) tokens per batch :- when GPU runs out of memory
 #) BLEU score scareBLEU
 
 
@@ -74,5 +74,5 @@ Testing Rules
 #) GPU profiler
 #) Tensorflow graph optimizations
 #) Tensorflow implementation of BERT score
->>>>>>> b3888fb41bd7b2958f940ef71889130a5d4c1360
+
 

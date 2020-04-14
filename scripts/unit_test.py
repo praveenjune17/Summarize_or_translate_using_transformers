@@ -132,3 +132,17 @@ if config.check_evaluation_pipeline:
     log.info(f'Validation run completed with ROUGE-avg {rouge} and BERT-f1 {bert}\
                Check the written summary file in {config.output_sequence_write_path}')
     sys.exit()
+
+if config.detokenize_samples:
+    source_tokenizer = tfds.features.text.SubwordTextEncoder.load_from_file(config.input_seq_vocab_path)
+    target_tokenizer = tfds.features.text.SubwordTextEncoder.load_from_file(config.output_seq_vocab_path)
+  
+    sample_string = 'Transformer is awesome.'
+
+    tokenized_string = source_tokenizer.encode(sample_string)
+    print ('Tokenized string is {}'.format(tokenized_string))
+
+    original_string = source_tokenizer.decode(tokenized_string)
+    print ('The original string: {}'.format(original_string))
+
+    assert original_string == sample_string, 'Encoding issue with tokenizer'

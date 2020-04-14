@@ -199,9 +199,7 @@ class AbstractiveSummarization(tf.keras.Model):
                                           enc_output, 
                                           dec_padding_mask, 
                                           batch_size,
-                                          beam_size=config.beam_size,
-                                          beam_size,
-                                          batch_size
+                                          beam_size=config.beam_size
                                           ):
 
         log.info(f"Building: 'Draft beam search decoder'")

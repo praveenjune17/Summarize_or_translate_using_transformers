@@ -70,15 +70,15 @@ def train_step(input_ids,
                                                         refine_mask
                                                         )
             predictions = refine_predictions
-            train_accuracy(target_ids_[:, :-1], predictions)  
+            target = target_ids_[:, :-1]
         else:
             refine_output_sequence_loss = 0
             predictions = draft_predictions
-            train_accuracy(target_ids_[:, 1:], predictions)  
-            regularization_loss = tf.add_n(Model.losses)
-            loss = draft_output_sequence_loss + refine_output_sequence_loss 
-            loss = tf.reduce_mean(loss) + regularization_loss
-            scaled_loss = optimizer.get_scaled_loss(loss)
+            target = target_ids_[:, 1:]
+              
+        regularization_loss = tf.add_n(Model.losses)
+        loss = draft_output_sequence_loss + refine_output_sequence_loss + regularization_loss
+        scaled_loss = optimizer.get_scaled_loss(loss)
     scaled_gradients  = tape.gradient(scaled_loss, train_variables)
     gradients = optimizer.get_unscaled_gradients(scaled_gradients)
     # Initialize the shadow variables with same type as the gradients 
@@ -95,7 +95,7 @@ def train_step(input_ids,
         for accumulator in (gradient_accumulators):
             accumulator.assign(tf.zeros_like(accumulator))
         train_loss(loss)
-      
+        train_accuracy(target, predictions)
     return predictions
 
 @tf.function(input_signature=val_step_signature)
@@ -170,9 +170,7 @@ def eval_step(input_ids,
     else:
       refine_output_sequence_loss = 0
     regularization_loss = tf.add_n(Model.losses)
-    loss = draft_output_sequence_loss + refine_output_sequence_loss 
-    denominator = tf.cast(tf.math.count_nonzero(loss), dtype=tf.float32)
-    loss = (tf.reduce_sum(loss)/denominator) + regularization_loss
+    loss = draft_output_sequence_loss + refine_output_sequence_loss + regularization_loss
     log.info(Model.summary())
     if config.save_initial_weights:
         initial_weights = os.path.join(config.initial_weights,'initial_weights')
