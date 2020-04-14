@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
+import platform
 from bunch import Bunch
 
 unit_test = {
@@ -22,11 +23,7 @@ model_parms = {
      'add_bias' : None,               # set values as True|None Increases the inital bias of Tamil vocabs
      'activation' : 'relu',
      'bert_score_model' : 'bert-base-multilingual-cased',
-<<<<<<< HEAD
      'copy_gen': False,
-=======
-     'copy_gen': True,
->>>>>>> b3888fb41bd7b2958f940ef71889130a5d4c1360
      'input_seq_length': 60,
      'd_model': 768,                  # the projected word vector dimension
      'dff': 2048,                      # feed forward network hidden parameters
@@ -46,13 +43,9 @@ training_parms = {
      'early_stop' : True,
      'enable_jit' : True,
      'eval_after' : 5000,              # Evaluate once this many samples are trained 
-     'last_recorded_value': 0.00,
+     'last_recorded_value': None,
      'max_tokens_per_line' : model_parms['input_seq_length']+model_parms['target_seq_length'],      # filter documents based on this many tokens
-<<<<<<< HEAD
      'min_train_loss' : 1.0,
-=======
-     'min_train_loss' : 1,
->>>>>>> b3888fb41bd7b2958f940ef71889130a5d4c1360
      'monitor_metric' : 'combined_metric',
      'print_chks': 50,                  # print training progress per number of batches specified
      'run_tensorboard': True,
@@ -79,17 +72,10 @@ special_tokens = {
 h_parms = {
    'gradient_accumulation_steps': 2,                                                                                   
    'train_batch_size': 32,
-<<<<<<< HEAD
    'beam_size': 3,              # Used  during inference                                                 
    'combined_metric_weights': [0.7, 0.3], #(bert_score, rouge)
    'dropout_rate': 0.1,
    'epochs': 2,
-=======
-   'beam_sizes': [2, 3, 4],              # Used  during inference                                                 
-   'combined_metric_weights': [0.7, 0.3], #(bert_score, rouge)
-   'dropout_rate': 0.1,
-   'epochs': 1,
->>>>>>> b3888fb41bd7b2958f940ef71889130a5d4c1360
    'epsilon_ls': 0.2,                    # label_smoothing hyper parameter
    'grad_clipnorm':None,
    'l2_norm':0.001,
@@ -101,23 +87,28 @@ h_parms = {
    }                                    
 
 dataset_name = training_parms['tfds_name']
-core_path = 'D:\\Local_run'
+if platform.system() == 'Windows':
+  path_seperator = '\\'
+else:
+  path_seperator = '/'
+core_path = os.getcwd()
 
 file_path = {
-        'best_ckpt_path' : os.path.join(core_path, f"best_checkpoints\\{dataset_name}\\"),  
-        'checkpoint_path' : os.path.join(core_path, f"checkpoints\\{dataset_name}\\"),
-        'initial_weights' : os.path.join(core_path, f"initial_weights\\{dataset_name}\\"),
+        'best_ckpt_path' : os.path.join(core_path, f"best_checkpoints{path_seperator}{dataset_name}{path_seperator}"),  
+        'checkpoint_path' : os.path.join(core_path, f"checkpoints{path_seperator}{dataset_name}{path_seperator}"),
+        'initial_weights' : os.path.join(core_path, f"initial_weights{path_seperator}{dataset_name}{path_seperator}"),
         'infer_csv_path' : None,
         'infer_ckpt_path' : None,
-        'log_path' : os.path.join(core_path, f"created_files\\{dataset_name}\\tensorflow.log"),
-        'output_sequence_write_path' : os.path.join(core_path, f"created_files\\{dataset_name}\\summaries\\{dataset_name}\\"),
+        'log_path' : os.path.join(core_path, f"created_files{path_seperator}{dataset_name}{path_seperator}tensorflow.log"),
+        'output_sequence_write_path' : os.path.join(core_path, f"created_files{path_seperator}{dataset_name}{path_seperator}\
+                                                                 summaries{path_seperator}{dataset_name}{path_seperator}"),
         'serialized_tensor_path' : os.path.join("/content/drive/My Drive/", 'saved_serialized_tensor_3'),
-        'tensorboard_log' : os.path.join(core_path, f"created_files\\{dataset_name}\\tensorboard_logs/"),
-        'tfds_data_dir' : 'D:\\Local_run\\Tensorflow_datasets\\en_tam_parallel_text_dataset',
-        'tfds_data_version' : None,#{"version": "2.0.0"},
+        'tensorboard_log' : os.path.join(core_path, f"created_files{path_seperator}{dataset_name}{path_seperator}tensorboard_logs/"),
+        'tfds_data_dir' : os.path.join(core_path, f'Tensorflow_datasets{path_seperator}en_tam_parallel_text_dataset'),
+        'tfds_data_version' : None,
         'train_csv_path' : None,
-        'input_seq_vocab_path' : 'D:\\Local_run\\TFDS_vocab_files\\vocab_en',
-        'output_seq_vocab_path' : 'D:\\Local_run\\TFDS_vocab_files\\vocab_ta',
+        'input_seq_vocab_path' : os.path.join(core_path, f"TFDS_vocab_files{path_seperator}{dataset_name}{path_seperator}vocab_en"),
+        'output_seq_vocab_path' : os.path.join(core_path, f"TFDS_vocab_files{path_seperator}{dataset_name}{path_seperator}vocab_ta"),
             }
 if not training_parms['use_tfds']:
     training_parms['num_examples_to_train'] = None     # If None then all the examples in the dataset will be used to train
