@@ -16,8 +16,7 @@ def with_column(x, i, column):
     return :: (N, T)
     """
     left = x[:, :i]
-    right = x[:, i+1:]
-        
+    right = x[:, i+1:]      
     return tf.concat([left, column, right], axis=1)
 
 def mask_timestamp(x, i, mask_with):
@@ -30,18 +29,14 @@ def mask_timestamp(x, i, mask_with):
     x :: (N, T)
     return :: (N, T)
     """
-<<<<<<< HEAD
     N, _ = tf.shape(x)[0], tf.shape(x)[1]
     mask = tf.ones([N, 1], dtype=x.dtype) * mask_with
     masked = with_column(x, i, mask)
-=======
     N, T = tf.shape(x)[0], tf.shape(x)[1]
     left = x[:, :i]
     right = x[:, i+1:]
     mask = tf.ones([N, 1], dtype=x.dtype) * mask_with
     masked = tf.concat([left, mask, right], axis=1)
->>>>>>> b3888fb41bd7b2958f940ef71889130a5d4c1360
-
     return masked
 
 def create_padding_mask(seq):
@@ -57,7 +52,6 @@ def create_padding_mask(seq):
     # (batch_size, 1, 1, seq_len)
     return seq[:, tf.newaxis, tf.newaxis, :]  
 
-<<<<<<< HEAD
 def tile_and_mask_diagonal(x, mask_with):
     """    
     Masks each word in the summary draft one by one with the [MASK] token
@@ -80,11 +74,8 @@ def tile_and_mask_diagonal(x, mask_with):
     masked = tf.linalg.set_diag(masked, diag)    
     masked = tf.concat([first, masked], axis=2)    
     masked = tf.reshape(masked, [N*T, T+1])
+    return maskeds
 
-    return masked
-
-=======
->>>>>>> b3888fb41bd7b2958f940ef71889130a5d4c1360
 def sampling(logits):
     sample = tf.random.categorical(logits, num_samples=1, dtype=tf.int32, seed=1)
     return sample
@@ -152,34 +143,6 @@ def topp_topk(logits, batch_size, p, k):
 
     return sample
 
-<<<<<<< HEAD
-=======
-def tile_and_mask_diagonal(x, mask_with):
-    """    
-    Masks each word in the summary draft one by one with the [MASK] token
-    At t-th time step the t-th word of input summary is
-    masked, and the decoder predicts the refined word given other
-    words of the summary.
-    
-    x :: (N, T)
-    returrn :: (N, T-1, T)
-    
-    We do not mask the first and last postition (corresponding to [CLS]
-    """
-
-    N, T = tf.shape(x)[0], tf.shape(x)[1]
-    first = tf.reshape(tf.tile(x[:, 0], [T-1]), [N, T-1, 1])    
-    x = x[:, 1:]
-    T = T - 1    
-    masked = tf.reshape(tf.tile(x, [1, T]), [N, T, T])    
-    diag = tf.ones([N, T], dtype=masked.dtype) * mask_with
-    masked = tf.linalg.set_diag(masked, diag)    
-    masked = tf.concat([first, masked], axis=2)    
-    masked = tf.reshape(masked, [N*T, T+1])
-
-    return masked
-
->>>>>>> b3888fb41bd7b2958f940ef71889130a5d4c1360
 def sampling_decoder(decoder_type, decoder_op, batch_size, temperature, p, k):
 
     if decoder_type == 'nucleus':
@@ -193,10 +156,5 @@ def sampling_decoder(decoder_type, decoder_op, batch_size, temperature, p, k):
     elif decoder_type == 'greedy':
         predictions = tf.cast(tf.argmax(decoder_op, axis=-1), tf.int32)
     else:
-<<<<<<< HEAD
-        raise RuntimeError('Incorrect decoder_type')
-=======
         raise RuntimeError('Incorrect decoder_type given')
->>>>>>> b3888fb41bd7b2958f940ef71889130a5d4c1360
-
     return predictions

@@ -31,16 +31,10 @@ def encode(sent_1, sent_2, source_tokenizer, target_tokenizer, input_seq_len, ou
         if len(target_ids) > (output_seq_len + 1) - 2:
             target_ids = target_ids[0:((output_seq_len + 1) - 2)]
         input_ids = pad(input_ids, input_seq_len)
-<<<<<<< HEAD
-        target_ids = pad(target_ids, output_seq_len + 1)    
-    input_ids = [config.input_CLS_ID] + source_tokenizer.encode(sent_1.numpy()) + [config.input_SEP_ID]
-    target_ids = [config.target_CLS_ID] + target_tokenizer.encode(sent_2.numpy()) + [config.target_SEP_ID]
-=======
         target_ids = pad(target_ids, output_seq_len + 1)
     else:    
       input_ids = [config.input_CLS_ID] + source_tokenizer.encode(sent_1.numpy()) + [config.input_SEP_ID]
       target_ids = [config.target_CLS_ID] + target_tokenizer.encode(sent_2.numpy()) + [config.target_SEP_ID]
->>>>>>> b3888fb41bd7b2958f940ef71889130a5d4c1360
     return input_ids, target_ids
 
 
