@@ -1,6 +1,9 @@
 import tensorflow as tf
 import tensorflow_datasets as tfds
+<<<<<<< HEAD
 import tensorflow_addons as tfa
+=======
+>>>>>>> b3888fb41bd7b2958f940ef71889130a5d4c1360
 from tensorflow.keras.initializers import Constant
 from beam_search import beam_search
 from transformers import TFBertModel, BertTokenizer
@@ -192,13 +195,22 @@ class AbstractiveSummarization(tf.keras.Model):
             
         # (batch_size, seq_len, vocab_len), (batch_size, seq_len), (_)
         return dec_input, attention_dist
+<<<<<<< HEAD
 
+=======
+    @tf.function
+>>>>>>> b3888fb41bd7b2958f940ef71889130a5d4c1360
     def draft_output_sequence_beam_search(self,
                                           input_ids, 
                                           enc_output, 
                                           dec_padding_mask, 
+<<<<<<< HEAD
                                           batch_size,
                                           beam_size=config.beam_size                                          
+=======
+                                          beam_size,
+                                          batch_size
+>>>>>>> b3888fb41bd7b2958f940ef71889130a5d4c1360
                                           ):
 
         log.info(f"Building: 'Draft beam search decoder'")
@@ -226,7 +238,11 @@ class AbstractiveSummarization(tf.keras.Model):
                             [config.target_CLS_ID] * batch_size, 
                             beam_size, 
                             config.target_seq_length, 
+<<<<<<< HEAD
                             config.target_vocab_size, 
+=======
+                            config.input_vocab_size, 
+>>>>>>> b3888fb41bd7b2958f940ef71889130a5d4c1360
                             config.length_penalty, 
                             stop_early=False, 
                             eos_id=[[config.target_SEP_ID]]
@@ -327,6 +343,7 @@ class AbstractiveSummarization(tf.keras.Model):
             enc_output = self.encoder(inp, False, dec_padding_mask)
         # (batch_size, seq_len, vocab_len), 
         #  ()
+<<<<<<< HEAD
         if draft_decoder_sampling_type=='beam_search':
             predicted_beam_search_op = self.draft_output_sequence_beam_search(inp, 
                                                                               enc_output, 
@@ -348,6 +365,19 @@ class AbstractiveSummarization(tf.keras.Model):
                                                                           k=k,
                                                                         )
 
+=======
+        (predicted_draft_output_sequence, 
+                    draft_attention_dist) = self.draft_output_sequence_sampling(
+                                                                      inp,
+                                                                      enc_output=enc_output,
+                                                                      look_ahead_mask=None,
+                                                                      padding_mask=dec_padding_mask,
+                                                                      decoder_type=draft_decoder_sampling_type,
+                                                                      temperature=temperature,
+                                                                      p=p, 
+                                                                      k=k,
+                                                                    )
+>>>>>>> b3888fb41bd7b2958f940ef71889130a5d4c1360
         if config.use_refine_decoder:
           # (batch_size, seq_len, vocab_len), 
           # ()

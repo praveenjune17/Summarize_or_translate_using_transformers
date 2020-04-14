@@ -3,6 +3,7 @@
 
 ######################################################
 
+<<<<<<< HEAD
 Testing Rules
 
 Flow test
@@ -46,4 +47,34 @@ d)add decoding hyper parameters to config
 #) Tensorflow graph optimizations
 
 
+=======
+a)  create a single project
+Testing Rules
+*) estimated memory calculation
+*) seq length test
+#####################################################
+#) checkpoint test. run a model store its checkpoint and restart it
+#) gradient accumulation check
+#) remove eval_after bug
+#) tokens per batch
+#) filter function in preprocess
+#) two architecutre:- vanilla transformer, BERT_based_NLG, change the configs accordingly
+#) add decoding hyper parameters to config
+#) hyper parameter tuning
+#) BLEU score scareBLEU
+########################################################
+#) meaning full names
+#) if same code is repeated then use a function
+#) separate script for specific functions
+#) functions should be small
+#) one method that clearly say what it does
+#) remove composite switch statements
+#) identify memory leakage
+####################################################
+#) embedding projector in tensorboard
+#) time taken for evaluation pipeline.
+#) GPU profiler
+#) Tensorflow graph optimizations
+#) Tensorflow implementation of BERT score
+>>>>>>> b3888fb41bd7b2958f940ef71889130a5d4c1360
 

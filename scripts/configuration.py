@@ -22,7 +22,11 @@ model_parms = {
      'add_bias' : None,               # set values as True|None Increases the inital bias of Tamil vocabs
      'activation' : 'relu',
      'bert_score_model' : 'bert-base-multilingual-cased',
+<<<<<<< HEAD
      'copy_gen': False,
+=======
+     'copy_gen': True,
+>>>>>>> b3888fb41bd7b2958f940ef71889130a5d4c1360
      'input_seq_length': 60,
      'd_model': 768,                  # the projected word vector dimension
      'dff': 2048,                      # feed forward network hidden parameters
@@ -42,9 +46,13 @@ training_parms = {
      'early_stop' : True,
      'enable_jit' : True,
      'eval_after' : 5000,              # Evaluate once this many samples are trained 
-     'last_recorded_value': None,
+     'last_recorded_value': 0.00,
      'max_tokens_per_line' : model_parms['input_seq_length']+model_parms['target_seq_length'],      # filter documents based on this many tokens
+<<<<<<< HEAD
      'min_train_loss' : 1.0,
+=======
+     'min_train_loss' : 1,
+>>>>>>> b3888fb41bd7b2958f940ef71889130a5d4c1360
      'monitor_metric' : 'combined_metric',
      'print_chks': 50,                  # print training progress per number of batches specified
      'run_tensorboard': True,
@@ -71,10 +79,17 @@ special_tokens = {
 h_parms = {
    'gradient_accumulation_steps': 2,                                                                                   
    'train_batch_size': 32,
+<<<<<<< HEAD
    'beam_size': 3,              # Used  during inference                                                 
    'combined_metric_weights': [0.7, 0.3], #(bert_score, rouge)
    'dropout_rate': 0.1,
    'epochs': 2,
+=======
+   'beam_sizes': [2, 3, 4],              # Used  during inference                                                 
+   'combined_metric_weights': [0.7, 0.3], #(bert_score, rouge)
+   'dropout_rate': 0.1,
+   'epochs': 1,
+>>>>>>> b3888fb41bd7b2958f940ef71889130a5d4c1360
    'epsilon_ls': 0.2,                    # label_smoothing hyper parameter
    'grad_clipnorm':None,
    'l2_norm':0.001,
