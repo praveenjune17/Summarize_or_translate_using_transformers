@@ -1,11 +1,49 @@
-*) create preprocessing pipeline with spell check or code telling possible mispelled words
-*) Generalize the text summarization BERT script to suit Machine translation
-*) Encoder part should be BERT_base. 
-*) Decoder part should be multilingual BERT. Embeddings for Tamil words are extracted from it.
-*) Seperate BERT-BASE and BERT-multilingual vocab should be used
-*) Add the text summarization model to Hugging face.
-*) evaluate the model
 *) Client script creation (spell check, preprocess) 
 *) encode without tf.py_function https://colab.research.google.com/drive/1IAIeaTdl4bJlWxDJS6AXFnBCg1B92E5Z#scrollTo=NsaUPscGZ-Mq
+
+######################################################
+
+Testing Rules
+
+Flow test
+
+for single_batch_size:
+	model_capacity check
+	input independent baseline
+	randomness check
+	initial loss check
+
+for batch_size in [single, multiple]:
+	run train pipeline
+	run eval pipeline
+
+#) create the same model and test modify config
+#) beam_search 1 == greedy?
+#) gradient accumulation test
+#) remove eval_after bug
+#) early monitor check
+#) tokens per batch :- when GPU runs out of memory
+#) BLEU score scareBLEU
+
+
+#) add signatures to tf.function 
+a) professionalize
+c)separate script for python ops
+d)add decoding hyper parameters to config
+#) improvize detokenize
+#) two architecture:- vanilla transformer, BERT_based_NLG, change the configs accordingly
+#) seperate out translation and summarize 
+	#) metrics
+	#) preprocess 
+#####################################################
+
+#) embedding projector in tensorboard
+#) time taken for evaluation pipeline.
+#) run evaluation pipeline for more batches
+
+##########################################################
+#) GPU profiler
+#) Tensorflow graph optimizations
+
 
 
