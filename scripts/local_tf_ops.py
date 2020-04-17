@@ -19,9 +19,6 @@ optimizer = mixed_precision.LossScaleOptimizer(optimizer, loss_scale='dynamic')
 train_step_signature = [
                       tf.TensorSpec(shape=(None, None), dtype=tf.int32),
                       tf.TensorSpec(shape=(None, None), dtype=tf.int32),
-                      tf.TensorSpec(shape=(None, None, None), dtype=tf.float32),
-                      tf.TensorSpec(shape=(None, None), dtype=tf.bool),
-                      tf.TensorSpec(shape=(None, None), dtype=tf.bool),
                       tf.TensorSpec(shape=(None), dtype=tf.bool)
                       ]
 

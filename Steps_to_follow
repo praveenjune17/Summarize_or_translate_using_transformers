@@ -23,8 +23,6 @@ for batch_size in [single, multiple]:
 #) separate script for python ops
 
 #) check the output of mask and loss
-#) tokens per batch and find out at what number of tokens per batch does GPU runs out of memory
-#) add early monitor check to unit test
 #) gradient accumulation test
 
 #) BLEU score scareBLEU or from official.transformer import compute_bleu

@@ -335,10 +335,10 @@ class Bertified_transformer(tf.keras.Model):
 
     @tf.function(input_signature=call_signature)
     def call(self, input_ids, dec_padding_mask, enc_padding_mask=None, 
-           look_ahead_mask=None, tar=None, training=None):
+           look_ahead_mask=None, target_ids=None, training=None):
 
         if training is not None:
-            return self.fit(self, input_ids, tar, training, enc_padding_mask, 
+            return self.fit(self, input_ids, target_ids, training, enc_padding_mask, 
                         look_ahead_mask, dec_padding_mask)
         else:
             return self.predict(self, input_ids, dec_padding_mask)

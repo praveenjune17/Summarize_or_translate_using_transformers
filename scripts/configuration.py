@@ -53,7 +53,7 @@ training_parms = {
      'steps_to_print_training_info': 50,                  # print training progress per number of batches specified
      'tfds_name' : 'en_tam_parallel_text',     # tfds dataset to be used
      'tolerance' : 0,
-     'tolerance_threshold': 5,          # Stop training after the threshold is reached
+     'tolerance_threshold': 3,          # Stop training after the threshold is reached
      'tokens_per_batch' : 3200,
      'use_tfds' : True,                 # use tfds datasets as to train the model else use the given csv file
      'use_last_recorded_value' : True,

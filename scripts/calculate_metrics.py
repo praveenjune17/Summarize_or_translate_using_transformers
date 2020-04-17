@@ -185,7 +185,6 @@ def monitor_run(ckpt_save_path,
         config.tolerance+=1
     
     # stop if minimum training loss is reached
-
     if train_loss < config.min_train_loss:
         log.info(f'Stop training since minimum training loss reached')
         return False

@@ -6,6 +6,8 @@ tf.keras.backend.clear_session()
 tf.random.set_seed(100)
 import time
 import sys
+import GPUtil
+from io import StringIO
 from tqdm import tqdm
 from preprocess import create_dataset
 from configuration import config
@@ -23,7 +25,30 @@ unit_test_dataset = create_dataset(
                               to=100, 
                               batch_size=config.unit_test_dataset_batch_size
                               )
+def check_gpu_usage():
+    old_stdout = sys.stdout
+    sys.stdout = mystdout = StringIO()
+    GPUtil.showUtilization()
+    sys.stdout = old_stdout
+    gpu_usage = mystdout.getvalue().strip().split('|')[-2].strip()
+    return gpu_usage
 
+def change_dataset_and_train(addtional_tokens_per_batch, batch_size):
+    
+    memory_test_dataset = create_dataset(
+                              split='train', 
+                              source_tokenizer=source_tokenizer, 
+                              target_tokenizer=target_tokenizer, 
+                              from_=90, 
+                              to=100, 
+                              batch_size=batch_size
+                              )
+    training_loop(memory_test_dataset.repeat(10), False)
+    gpu_usage = check_gpu_usage()
+    log.info(f'Training with tokens_per_batch set to {addtional_tokens_per_batch}\
+               and batch_size set to {batch_size}')
+    log.info(f'GPU memory utilization is {gpu_usage}')
+    return gpu_usage
 
 def training_loop(dataset, check_model_capacity):
     if check_model_capacity:
@@ -38,6 +63,7 @@ def training_loop(dataset, check_model_capacity):
                                   target_ids, 
                                   grad_accum_flag
                                   )
+
         if grad_accum_flag:
             train_loss = batch_run_check(
                                       step+1,  
@@ -123,6 +149,8 @@ if config.check_evaluation_pipeline:
                                     0.0, 
                                     1
                                     )
+    if not monitor_early_stop:
+        break
     log.info(f'Validation run completed with ROUGE-avg {rouge} and BERT-f1 {bert}\
                Check the written summary file in {config.output_sequence_write_path}')
     sys.exit()
@@ -140,6 +168,7 @@ if config.detokenize_samples:
     print ('The original string: {}'.format(original_string))
 
     assert original_string == sample_string, 'Encoding issue with tokenizer'
+    sys.exit()
 
 if config.check_predictions_shape:
     temp_input = tf.random.uniform((64, 38), dtype=tf.int64, minval=0, maxval=200)
@@ -165,9 +194,17 @@ if config.check_predictions_shape:
                              dec_padding_mask=None, 
                              enc_padding_mask=None, 
                              look_ahead_mask=None,
-                             temp_target, 
+                             target_ids=temp_target, 
                              training=False, 
                              )
     log.info(f'The output shape of the sample model is {fn_out.shape}')
+    sys.exit()
 
-    
+if config.GPU_memory_test:
+    gpu_usage = check_gpu_usage()
+    while float(gpu_usage[:-1]) < 80:
+        gpu_usage = change_dataset_and_train(config.tokens_per_batch, config.train_batch_size)
+        config.tokens_per_batch += 500
+        log.info('Increasing tokens_per_batch to 500')
+    log.info('GPU memory exceeded "80%" hence stopping the training')
+    sys.exit()
