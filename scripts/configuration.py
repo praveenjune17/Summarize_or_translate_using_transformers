@@ -74,7 +74,7 @@ special_tokens = {
     }
 
 inference_decoder_parms = {
-    'decoder_type' : 'beam_search'   # or topktopp
+    'decoder_type' : 'beam_search',   # or topktopp
     'softmax_temperature'  : 0.9, 
     'topp' : 0.9, 
     'topk' : 5

@@ -25,6 +25,8 @@ Watch out:-
 	#) test cases on whether inference decoders
 
 work on:-
+	#) combined and look ahead mask are same, if they are then maintain a same name
+	#) run unit test on all three architectures
 	#) BLEU score scareBLEU or from official.transformer import compute_bleu
 	#) seperate out translation and summarize 
 		#) metrics

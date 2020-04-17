@@ -1,18 +1,16 @@
 # -*- coding: utf-8 -*-
 import tensorflow as tf
-import numpy as np
 from configuration import config
 from model_utils import positional_encoding, draft_decoder
 
 call_signature = [
                 tf.TensorSpec(shape=(None, None), dtype=tf.int32),
-                tf.TensorSpec(shape=(None, None), dtype=tf.bool),
-                tf.TensorSpec(shape=(None, None), dtype=tf.bool),
-                tf.TensorSpec(shape=(None, None), dtype=tf.bool),
                 tf.TensorSpec(shape=(None, None), dtype=tf.int32),
+                tf.TensorSpec(shape=(None, None), dtype=tf.bool),
+                tf.TensorSpec(shape=(None, None), dtype=tf.bool),
+                tf.TensorSpec(shape=(None, None), dtype=tf.bool),
                 tf.TensorSpec(shape=(None), dtype=tf.bool)
                 ]
-
 
 def scaled_dot_product_attention(q, k, v, mask):
     # (..., seq_len_q, seq_len_k)
@@ -375,12 +373,12 @@ class Transformer(tf.keras.Model):
                                                 )
         return (predicted_draft_output_sequence, draft_attention_dist, None, None)
 
-    @tf.function(input_signature=call_signature)
-    def call(self, input_ids, dec_padding_mask, enc_padding_mask=None, 
-           look_ahead_mask=None, target_ids=None, training=None):
+    #@tf.function(input_signature=call_signature)
+    def call(self, input_ids, target_ids, dec_padding_mask, 
+                enc_padding_mask, look_ahead_mask, training):
 
         if training is not None:
-            return self.fit(self, input_ids, target_ids, training, enc_padding_mask, 
+            return self.fit(input_ids, target_ids, training, enc_padding_mask, 
                             look_ahead_mask, dec_padding_mask)
         else:
-            return self.predict(self, input_ids, dec_padding_mask)
+            return self.predict(input_ids, dec_padding_mask)

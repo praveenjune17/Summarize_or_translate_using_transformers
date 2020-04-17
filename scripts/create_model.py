@@ -2,18 +2,18 @@ import tensorflow as tf
 import tensorflow_datasets as tfds
 from tensorflow.keras.initializers import Constant
 from transformers import TFBertModel, BertTokenizer
-from transformer import create_masks, Decoder, Encoder, Transformer
+from transformer import Decoder, Encoder, Transformer
 from creates import log, create_vocab
 from configuration import config
 from model_utils import (tile_and_mask_diagonal, sampling_decoder, 
-                          with_column, mask_timestamp, draft_decoder)
+                         with_column, mask_timestamp, draft_decoder)
 
 call_signature = [
                 tf.TensorSpec(shape=(None, None), dtype=tf.int32),
-                tf.TensorSpec(shape=(None, None), dtype=tf.bool),
-                tf.TensorSpec(shape=(None, None), dtype=tf.bool),
-                tf.TensorSpec(shape=(None, None), dtype=tf.bool),
                 tf.TensorSpec(shape=(None, None), dtype=tf.int32),
+                tf.TensorSpec(shape=(None, None), dtype=tf.bool),
+                tf.TensorSpec(shape=(None, None), dtype=tf.bool),
+                tf.TensorSpec(shape=(None, None), dtype=tf.bool),
                 tf.TensorSpec(shape=(None), dtype=tf.bool)
                 ]
 
@@ -244,15 +244,15 @@ class Bertified_transformer(tf.keras.Model):
         return (predicted_draft_output_sequence, draft_attention_dist, 
                predicted_refined_output_sequence, refined_attention_dist)
 
-    @tf.function(input_signature=call_signature)
-    def call(self, input_ids, dec_padding_mask, enc_padding_mask=None, 
-           look_ahead_mask=None, target_ids=None, training=None):
+    #@tf.function(input_signature=call_signature)
+    def call(self, input_ids, target_ids, dec_padding_mask, 
+             enc_padding_mask, look_ahead_mask, training):
 
         if training is not None:
-            return self.fit(self, input_ids, target_ids, training, enc_padding_mask, 
-                        look_ahead_mask, dec_padding_mask)
+            return self.fit(input_ids, target_ids, training, enc_padding_mask, 
+                            look_ahead_mask, dec_padding_mask)
         else:
-            return self.predict(self, input_ids, dec_padding_mask)
+            return self.predict(input_ids, dec_padding_mask)
         
 
 if not (config.model_architecture == 'bertified_transformer'):

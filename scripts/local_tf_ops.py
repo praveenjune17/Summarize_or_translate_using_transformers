@@ -38,13 +38,13 @@ evaluation_step  = 'Time taken for {} step : {} secs'
 checkpoint_details = 'Saving checkpoint at step {} on {}'
 batch_zero = 'Time taken to feed the input data to the model {} seconds'
 batch_run_details = 'Train_Loss {:.4f} Train_Accuracy {:.4f}'
-
-train_loss, train_accuracy = get_loss_and_accuracy()
 gradient_accumulators = []
+train_loss, train_accuracy = get_loss_and_accuracy()
+
 @tf.function(input_signature=train_step_signature)
 def train_step(input_ids, 
                target_ids,
-               grad_accum_flag=None):
+               grad_accum_flag):
     
     target_inp = target_ids[:, :-1]
     enc_padding_mask, combined_mask, dec_padding_mask = create_masks(input_ids, target_inp)
@@ -52,11 +52,11 @@ def train_step(input_ids,
         (draft_predictions, draft_attention_weights, 
           refine_predictions, refine_attention_weights) = Model(
                                                                input_ids,
-                                                               dec_padding_mask,
-                                                               target_inp,
-                                                               enc_padding_mask, 
-                                                               combined_mask, 
-                                                               True,
+                                                               dec_padding_mask=dec_padding_mask,
+                                                               target_ids=target_inp,
+                                                               enc_padding_mask=enc_padding_mask, 
+                                                               look_ahead_mask=combined_mask, 
+                                                               training=True,
                                                                )
         train_variables = Model.trainable_variables
         loss = loss_function(target_ids, 
@@ -101,8 +101,8 @@ def val_step(
     (draft_predictions, _,  
      refine_predictions, _) = Model( 
                                     input_ids,
-                                    dec_padding_mask,
-                                    training=False
+                                    dec_padding_mask=dec_padding_mask,
+                                    training=None
                                     )
     
     if refine_predictions:
@@ -148,13 +148,13 @@ def eval_step(input_ids,
     enc_padding_mask, combined_mask, dec_padding_mask = create_masks(input_ids, target_inp)  
     (draft_predictions, draft_attention_weights, 
       refine_predictions, refine_attention_weights) = Model(
-                                                            input_ids,
-                                                            dec_padding_mask,  
-                                                            enc_padding_mask, 
-                                                            combined_mask, 
-                                                            target_inp,
-                                                            False,
-                                                            )
+                                                             input_ids=input_ids,
+                                                             dec_padding_mask=dec_padding_mask,
+                                                             target_ids=target_inp,
+                                                             enc_padding_mask=enc_padding_mask, 
+                                                             look_ahead_mask=combined_mask, 
+                                                             training=False
+                                                             )
     loss = loss_function(target_ids, 
                          draft_predictions,
                          refine_predictions, 

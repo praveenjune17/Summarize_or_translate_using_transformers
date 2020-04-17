@@ -1,14 +1,13 @@
 #code adapted from a) https://github.com/ShenakhtPajouh/GPT-language-model-tf.keras/blob/master/utils.py
 #                  b)https://github.com/raufer/bert-summarization/tree/master/models
 import tensorflow as tf
+import numpy as np
 tf.random.set_seed(100)
 import tensorflow_addons as tfa
 from beam_search import beam_search
 from configuration import config
 from creates import log
 from beam_search import beam_search
-from transformer import create_masks
-
 
 def with_column(x, i, column):
     """
@@ -39,20 +38,7 @@ def mask_timestamp(x, i, mask_with):
     mask = tf.ones([N, 1], dtype=x.dtype) * mask_with
     masked = tf.concat([left, mask, right], axis=1)
     return masked
-
-def create_padding_mask(seq):
-    """
-    Mask all the pad tokens in the batch of sequence.
-    It ensures that the model does not treat padding as the input.
-    The mask indicates where pad value 0 is present:
-    it outputs a 1 at those locations, and a 0 otherwise.
-    add extra dimensions so that padding can be added
-    to the attention logits.
-    """
-    seq = tf.cast(tf.math.equal(seq, 0), tf.float32)
-    # (batch_size, 1, 1, seq_len)
-    return seq[:, tf.newaxis, tf.newaxis, :]  
-
+  
 def tile_and_mask_diagonal(x, mask_with):
     """    
     Masks each word in the summary draft one by one with the [MASK] token
@@ -151,7 +137,7 @@ def top_k_sampling(logits, batch_size, k=25):
     return sample
   
 def nucleus_sampling(logits, batch_size, p=0.9):
-    
+
     sorted_logits = tf.sort(logits, direction='DESCENDING')
     sorted_indices = tf.argsort(logits, direction='DESCENDING')
     cumulative_probs = tf.cumsum(tf.nn.softmax(sorted_logits))
