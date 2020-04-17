@@ -1,5 +1,6 @@
 #######################
-
+Beam_search doesn't output attention weights, if required then need to modify the core t2t algorithm
+#########################
 Positional encoding:-
 	'''Positional encoding is added to give the model some information about the 
    relative position of the words in the sentence.Nearby tokens will have 

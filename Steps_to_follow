@@ -18,23 +18,24 @@ for batch_size in [single, multiple]:
 	run train pipeline
 	run eval pipeline
 
-# one line space after function name and before return
-#) check duplicates
-#) separate script for python ops
+Watch out:-
+	# one line space after function name and before return
+	#) check duplicates
+	#) separate script for python ops
+	#) test cases on whether inference decoders
 
-#) check the output of mask and loss
-#) gradient accumulation test
-
-#) BLEU score scareBLEU or from official.transformer import compute_bleu
-#) seperate out translation and summarize 
-	#) metrics
-	#) preprocess 
-	#) start and end IDS
-#####################################################
-
-#) embedding projector in tensorboard
-#) time taken for evaluation pipeline.
-#) run evaluation pipeline for more batches
+work on:-
+	#) BLEU score scareBLEU or from official.transformer import compute_bleu
+	#) seperate out translation and summarize 
+		#) metrics
+		#) preprocess 
+		#) start and end IDS
+	#) checkpoint test. run a model store its checkpoint and restart it
+	#) check the output of mask and loss
+	#) gradient accumulation test
+	#) estimated memory calculation
+	
+	#) embedding projector in tensorboard
 
 ##########################################################
 #) GPU profiler
@@ -44,7 +45,6 @@ for batch_size in [single, multiple]:
 =======
 a)  create a single project
 Testing Rules
-*) estimated memory calculation
 *) seq length test
 #####################################################
 #) checkpoint test. run a model store its checkpoint and restart it

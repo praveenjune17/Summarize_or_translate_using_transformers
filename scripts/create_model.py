@@ -1,14 +1,12 @@
 import tensorflow as tf
 import tensorflow_datasets as tfds
-import tensorflow_addons as tfa
 from tensorflow.keras.initializers import Constant
-from beam_search import beam_search
 from transformers import TFBertModel, BertTokenizer
 from transformer import create_masks, Decoder, Encoder, Transformer
 from creates import log, create_vocab
 from configuration import config
-from decode_utils import (tile_and_mask_diagonal, sampling_decoder, 
-                          with_column, mask_timestamp)
+from model_utils import (tile_and_mask_diagonal, sampling_decoder, 
+                          with_column, mask_timestamp, draft_decoder)
 
 call_signature = [
                 tf.TensorSpec(shape=(None, None), dtype=tf.int32),
@@ -139,82 +137,6 @@ class Bertified_transformer(tf.keras.Model):
         # (batch_size, seq_len, vocab_len)
         return refine_logits, refine_attention_dist
 
-    def draft_output_sequence_sampling(self,
-                                       input_ids, 
-                                       enc_output, 
-                                       look_ahead_mask, 
-                                       padding_mask, 
-                                       decoder_type='greedy', 
-                                       temperature=0.9, 
-                                       p=0.9, 
-                                       k=25, 
-                                       training=False
-                                       ):
-
-        """
-        Inference call, builds a draft output_sequence auto-regressively
-        """
-        log.info(f"Building: 'Draft {decoder_type} decoder'")
-        N = tf.shape(enc_output)[0]
-        # (batch_size, 1)
-        dec_input = tf.expand_dims([config.target_CLS_ID]*N, 0)
-        #dec_outputs, dec_logits, attention_dists = [], [], []
-        for i in (range(0, config.target_seq_length)):
-            # (batch_size, i+1, d_bert)
-            embeddings = self.decoder_embedding(dec_input)
-            _, combined_mask, dec_padding_mask = create_masks(input_ids, embeddings)
-            # (batch_size, i+1, vocab), (_)            
-            dec_output, attention_dist = self.decoder(input_ids,
-                                                       embeddings, 
-                                                       enc_output, 
-                                                       training, 
-                                                       combined_mask, 
-                                                       dec_padding_mask
-                                                       )        
-
-            # (batch_size, 1, vocab)
-            dec_output_i = dec_output[:, -1: ,:]
-            predictions = sampling_decoder(decoder_type, dec_output_i, N, temperature, p, k)
-            dec_input = tf.concat([dec_input, predictions], axis=-1)
-        # (batch_size, seq_len, vocab_len), (batch_size, seq_len), (_)
-        return dec_input, attention_dist
-
-    def draft_output_sequence_beam_search(self,
-                                          input_ids, 
-                                          enc_output, 
-                                          dec_padding_mask,
-                                          beam_size,
-                                          batch_size,
-                                          training=False):
-
-        log.info(f"Building: 'Draft beam search decoder'")
-        input_ids = tfa.seq2seq.tile_batch(input_ids, multiplier=beam_size)
-        enc_output = tfa.seq2seq.tile_batch(enc_output, multiplier=beam_size)
-        dec_padding_mask = tfa.seq2seq.tile_batch(dec_padding_mask, multiplier=beam_size)
-        def beam_search_decoder(output):
-            # (batch_size, seq_len, d_bert)    
-            
-            embeddings = self.decoder_embedding(output)
-            predictions, attention_weights = self.decoder(input_ids,
-                                                           embeddings, 
-                                                           enc_output, 
-                                                           training, 
-                                                           None, 
-                                                           dec_padding_mask
-                                                           )
-            # (batch_size, 1, target_vocab_size)
-            return (predictions[:,-1:,:])
-        return beam_search(
-                            beam_search_decoder, 
-                            [config.target_CLS_ID] * batch_size, 
-                            beam_size, 
-                            config.target_seq_length, 
-                            config.target_vocab_size, 
-                            config.length_penalty,
-                            stop_early=False,
-                            eos_id=[[config.target_SEP_ID]]
-                            )
-    
     def refined_output_sequence_sampling(self,
                                          input_ids, 
                                          enc_output, 
@@ -283,37 +205,26 @@ class Bertified_transformer(tf.keras.Model):
     def predict(self,
                input_ids,
                dec_padding_mask, 
-               draft_decoder_sampling_type='greedy',
+               draft_decoder_sampling_type=config.decoder_type,
                refine_decoder_type='topk', 
                temperature=config.softmax_temperature, 
-               p=config.topp, 
-               k=config.topk):
+               top_p=config.topp, 
+               top_k=config.topk):
 
         # (batch_size, seq_len, d_bert)
-        enc_output = self.encoder(input_ids)[0]            
-        if draft_decoder_sampling_type=='beam_search':
-            predicted_beam_search_op = self.draft_output_sequence_beam_search(
-                                                                  input_ids, 
-                                                                  enc_output, 
-                                                                  dec_padding_mask, 
-                                                                  config.beam_size,
-                                                                  tf.shape(input_ids)[0],
-                                                                  training=False
-                                                                  )
-            predicted_draft_output_sequence = predicted_beam_search_op[0][:,0,:]
-            draft_attention_dist = None
-        else:
-            (predicted_draft_output_sequence, 
-              draft_attention_dist) = self.draft_output_sequence_sampling(
-                                                    input_ids,
-                                                    enc_output=enc_output,
-                                                    look_ahead_mask=None,
-                                                    padding_mask=dec_padding_mask,
-                                                    decoder_type=draft_decoder_sampling_type,
-                                                    temperature=temperature,
-                                                    p=p, 
-                                                    k=k,
-                                                  )
+        enc_output = self.encoder(input_ids)[0]
+        # (batch_size, seq_len, vocab_len), 
+        # ()
+        (predicted_draft_output_sequence, 
+          draft_attention_dist) = draft_decoder(self,
+                                                input_ids,
+                                                enc_output=enc_output,
+                                                beam_size=config.beam_size,
+                                                decoder_type=draft_decoder_sampling_type,
+                                                temperature=temperature,
+                                                top_p=top_p, 
+                                                top_k=top_k,
+                                                )
         
         
         # (batch_size, seq_len, vocab_len), 

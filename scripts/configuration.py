@@ -9,6 +9,7 @@ unit_test = {
       'check_training_pipeline' : False,
       'check_predictions_shape' : True,
       'detokenize_samples' : False,
+      'gpu_memory_test' : True,
       'init_loss_check' : False,
       'input_independent_baseline_check' : False, 
       'print_config' : True,
@@ -73,6 +74,7 @@ special_tokens = {
     }
 
 inference_decoder_parms = {
+    'decoder_type' : 'beam_search'   # or topktopp
     'softmax_temperature'  : 0.9, 
     'topp' : 0.9, 
     'topk' : 5

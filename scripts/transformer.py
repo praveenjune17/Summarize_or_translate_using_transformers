@@ -2,6 +2,7 @@
 import tensorflow as tf
 import numpy as np
 from configuration import config
+from model_utils import positional_encoding, draft_decoder
 
 call_signature = [
                 tf.TensorSpec(shape=(None, None), dtype=tf.int32),
@@ -12,58 +13,6 @@ call_signature = [
                 tf.TensorSpec(shape=(None), dtype=tf.bool)
                 ]
 
-def get_angles(pos, i, d_model):
-    '''Get angle rate for the projected embedding output (d_model)
-       and multiply that with the target vocab size
-    '''
-    angle_rates = 1 / np.power(10000, (2 * (i//2)) / np.float32(d_model))
-
-    return pos * angle_rates
-
-def positional_encoding(position, d_model):
-
-    angle_rads = get_angles(np.arange(position)[:, np.newaxis],
-                          np.arange(d_model)[np.newaxis, :],
-                          d_model)
-
-    # apply sin to even indices in the array; 2i
-    angle_rads[:, 0::2] = np.sin(angle_rads[:, 0::2])
-    # apply cos to odd indices in the array; 2i+1
-    angle_rads[:, 1::2] = np.cos(angle_rads[:, 1::2])
-    pos_encoding = angle_rads[np.newaxis, ...]
-
-    return tf.cast(pos_encoding, dtype=tf.float32)
-
-
-def create_padding_mask(seq):
-    '''The mask indicates where pad value 0 is present.
-       it outputs a 1 at those locations, and a 0 otherwise.
-    '''
-    seq = tf.cast(tf.math.equal(seq, 0), tf.float32)
-    # add extra dimensions so that we can add the padding
-    # to the attention logits.
-
-    # (batch_size, 1, 1, seq_len)
-    return seq[:, tf.newaxis, tf.newaxis, :]  
-
-def create_look_ahead_mask(size):
-    '''look-ahead mask is used to mask the future tokens in a sequence
-       i.e to predict the third word, only the first and second word will be used
-    '''
-              #lower_triangular_matrix
-    mask = 1 - tf.linalg.band_part(tf.ones((size, size)), -1, 0)  
-    # (seq_len, seq_len)
-    return mask  
-
-def create_masks(input_ids, target_ids):
-    # Encoder padding mask
-    enc_padding_mask = create_padding_mask(input_ids)  
-    dec_padding_mask = create_padding_mask(input_ids)
-    dec_target_padding_mask = create_padding_mask(target_ids)
-    look_ahead_mask = create_look_ahead_mask(tf.shape(target_ids)[1])
-    combined_mask = tf.maximum(dec_target_padding_mask, look_ahead_mask)
-
-    return enc_padding_mask, combined_mask, dec_padding_mask
 
 def scaled_dot_product_attention(q, k, v, mask):
     # (..., seq_len_q, seq_len_k)
@@ -341,7 +290,8 @@ class Decoder(tf.keras.layers.Layer):
              look_ahead_mask, padding_mask):
         seq_len = tf.shape(target_ids)[1]
         attention_weights = {}
-        target_ids = self.decoder_embedding(target_ids)
+        if not config.model_architecture=='bertified_transformer':
+            target_ids = self.decoder_embedding(target_ids)
         # (batch_size, target_seq_len, d_model) 
         target_ids *= tf.math.sqrt(tf.cast(self.d_model, tf.float32))
         target_ids += self.pos_encoding[:, :seq_len, :]
@@ -405,34 +355,24 @@ class Transformer(tf.keras.Model):
                dec_padding_mask,
                decoder_sampling_type='greedy',
                temperature=0.9, 
-               p=0.9, 
-               k=25):
+               top_p=0.9, 
+               top_k=25):
 
         # (batch_size, inp_seq_len, d_model)
         # Both dec_padding_mask and enc_padding_mask are same
         enc_output = self.encoder(input_ids, False, dec_padding_mask)
-        if decoder_sampling_type=='beam_search':
-            predicted_beam_search_op = self.draft_output_sequence_beam_search(
-                                                                        input_ids, 
-                                                                        enc_output, 
-                                                                        dec_padding_mask, 
-                                                                        config.beam_size,
-                                                                        tf.shape(input_ids)[0]
-                                                                        )
-            predicted_draft_output_sequence = predicted_beam_search_op[0][:,0,:]
-            draft_attention_dist = None
-        else:
-            (predicted_draft_output_sequence, 
-                        draft_attention_dist) = self.draft_output_sequence_sampling(
-                                                                  input_ids,
-                                                                  enc_output=enc_output,
-                                                                  look_ahead_mask=None,
-                                                                  padding_mask=dec_padding_mask,
-                                                                  decoder_type=draft_decoder_sampling_type,
-                                                                  temperature=temperature,
-                                                                  p=p, 
-                                                                  k=k,
-                                                                )
+        # (batch_size, seq_len, vocab_len), 
+        # ()
+        (predicted_draft_output_sequence, 
+          draft_attention_dist) = draft_decoder(self,
+                                                input_ids,
+                                                enc_output=enc_output,
+                                                beam_size=config.beam_size,
+                                                decoder_type=draft_decoder_sampling_type,
+                                                temperature=temperature,
+                                                top_p=top_p, 
+                                                top_k=top_k,
+                                                )
         return (predicted_draft_output_sequence, draft_attention_dist, None, None)
 
     @tf.function(input_signature=call_signature)

@@ -6,7 +6,7 @@ from configuration import config
 from creates import (log, train_output_sequence_writer, 
                     valid_output_sequence_writer, detokenize)
 from create_model import source_tokenizer, target_tokenizer, Model
-from decode_utils import create_padding_mask
+from model_utils import create_padding_mask, create_masks
 from calculate_metrics import (get_loss_and_accuracy, loss_function, 
                                optimizer, tf_write_output_sequence)
 
@@ -96,6 +96,7 @@ def val_step(
              target_ids,
              step, 
              write_output_seq):
+
     dec_padding_mask = create_padding_mask(input_ids)
     (draft_predictions, _,  
      refine_predictions, _) = Model( 
@@ -144,8 +145,6 @@ def eval_step(input_ids,
                ):
 
     target_inp = target_ids[:, :-1]
-    #target_draft_real = target_ids_3D[:, 1:, :]
-    #target_refine_real = target_ids_3D[:, :-1, :]
     enc_padding_mask, combined_mask, dec_padding_mask = create_masks(input_ids, target_inp)  
     (draft_predictions, draft_attention_weights, 
       refine_predictions, refine_attention_weights) = Model(

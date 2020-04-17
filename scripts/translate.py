@@ -2,7 +2,7 @@ import time
 import tensorflow as tf
 from create_model import  target_tokenizer, Model
 from creates import detokenize
-from decode_utils import create_padding_mask
+from model_utils import create_padding_mask
 from configuration import config
 
 def translate():

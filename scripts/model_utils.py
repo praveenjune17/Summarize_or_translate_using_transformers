@@ -2,6 +2,8 @@
 #                  b)https://github.com/raufer/bert-summarization/tree/master/models
 import tensorflow as tf
 tf.random.set_seed(100)
+import tensorflow_addons as tfa
+from beam_search import beam_search
 from configuration import config
 from creates import log
 from beam_search import beam_search
@@ -73,10 +75,66 @@ def tile_and_mask_diagonal(x, mask_with):
     masked = tf.linalg.set_diag(masked, diag)    
     masked = tf.concat([first, masked], axis=2)    
     masked = tf.reshape(masked, [N*T, T+1])
+
     return maskeds
 
+def get_angles(pos, i, d_model):
+    '''Get angle rate for the projected embedding output (d_model)
+       and multiply that with the target vocab size
+    '''
+    angle_rates = 1 / np.power(10000, (2 * (i//2)) / np.float32(d_model))
+
+    return pos * angle_rates
+
+def positional_encoding(position, d_model):
+
+    angle_rads = get_angles(np.arange(position)[:, np.newaxis],
+                          np.arange(d_model)[np.newaxis, :],
+                          d_model)
+
+    # apply sin to even indices in the array; 2i
+    angle_rads[:, 0::2] = np.sin(angle_rads[:, 0::2])
+    # apply cos to odd indices in the array; 2i+1
+    angle_rads[:, 1::2] = np.cos(angle_rads[:, 1::2])
+    pos_encoding = angle_rads[np.newaxis, ...]
+
+    return tf.cast(pos_encoding, dtype=tf.float32)
+
+
+def create_padding_mask(seq):
+    '''The mask indicates where pad value 0 is present.
+       it outputs a 1 at those locations, and a 0 otherwise.
+    '''
+    seq = tf.cast(tf.math.equal(seq, 0), tf.float32)
+    # add extra dimensions so that we can add the padding
+    # to the attention logits.
+
+    # (batch_size, 1, 1, seq_len)
+    return seq[:, tf.newaxis, tf.newaxis, :]  
+
+def create_look_ahead_mask(size):
+    '''look-ahead mask is used to mask the future tokens in a sequence
+       i.e to predict the third word, only the first and second word will be used
+    '''
+              #lower_triangular_matrix
+    mask = 1 - tf.linalg.band_part(tf.ones((size, size)), -1, 0)  
+    # (seq_len, seq_len)
+    return mask  
+
+def create_masks(input_ids, target_ids):
+    # Encoder padding mask
+    enc_padding_mask = create_padding_mask(input_ids)  
+    dec_padding_mask = create_padding_mask(input_ids)
+    dec_target_padding_mask = create_padding_mask(target_ids)
+    look_ahead_mask = create_look_ahead_mask(tf.shape(target_ids)[1])
+    combined_mask = tf.maximum(dec_target_padding_mask, look_ahead_mask)
+
+    return enc_padding_mask, combined_mask, dec_padding_mask
+
 def sampling(logits):
+
     sample = tf.random.categorical(logits, num_samples=1, dtype=tf.int32, seed=1)
+
     return sample
 
 def top_k_sampling(logits, batch_size, k=25):
@@ -93,6 +151,7 @@ def top_k_sampling(logits, batch_size, k=25):
     return sample
   
 def nucleus_sampling(logits, batch_size, p=0.9):
+    
     sorted_logits = tf.sort(logits, direction='DESCENDING')
     sorted_indices = tf.argsort(logits, direction='DESCENDING')
     cumulative_probs = tf.cumsum(tf.nn.softmax(sorted_logits))
@@ -156,4 +215,76 @@ def sampling_decoder(decoder_type, decoder_op, batch_size, temperature, p, k):
         predictions = tf.cast(tf.argmax(decoder_op, axis=-1), tf.int32)
     else:
         raise RuntimeError('Incorrect decoder_type given')
+
     return predictions
+
+def query_decoder(self, enc_output, input_ids, dec_input, decoder_type, training=False):
+
+    embeddings = self.decoder_embedding(dec_input) if config.model_architecture == 'bertified_transformer' else dec_input
+    _, combined_mask, dec_padding_mask = create_masks(input_ids, embeddings)
+    # (batch_size, i+1, vocab), (_)            
+    dec_output, attention_dist = self.decoder(input_ids,
+                                               embeddings, 
+                                               enc_output, 
+                                               training, 
+                                               combined_mask, 
+                                               dec_padding_mask
+                                               )        
+
+    # (batch_size, 1, vocab)
+    if decoder_type=='beam_search':
+        return dec_output[:, -1: ,:]
+    else:
+        return (dec_output[:, -1: ,:], attention_dist)
+
+def draft_decoder(self,
+                 input_ids, 
+                 enc_output,
+                 beam_size,
+                 decoder_type, 
+                 temperature, 
+                 top_p, 
+                 top_k, 
+                 training=False
+                 ):
+
+        """
+        Inference call, builds a draft output_sequence auto-regressively
+        """
+        log.info(f"Building: '{decoder_type} decoder'")
+        batch_size = tf.shape(enc_output)[0]
+        if decoder_type == 'beam_search':
+            tiled_input_ids = tfa.seq2seq.tile_batch(input_ids, multiplier=beam_size)
+            tiled_enc_output = tfa.seq2seq.tile_batch(enc_output, multiplier=beam_size)
+            def perform_beam_search(dec_input):
+                return query_decoder(self, tiled_enc_output, tiled_input_ids, dec_input, training=False)
+            predicted_beam_search_op = beam_search(
+                                                  perform_beam_search, 
+                                                  [config.target_CLS_ID] * batch_size, 
+                                                  beam_size, 
+                                                  config.target_seq_length, 
+                                                  config.target_vocab_size, 
+                                                  config.length_penalty,
+                                                  stop_early=False,
+                                                  eos_id=[[config.target_SEP_ID]]
+                                                  )
+            predicted_output_sequence = predicted_beam_search_op[0][:,0,:]
+            attention_dist = None
+        else:
+            predicted_output_sequence = tf.expand_dims([config.target_CLS_ID]*N, 0)
+            for i in (range(0, config.target_seq_length)):
+                # (batch_size, i+1, d_bert)
+                dec_output_i,attention_dist = query_decoder(self,
+                                                            enc_output, 
+                                                            input_ids,
+                                                            dec_input,
+                                                            decoder_type, 
+                                                            training=False
+                                                            )
+                predictions = sampling_decoder(decoder_type, dec_output_i, batch_size, temperature, 
+                                              top_p, top_k)
+                predicted_output_sequence = tf.concat([predicted_output_sequence, predictions], 
+                                                      axis=-1
+                                                      )
+        #(batch_size, seq_len, vocab_len), (_)
+        return predicted_output_sequence, attention_dist

@@ -31,7 +31,7 @@ def label_smoothing(inputs, epsilon=config.epsilon_ls):
     V = tf.cast(V, dtype=inputs.dtype)
     return ((1-epsilon) * inputs) + (epsilon / V)
 
-# def mask_and_one_hot_labels(target):
+# def mask_and_calculate_loss(target):
 #     draft_mask = tf.math.logical_not(tf.math.equal(target[:, 1:], config.PAD_ID))
 #     refine_mask = tf.math.logical_not(tf.math.logical_or(tf.math.equal(target[:, :-1], config.target_CLS_ID), 
 #                                                          tf.math.equal(target[:, :-1], config.PAD_ID)
