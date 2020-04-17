@@ -86,7 +86,6 @@ def create_dataset(split,
                    batch_size,
                    buffer_size=None,
                    use_tfds=True, 
-                   shuffle=False, 
                    csv_path=None,
                    num_examples_to_select=config.samples_to_test):
 
@@ -115,7 +114,7 @@ def create_dataset(split,
   tf_dataset = tf_dataset.filter(filter_combined_length)
   tf_dataset = tf_dataset.take(num_examples_to_select) 
   tf_dataset = tf_dataset.cache()
-  if shuffle:
+  if buffer_size:
      tf_dataset = tf_dataset.shuffle(buffer_size, seed = 100)
   tf_dataset = tf_dataset.padded_batch(batch_size, padded_shapes=([-1], [-1]))
   tf_dataset = tf_dataset.prefetch(buffer_size=AUTOTUNE)

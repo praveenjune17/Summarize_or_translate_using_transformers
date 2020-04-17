@@ -101,9 +101,9 @@ if __name__== '__main__':
         hist_tokens_per_batch(tf_datasets[split], batch_size=batch_size, split=split)
 
     if show_detokenized_samples:
-        inp, tar = next(iter(examples['train']))
+        input_ids, tar = next(iter(examples['train']))
         source, target = detokenize(target_tokenizer, 
-                                    tf.squeeze(inp[-1,:]), 
+                                    tf.squeeze(input_ids[-1,:]), 
                                     tf.squeeze(tar[-1,:]), 
                                     source_tokenizer
                                     )

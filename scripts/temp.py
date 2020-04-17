@@ -1,37 +1,38 @@
-# -*- coding: utf-8 -*-
-from __future__ import absolute_import, division, print_function, unicode_literals
-
-import tensorflow as tf
-tf.keras.backend.clear_session()
-tf.random.set_seed(100)
-import time
-from tqdm import tqdm
-from preprocess import create_dataset
-from configuration import config
-from calculate_metrics import mask_and_one_hot_labels, monitor_run
-from creates import log
-from create_model import source_tokenizer, target_tokenizer
-from local_tf_ops import (check_ckpt, eval_step, train_step, batch_run_check, 
-                          train_sanity_check, evaluate_validation_set, post_training_results)
+def mask_and_calculate_loss(mask, loss):
+    mask   = tf.cast(mask, dtype=loss.dtype)
+    loss *= loss * mask
+    loss = tf.reduce_sum(loss)/tf.reduce_sum(mask)
+    return loss
 
 
-val_dataset = create_dataset(
-                             split='validation', 
-                             source_tokenizer=source_tokenizer, 
-                             target_tokenizer=target_tokenizer, 
-                             from_=0, 
-                             to=100, 
-                             batch_size=config.validation_batch_size,
-                             drop_remainder=True                          
-                             )
-
-count=0
-for _ in val_dataset:
-    count+=1
-
-print(f'count {count}')
-# # if a checkpoint exists, restore the latest checkpoint.
-# (rouge_score, bert_score) = evaluate_validation_set(
-#                                                       val_dataset, 
-#                                                       step+1
-#                                                       )
+def loss_function(target_ids, draft_predictions, refine_predictions, model):
+    # pred shape == real shape = (batch_size, tar_seq_len, target_vocab_size)
+    true_ids_3D = label_smoothing(tf.one_hot(target_ids, depth=config.target_vocab_size))
+    loss_object = tf.keras.losses.CategoricalCrossentropy(
+                                                      from_logits=True, 
+                                                      reduction='none'
+                                                      )
+    draft_loss  = loss_object(true_ids_3D[:, 1:, :], draft_predictions)
+    draft_mask = tf.math.logical_not(tf.math.equal(target_ids[:, 1:], config.PAD_ID))
+    draft_loss = mask_and_calculate_loss(draft_mask, draft_loss)
+    if refine_predictions:
+        refine_loss  = loss_object(target_ids_3D[:, :-1, :], refine_predictions)
+        refine_mask = tf.math.logical_not(tf.math.logical_or(tf.math.equal(
+                                                                target_ids[:, :-1], 
+                                                                config.target_CLS_ID
+                                                                          ), 
+                                                             tf.math.equal(
+                                                                target_ids[:, :-1], 
+                                                                config.PAD_ID
+                                                                          )
+                                                             )
+                                          )
+        refine_loss = mask_and_calculate_loss(refine_mask, refine_loss)
+    else:
+        refine_loss = [0.0]
+    regularization_loss = tf.add_n(model.losses)
+    total_loss = tf.reduce_sum(draft_loss, 
+                               refine_loss, 
+                               regularization_loss
+                              )
+    return total_loss

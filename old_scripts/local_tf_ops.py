@@ -44,51 +44,57 @@ batch_run_details = 'Train_Loss {:.4f} Train_Accuracy {:.4f}'
 
 train_loss, train_accuracy = get_loss_and_accuracy()
 gradient_accumulators = []
+
 @tf.function(input_signature=train_step_signature)
 def train_step(input_ids, 
-               target_ids,
-               grad_accum_flag=None):
-    
-    target_inp = target_ids[:, :-1]
-    enc_padding_mask, combined_mask, dec_padding_mask = create_masks(input_ids, target_inp)
+               target_ids_, 
+               target_ids, 
+               draft_mask, 
+               refine_mask,
+               grad_accum_flag):
     with tf.GradientTape() as tape:
         (draft_predictions, draft_attention_weights, 
           refine_predictions, refine_attention_weights) = Model(
-                                                               input_ids,
-                                                               dec_padding_mask,
-                                                               target_inp,
-                                                               enc_padding_mask, 
-                                                               combined_mask, 
-                                                               True,
+                                                               input_ids,  
+                                                               target_ids_,
+                                                               True
                                                                )
         train_variables = Model.trainable_variables
-        loss = loss_function(target_ids, 
-                             draft_predictions,
-                             refine_predictions, 
-                             Model
-                             )
-        predictions = refine_predictions if refine_predictions else draft_predictions
+        draft_output_sequence_loss = loss_function(target_ids[:, 1:, :], 
+                                                   draft_predictions, 
+                                                   draft_mask
+                                                   )
+        if config.use_refine_decoder:
+            refine_output_sequence_loss = loss_function(target_ids[:, :-1, :], 
+                                                        refine_predictions, 
+                                                        refine_mask
+                                                        )
+            predictions = refine_predictions
+            target = target_ids_[:, :-1]
+        else:
+            refine_output_sequence_loss = 0
+            predictions = draft_predictions
+            target = target_ids_[:, 1:]
+              
+        regularization_loss = tf.add_n(Model.losses)
+        loss = draft_output_sequence_loss + refine_output_sequence_loss + regularization_loss
         scaled_loss = optimizer.get_scaled_loss(loss)
     scaled_gradients  = tape.gradient(scaled_loss, train_variables)
     gradients = optimizer.get_unscaled_gradients(scaled_gradients)
-    if config.accmulate_gradients:
-        # Initialize the shadow variables with same type as the gradients 
-        if not gradient_accumulators:
-            for tv in gradients:
-              gradient_accumulators.append(tf.Variable(tf.zeros_like(tv), 
-                                                       trainable=False))
-        # accmulate the gradients to the shadow variables
-        for (accumulator, grad) in zip(gradient_accumulators, gradients):
-            accumulator.assign_add(grad)
-        # apply the gradients and reset them to zero if the flag is true
-        if grad_accum_flag:
-            optimizer.apply_gradients(zip(gradient_accumulators, train_variables))
-            for accumulator in (gradient_accumulators):
-                accumulator.assign(tf.zeros_like(accumulator))
-            train_loss(loss)
-            train_accuracy(target, predictions)
-    else:
-        optimizer.apply_gradients(zip(gradients, train_variables))
+    # Initialize the shadow variables with same type as the gradients 
+    if not gradient_accumulators:
+        for tv in gradients:
+          gradient_accumulators.append(tf.Variable(tf.zeros_like(tv), 
+                                                   trainable=False)
+                                      )
+    # accmulate the gradients to the shadow variables
+    for (accumulator, grad) in zip(gradient_accumulators, gradients):
+        accumulator.assign_add(grad)
+    # apply the gradients and reset them to zero if the flag is true
+    if grad_accum_flag:
+        optimizer.apply_gradients(zip(gradient_accumulators, train_variables))
+        for accumulator in (gradient_accumulators):
+            accumulator.assign(tf.zeros_like(accumulator))
         train_loss(loss)
         train_accuracy(target, predictions)
     return predictions
@@ -96,22 +102,22 @@ def train_step(input_ids,
 @tf.function(input_signature=val_step_signature)
 def val_step(
              input_ids,
-             target_ids,
+             target_ids_,
              step, 
              write_output_seq):
     dec_padding_mask = create_padding_mask(input_ids)
     (draft_predictions, _,  
-     refine_predictions, _) = Model( 
+     refine_predictions, _) = Model.predict( 
                                     input_ids,
                                     dec_padding_mask,
-                                    training=False
+                                    False
                                     )
     
-    if refine_predictions:
+    if config.use_refine_decoder:
       predictions = refine_predictions
     else:
       predictions = draft_predictions
-    rouge, bert = tf_write_output_sequence(target_ids[:, 1:], 
+    rouge, bert = tf_write_output_sequence(target_ids_[:, 1:], 
                                            predictions[:, 1:], 
                                            step, 
                                            write_output_seq)  
@@ -123,17 +129,17 @@ def evaluate_validation_set(
                            ):
     rouge_score_total = 0
     bert_score_total = 0
-    for (batch, (input_ids, target_ids)) in enumerate(validation_dataset):
+    for (batch, (input_ids, target_ids_)) in enumerate(validation_dataset):
         # calculate rouge and bert score for only the first batch
         if batch == 0:
           rouge_score, bert_score = val_step(input_ids,
-                                             target_ids,  
+                                             target_ids_,  
                                              step, 
                                              config.write_summary_op
                                              )
         else:
           rouge_score, bert_score  =  val_step(input_ids,
-                                               target_ids, 
+                                               target_ids_, 
                                                step, 
                                                False
                                                )
@@ -143,29 +149,30 @@ def evaluate_validation_set(
             bert_score_total/(batch+1))
 
 def eval_step(input_ids, 
+               target_ids_, 
                target_ids, 
+               draft_mask, 
+               refine_mask
                ):
-
-    target_inp = target_ids[:, :-1]
-    #target_draft_real = target_ids_3D[:, 1:, :]
-    #target_refine_real = target_ids_3D[:, :-1, :]
-    enc_padding_mask, combined_mask, dec_padding_mask = create_masks(input_ids, target_inp)  
+  
     (draft_predictions, draft_attention_weights, 
       refine_predictions, refine_attention_weights) = Model(
-                                                            input_ids,
-                                                            dec_padding_mask,  
-                                                            enc_padding_mask, 
-                                                            combined_mask, 
-                                                            target_inp,
-                                                            False,
+                                                            input_ids,  
+                                                            target_ids_,
+                                                            False
                                                             )
-    loss = loss_function(target_ids, 
-                         draft_predictions,
-                         refine_predictions, 
-                         Model
-                         )
-    predictions = refine_predictions if refine_predictions else draft_predictions
-    train_accuracy(loss, predictions)
+    draft_output_sequence_loss = loss_function(target_ids[:, 1:, :], 
+                                               draft_predictions, 
+                                               draft_mask)
+    if config.use_refine_decoder:
+        refine_output_sequence_loss = loss_function(target_ids[:, :-1, :], 
+                                                    refine_predictions, 
+                                                    refine_mask
+                                                    )
+    else:
+      refine_output_sequence_loss = 0
+    regularization_loss = tf.add_n(Model.losses)
+    loss = draft_output_sequence_loss + refine_output_sequence_loss + regularization_loss
     log.info(Model.summary())
     if config.save_initial_weights:
         initial_weights = os.path.join(config.initial_weights,'initial_weights')
@@ -220,12 +227,12 @@ def train_sanity_check(tokenizer, predictions, target_id):
     return predicted
 
 def training_results(
-                    step, 
-                    rouge_score, 
-                    bert_score,
-                    timing_info,
-                    ckpt_save_path
-                    ):
+                          step, 
+                          rouge_score, 
+                          bert_score,
+                          timing_info,
+                          ckpt_save_path
+                          ):
 
       log.info(
                 model_metrics.format(

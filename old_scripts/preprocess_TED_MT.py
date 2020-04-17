@@ -20,7 +20,7 @@ def pad(l, n, pad=config.PAD_ID):
 
 def encode(sent_1, sent_2, source_tokenizer, target_tokenizer, input_seq_len, output_seq_len):
     
-    if config.use_BERT:
+    if config.model_architecture == 'bertified_transformer':
         input_ids = [config.input_CLS_ID] + source_tokenizer.encode(sent_1.numpy().decode('utf-8'), 
                                             add_special_tokens=False) + [config.input_SEP_ID]
         target_ids = [config.target_CLS_ID] + target_tokenizer.encode(sent_2.numpy().decode('utf-8'), 
@@ -87,7 +87,6 @@ def create_dataset(split,
                    batch_size,
                    buffer_size=None,
                    use_tfds=True, 
-                   shuffle=False, 
                    csv_path=None,
                    drop_remainder=False,
                    num_examples_to_select=config.samples_to_test):
@@ -116,7 +115,7 @@ def create_dataset(split,
     tf_dataset = tf_dataset.filter(filter_max_length)
     tf_dataset = tf_dataset.take(num_examples_to_select) 
     tf_dataset = tf_dataset.cache()
-    if shuffle:
+    if buffer_size:
         tf_dataset = tf_dataset.shuffle(buffer_size, seed = 100)
     tf_dataset = tf_dataset.padded_batch(batch_size, padded_shapes=([-1], [-1]), drop_remainder=drop_remainder)
     tf_dataset = tf_dataset.prefetch(buffer_size=AUTOTUNE)

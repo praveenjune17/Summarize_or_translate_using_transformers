@@ -1,16 +1,21 @@
 # -*- coding: utf-8 -*-
 import datetime
 import tensorflow as tf
+import tensorflow_datasets as tfds
 import os
+import shutil
 import logging
 from configuration import config
 
-
-def check_and_create_dir():
-    for key in config.keys():
-        if key in ['best_ckpt_path', 'initial_weights', 'output_sequence_write_path', 'tensorboard_log']:
-            if not os.path.exists(config[key]):
-                os.makedirs(config[key])
+def set_memory_growth(log):
+    # Set GPU memory growth
+    gpu_devices = tf.config.experimental.list_physical_devices('GPU')
+    if not gpu_devices:
+        log.warning("GPU not available so Running in CPU")
+    else:
+        for device in gpu_devices:
+         tf.config.experimental.set_memory_growth(device, True)
+         log.info('GPU memory growth set')
 
 def detokenize(target_tokenizer, id_1, id_2, source_tokenizer=None):
     if source_tokenizer is None:
@@ -23,28 +28,53 @@ def detokenize(target_tokenizer, id_1, id_2, source_tokenizer=None):
                                                                                  config.PAD_ID]])
     return (detokenized_seq_1, detokenized_seq_2)
 
+def check_and_create_dir():
+    for key in config.keys():
+        if key in ['best_ckpt_path', 'initial_weights', 'output_sequence_write_path', 'tensorboard_log']:
+            if key == 'tensorboard_log':
+                try:
+                    shutil.rmtree(config[key])
+                except FileNotFoundError:
+                    pass
+                os.makedirs(config[key])
+            if not os.path.exists(config[key]):
+                os.makedirs(config[key])
+            
+
 # Create logger
 def create_logger():
     log = logging.getLogger('tensorflow')
     log.setLevel(logging.DEBUG)
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    fh = logging.FileHandler(config.log_path, 'w', 'utf-8')
+    fh = logging.FileHandler(config.log_path, 'a', 'utf-8')
     fh.setLevel(logging.DEBUG)
     fh.setFormatter(formatter)
     log.addHandler(fh)
     log.propagate = False
     return log
 
+def create_vocab(tokenizer_path, tok_type, log):
 
-def set_memory_growth(log):
-    # Set GPU memory growth
-    gpu_devices = tf.config.experimental.list_physical_devices('GPU')
-    if not gpu_devices:
-    	log.warning("GPU not available so Running in CPU")
+    try:
+        tokenizer = tfds.features.text.SubwordTextEncoder.load_from_file(tokenizer_path)
+    except FileNotFoundError:
+        log.warning(f'Vocab files not available in {tokenizer_path} so building it from the training set')
+        if config.use_tfds:
+            examples, metadata = tfds.load(config.tfds_name, with_info=True, as_supervised=True)
+            train_examples = examples['train']
+            if tok_type=='source':
+              tokenizer = tfds.features.text.SubwordTextEncoder.build_from_corpus(
+                      (ip_seq.numpy() for ip_seq, _ in train_examples), target_vocab_size=2**13)
+            else:
+              tokenizer = tfds.features.text.SubwordTextEncoder.build_from_corpus(
+                      (op_seq.numpy() for _, op_seq in train_examples), target_vocab_size=2**13)
+        tokenizer.save_to_file(tokenizer_path)
+    if tok_type=='source':
+        assert(tokenizer.vocab_size+2 == config.input_vocab_size),f'{tok_type} vocab size in configuration script should be {tokenizer.vocab_size+2}'
     else:
-        for device in gpu_devices:
-         tf.config.experimental.set_memory_growth(device, True)
-         log.info('GPU memory growth set')
+        assert(tokenizer.vocab_size+2 == config.target_vocab_size),f'{tok_type} vocab size in configuration script should be {tokenizer.vocab_size+2}'
+    log.info(f'{tok_type} vocab file created and saved to {tokenizer_path}')
+    return tokenizer
 
 def create_tensorboard_parms():
     if config.run_tensorboard:
@@ -58,40 +88,6 @@ def create_tensorboard_parms():
         valid_output_sequence_writer = None
     return (train_output_sequence_writer,
             valid_output_sequence_writer)
-
-# create metrics dict
-def validate_config_parameters():
-    monitor_metrics = dict()
-    monitor_metrics['validation_loss'] = None
-    monitor_metrics['BERT_f1'] = None
-    monitor_metrics['ROUGE_f1'] = None
-    monitor_metrics['combined_metric'] = (
-                                        monitor_metrics['BERT_f1'], 
-                                        monitor_metrics['ROUGE_f1']
-                                        )
-    assert config.monitor_metric in monitor_metrics.keys(), f'Available metrics to monitor are {monitor_metrics.keys()}'
-    assert sum(config.combined_metric_weights) == 1, 'weights should sum to 1'
-    assert config.d_model % config.num_heads == 0, 'd_model should be a multiple of num_heads'
-    if config.task.lower() == 'summarization':
-        assert config.input_pretrained_bert_model == config.target_pretrained_bert_model, f'For {config.task}\
-        the input and target models must be same'
-        assert config.input_CLS_ID ==  config.target_CLS_ID, 'Start Ids must be same'
-        assert config.input_SEP_ID ==  config.target_SEP_ID, 'End Ids must be same'
-    elif config.task.lower() == 'translation':
-        if config.use_BERT:
-            assert config.input_pretrained_bert_model != config.target_pretrained_bert_model, f'For {config.task}\
-        the input and target models must not be same'
-        if (config.input_CLS_ID ==  config.target_CLS_ID) or (config.input_SEP_ID ==  config.target_SEP_ID):
-            if not config.use_BERT:
-                assert config.target_vocab_size == config.input_vocab_size, 'Vocab size not same so ids should not be same too'
-            
-    # create folder in input_path if they don't exist
-    if not config.use_tfds:
-        assert os.path.exists(config.train_csv_path), 'Training dataset not available'
-    if config.print_config:
-        log.info(f'Configuration used \n {config}')
-    if config.test_script:
-        log.info(f'Setting Low Configuration to the model parameters since test_script is enabled')
 
 def check_recorded_metric_val():
     # Get last_recorded_value of monitor_metric from the log
@@ -115,6 +111,37 @@ def check_recorded_metric_val():
     except FileNotFoundError:
         log.info('setting default value to the last_recorded_value since file was not found')
         config['last_recorded_value'] = 0 if config.monitor_metric != 'validation_loss' else float('inf')
+# create metrics dict
+def validate_config_parameters():
+    monitor_metrics = dict()
+    monitor_metrics['validation_loss'] = None
+    monitor_metrics['BERT_f1'] = None
+    monitor_metrics['ROUGE_f1'] = None
+    monitor_metrics['combined_metric'] = (monitor_metrics['BERT_f1'], monitor_metrics['ROUGE_f1'])
+    assert config.monitor_metric in monitor_metrics.keys(), f'Available metrics to monitor are {monitor_metrics.keys()}'
+    assert sum(config.combined_metric_weights) == 1, 'weights should sum to 1'
+    assert config.d_model % config.num_heads == 0, 'd_model should be a multiple of num_heads'
+    assert config.eval_steps%config.steps_to_print_training_info == 0, ''
+    if config.task.lower() == 'summarization':
+        assert config.input_pretrained_bert_model == config.target_pretrained_bert_model, f'For {config.task}\
+        the input and target models must be same'
+        assert config.input_CLS_ID ==  config.target_CLS_ID, 'Start Ids must be same'
+        assert config.input_SEP_ID ==  config.target_SEP_ID, 'End Ids must be same'
+    elif config.task.lower() == 'translation':
+        if config.model_architecture == 'bertified_transformer':
+            assert config.input_pretrained_bert_model != config.target_pretrained_bert_model, f'For {config.task}\
+        the input and target models must not be same'
+        if (config.input_CLS_ID ==  config.target_CLS_ID) or (config.input_SEP_ID ==  config.target_SEP_ID):
+            if not config.model_architecture == 'bertified_transformer':
+                assert config.target_vocab_size == config.input_vocab_size, 'Vocab size not same so ids should not be same too'
+            
+    # create folder in input_path if they don't exist
+    if not config.use_tfds:
+        assert os.path.exists(config.train_csv_path), 'Training dataset not available'
+    if config.print_config:
+        log.info(f'Configuration used \n {config}')
+    if config.test_script:
+        log.info(f'Setting Low Configuration to the model parameters since test_script is enabled')
 
 
 check_and_create_dir()

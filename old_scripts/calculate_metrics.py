@@ -31,14 +31,14 @@ def label_smoothing(inputs, epsilon=config.epsilon_ls):
     V = tf.cast(V, dtype=inputs.dtype)
     return ((1-epsilon) * inputs) + (epsilon / V)
 
-# def mask_and_one_hot_labels(target):
-#     draft_mask = tf.math.logical_not(tf.math.equal(target[:, 1:], config.PAD_ID))
-#     refine_mask = tf.math.logical_not(tf.math.logical_or(tf.math.equal(target[:, :-1], config.target_CLS_ID), 
-#                                                          tf.math.equal(target[:, :-1], config.PAD_ID)
-#                                                          )
-#                                       )
-#     target_ids_3D = label_smoothing(tf.one_hot(target, depth=config.target_vocab_size))
-#     return (draft_mask, refine_mask, target_ids_3D)
+def mask_and_one_hot_labels(target):
+    draft_mask = tf.math.logical_not(tf.math.equal(target[:, 1:], config.PAD_ID))
+    refine_mask = tf.math.logical_not(tf.math.logical_or(tf.math.equal(target[:, :-1], config.target_CLS_ID), 
+                                                         tf.math.equal(target[:, :-1], config.PAD_ID)
+                                                         )
+                                      )
+    target_ids_3D = label_smoothing(tf.one_hot(target, depth=config.target_vocab_size))
+    return (draft_mask, refine_mask, target_ids_3D)
 
 def convert_wordpiece_to_words(w_piece):
     new=[]
@@ -53,54 +53,17 @@ def convert_wordpiece_to_words(w_piece):
         new.append(m)
     return (''.join(new))
 
-# def loss_function(real, pred, mask):
-#     # pred shape == real shape = (batch_size, tar_seq_len, target_vocab_size)
-#     loss_object = tf.keras.losses.CategoricalCrossentropy(
-#                                                       from_logits=True, 
-#                                                       reduction='none'
-#                                                       )
-#     loss_  = loss_object(real, pred)
-#     mask   = tf.cast(mask, dtype=loss_.dtype)
-#     loss_ *= mask
-#     return tf.reduce_sum(loss_)/tf.reduce_sum(mask)
-
-def mask_and_calculate_loss(mask, loss):
-    mask   = tf.cast(mask, dtype=loss.dtype)
-    loss *= loss * mask
-    loss = tf.reduce_sum(loss)/tf.reduce_sum(mask)
-    return loss
-
-
-def loss_function(target_ids, draft_predictions, refine_predictions, model):
+def loss_function(real, pred, mask):
     # pred shape == real shape = (batch_size, tar_seq_len, target_vocab_size)
-    true_ids_3D = label_smoothing(tf.one_hot(target_ids, depth=config.target_vocab_size))
     loss_object = tf.keras.losses.CategoricalCrossentropy(
                                                       from_logits=True, 
                                                       reduction='none'
                                                       )
-    draft_loss  = loss_object(true_ids_3D[:, 1:, :], draft_predictions)
-    draft_mask = tf.math.logical_not(tf.math.equal(target_ids[:, 1:], config.PAD_ID))
-    draft_loss = mask_and_calculate_loss(draft_mask, draft_loss)
-    if refine_predictions:
-        refine_loss  = loss_object(true_ids_3D[:, :-1, :], refine_predictions)
-        refine_mask = tf.math.logical_not(tf.math.logical_or(tf.math.equal(
-                                                                target_ids[:, :-1], 
-                                                                config.target_CLS_ID
-                                                                          ), 
-                                                             tf.math.equal(
-                                                                target_ids[:, :-1], 
-                                                                config.PAD_ID
-                                                                          )
-                                                             )
-                                          )
-        refine_loss = mask_and_calculate_loss(refine_mask, refine_loss)
-    else:
-        refine_loss = [0.0]
-    regularization_loss = tf.add_n(model.losses)
-    total_loss = tf.reduce_sum(draft_loss, refine_loss, regularization_loss)
-    return total_loss
+    loss_  = loss_object(real, pred)
+    mask   = tf.cast(mask, dtype=loss_.dtype)
+    loss_ *= mask
+    return tf.reduce_sum(loss_)/tf.reduce_sum(mask)
 
-    
 def get_loss_and_accuracy():
     loss = tf.keras.metrics.Mean()
     accuracy = tf.keras.metrics.CategoricalAccuracy(name='Accuracy')
@@ -183,9 +146,7 @@ def monitor_run(ckpt_save_path,
             shutil.copy2(os.path.join(ckpt_fold, files), config.best_ckpt_path)
     else:
         config.tolerance+=1
-    
     # stop if minimum training loss is reached
-
     if train_loss < config.min_train_loss:
         log.info(f'Stop training since minimum training loss reached')
         return False

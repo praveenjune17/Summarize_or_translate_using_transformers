@@ -1,7 +1,9 @@
 *) Client script creation (spell check, preprocess) 
 *) encode without tf.py_function https://colab.research.google.com/drive/1IAIeaTdl4bJlWxDJS6AXFnBCg1B92E5Z#scrollTo=NsaUPscGZ-Mq
 
-######################################################
+###################################################### 
+Base paper http://www.iitp.ac.in/~sukanta.pcs15/pubs/WAT_2018_paper_12.pdf 
+###########3333
 Testing Rules
 
 Flow test
@@ -16,24 +18,20 @@ for batch_size in [single, multiple]:
 	run train pipeline
 	run eval pipeline
 
-#) Shuffle it in the next run
-#) tokens per batch :- when GPU runs out of memory
-#) print checks required
+# one line space after function name and before return
+#) check duplicates
+#) separate script for python ops
+
+#) check the output of mask and loss
+#) tokens per batch and find out at what number of tokens per batch does GPU runs out of memory
+#) add early monitor check to unit test
 #) gradient accumulation test
-#) remove eval_after bug
-#) early monitor check
-#) BLEU score scareBLEU
 
-
-#) add signatures to tf.function 
-a) professionalize
-c)separate script for python ops
-d)add decoding hyper parameters to config
-#) improvize detokenize
-#) two architecture:- vanilla transformer, BERT_based_NLG, change the configs accordingly
+#) BLEU score scareBLEU or from official.transformer import compute_bleu
 #) seperate out translation and summarize 
 	#) metrics
 	#) preprocess 
+	#) start and end IDS
 #####################################################
 
 #) embedding projector in tensorboard

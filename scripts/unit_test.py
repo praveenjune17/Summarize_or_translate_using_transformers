@@ -28,17 +28,14 @@ unit_test_dataset = create_dataset(
 def training_loop(dataset, check_model_capacity):
     if check_model_capacity:
         dataset = dataset.repeat(int(config.epochs))
-    for (step, (input_ids, target_ids_)) in tqdm(enumerate(dataset), initial=1):
+    for (step, (input_ids, target_ids)) in tqdm(enumerate(dataset), initial=1):
         min_loss = 10000000
         start=time.time()
-        draft_mask, refine_mask, target_ids = mask_and_one_hot_labels(target_ids_)
+        draft_mask, refine_mask, target_ids_3D = mask_and_one_hot_labels(target_ids)
         grad_accum_flag = True if (step+1)%config.gradient_accumulation_steps == 0 else False
         predictions = train_step(
                                   input_ids,  
-                                  target_ids_, 
                                   target_ids, 
-                                  draft_mask,
-                                  refine_mask,
                                   grad_accum_flag
                                   )
         if grad_accum_flag:
@@ -53,7 +50,7 @@ def training_loop(dataset, check_model_capacity):
                     log.warning('Loss not decreasing watch out')
 
     if config.detokenize_samples:
-        _ = train_sanity_check(target_tokenizer, predictions, target_ids_)
+        _ = train_sanity_check(target_tokenizer, predictions, target_ids)
 
     if check_model_capacity:
       
@@ -74,30 +71,27 @@ if config.random_results_check:
     sys.exit()
 
 if config.init_loss_check:
-    input_ids, target_ids_ = next(iter(unit_test_dataset))
-    draft_mask, refine_mask, target_ids = mask_and_one_hot_labels(target_ids_)
+    input_ids, target_ids = next(iter(unit_test_dataset))
+    draft_mask, refine_mask, target_ids_3D = mask_and_one_hot_labels(target_ids)
     loss =  eval_step(
                       input_ids,  
-                      target_ids_, 
                       target_ids, 
-                      draft_mask,
-                      refine_mask
                       )
     log.info(f"Model's Initial loss {loss}")
     log.info(f'Expected initial loss {tf.math.log(tf.cast(config.target_vocab_size, dtype=tf.float32))*config.num_of_decoders}')
     log.info(f'Initial Loss check run completed')
 
 if config.input_independent_baseline_check:
-    for (step, (input_ids, target_ids_)) in tqdm(enumerate(unit_test_dataset), initial=1):
+    for (step, (input_ids, target_ids)) in tqdm(enumerate(unit_test_dataset), initial=1):
         start=time.time()
         input_ids = tf.zeros_like(input_ids)
-        target_ids_ = tf.zeros_like(target_ids_)
-        draft_mask, refine_mask, target_ids = mask_and_one_hot_labels(target_ids_)
+        target_ids = tf.zeros_like(target_ids)
+        draft_mask, refine_mask, target_ids_3D = mask_and_one_hot_labels(target_ids)
         grad_accum_flag = True if (step+1)%config.gradient_accumulation_steps == 0 else False
         _ = train_step(
                       input_ids,  
-                      target_ids_, 
                       target_ids, 
+                      target_ids_3D, 
                       draft_mask,
                       refine_mask,
                       grad_accum_flag
@@ -146,3 +140,34 @@ if config.detokenize_samples:
     print ('The original string: {}'.format(original_string))
 
     assert original_string == sample_string, 'Encoding issue with tokenizer'
+
+if config.check_predictions_shape:
+    temp_input = tf.random.uniform((64, 38), dtype=tf.int64, minval=0, maxval=200)
+    temp_target = tf.random.uniform((64, 36), dtype=tf.int64, minval=0, maxval=200)
+    if config.model_architecture == 'bertified_transformer':
+        sample_model = Bertified_transformer(
+                                num_layers=config.num_layers, 
+                                d_model=config.d_model, 
+                                num_heads=config.num_heads, 
+                                dff=config.dff, 
+                                input_vocab_size=config.input_vocab_size,
+                                target_vocab_size=config.target_vocab_size
+                                )
+    else:
+        sample_model = Transformer(num_layers=config.num_layers, 
+                               d_model=config.d_model, 
+                               num_heads=config.num_heads, 
+                               dff=config.dff, 
+                               input_vocab_size=config.input_vocab_size, 
+                               target_vocab_size=config.target_vocab_size,
+                               add_pointer_generator=config.add_pointer_generator)
+    fn_out, _ = sample_model(temp_input,
+                             dec_padding_mask=None, 
+                             enc_padding_mask=None, 
+                             look_ahead_mask=None,
+                             temp_target, 
+                             training=False, 
+                             )
+    log.info(f'The output shape of the sample model is {fn_out.shape}')
+
+    
