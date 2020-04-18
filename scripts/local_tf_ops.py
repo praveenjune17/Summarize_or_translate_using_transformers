@@ -41,7 +41,7 @@ batch_run_details = 'Train_Loss {:.4f} Train_Accuracy {:.4f}'
 gradient_accumulators = []
 train_loss, train_accuracy = get_loss_and_accuracy()
 
-#@tf.function(input_signature=train_step_signature)
+@tf.function(input_signature=train_step_signature)
 def train_step(input_ids, 
                target_ids,
                grad_accum_flag):
@@ -102,7 +102,10 @@ def val_step(
      refine_predictions, _) = Model( 
                                     input_ids,
                                     dec_padding_mask=dec_padding_mask,
-                                    training=None
+                                    target_ids=None,
+                                    enc_padding_mask=None, 
+                                    look_ahead_mask=None, 
+                                    training=None,
                                     )
     
     if refine_predictions:
@@ -148,7 +151,7 @@ def eval_step(input_ids,
     enc_padding_mask, combined_mask, dec_padding_mask = create_masks(input_ids, target_inp)  
     (draft_predictions, draft_attention_weights, 
       refine_predictions, refine_attention_weights) = Model(
-                                                             input_ids=input_ids,
+                                                             input_ids,
                                                              dec_padding_mask=dec_padding_mask,
                                                              target_ids=target_inp,
                                                              enc_padding_mask=enc_padding_mask, 
@@ -168,6 +171,7 @@ def eval_step(input_ids,
         initial_weights = os.path.join(config.initial_weights,'initial_weights')
         Model.save_weights(initial_weights)
     return loss
+    
 
 
 def check_ckpt(checkpoint_path):
@@ -206,6 +210,9 @@ def batch_run_check(batch, start):
 
 
 def train_sanity_check(tokenizer, predictions, target_id):
+    
+    train_loss.reset_states()
+    train_accuracy.reset_states()
     # use the last sample in the batch
     predicted, target = detokenize(tokenizer, 
                                    tf.squeeze(tf.argmax(predictions,axis=-1)[-1:]), 

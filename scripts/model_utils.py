@@ -4,7 +4,6 @@ import tensorflow as tf
 import numpy as np
 tf.random.set_seed(100)
 import tensorflow_addons as tfa
-from beam_search import beam_search
 from configuration import config
 from creates import log
 from beam_search import beam_search
@@ -204,7 +203,7 @@ def sampling_decoder(decoder_type, decoder_op, batch_size, temperature, p, k):
 
     return predictions
 
-def query_decoder(self, enc_output, input_ids, dec_input, decoder_type, training=False):
+def query_decoder(self, enc_output, input_ids, dec_input, decoder_type, beam_size, training=False):
 
     embeddings = self.decoder_embedding(dec_input) if config.model_architecture == 'bertified_transformer' else dec_input
     _, combined_mask, dec_padding_mask = create_masks(input_ids, embeddings)
@@ -230,7 +229,8 @@ def draft_decoder(self,
                  decoder_type, 
                  temperature, 
                  top_p, 
-                 top_k, 
+                 top_k,
+                 batch_size, 
                  training=False
                  ):
 
@@ -238,33 +238,33 @@ def draft_decoder(self,
         Inference call, builds a draft output_sequence auto-regressively
         """
         log.info(f"Building: '{decoder_type} decoder'")
-        batch_size = tf.shape(enc_output)[0]
+        start_ids = tf.repeat(config.target_CLS_ID, repeats=batch_size)
+        #end_ids   = tf.repeat(config.target_SEP_ID, repeats=batch_size)
         if decoder_type == 'beam_search':
-            tiled_input_ids = tfa.seq2seq.tile_batch(input_ids, multiplier=beam_size)
-            tiled_enc_output = tfa.seq2seq.tile_batch(enc_output, multiplier=beam_size)
             def perform_beam_search(dec_input):
-                return query_decoder(self, tiled_enc_output, tiled_input_ids, dec_input, training=False)
+                return query_decoder(self, enc_output, input_ids, dec_input, decoder_type, beam_size, training=False)
             predicted_beam_search_op = beam_search(
                                                   perform_beam_search, 
-                                                  [config.target_CLS_ID] * batch_size, 
-                                                  beam_size, 
-                                                  config.target_seq_length, 
-                                                  config.target_vocab_size, 
-                                                  config.length_penalty,
+                                                  initial_ids=start_ids, 
+                                                  beam_size=beam_size, 
+                                                  decode_length=config.target_seq_length, 
+                                                  vocab_size=config.target_vocab_size, 
+                                                  alpha=config.length_penalty,
                                                   stop_early=False,
-                                                  eos_id=[[config.target_SEP_ID]]
+                                                  eos_id=config.target_SEP_ID
                                                   )
             predicted_output_sequence = predicted_beam_search_op[0][:,0,:]
             attention_dist = None
         else:
-            predicted_output_sequence = tf.expand_dims([config.target_CLS_ID]*N, 0)
+            predicted_output_sequence = tf.expand_dims(start_ids, 1)
             for i in (range(0, config.target_seq_length)):
                 # (batch_size, i+1, d_bert)
                 dec_output_i,attention_dist = query_decoder(self,
                                                             enc_output, 
                                                             input_ids,
-                                                            dec_input,
-                                                            decoder_type, 
+                                                            predicted_output_sequence,
+                                                            decoder_type,
+                                                            beam_size=None, 
                                                             training=False
                                                             )
                 predictions = sampling_decoder(decoder_type, dec_output_i, batch_size, temperature, 

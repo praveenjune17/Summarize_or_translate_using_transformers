@@ -29,8 +29,8 @@ from tensorflow.python.ops import inplace_ops
 from tensorflow.python.util import nest
 from configuration import config
 
-# Assuming EOS_ID is 1
-EOS_ID = config.target_SEP_ID
+# # Assuming EOS_ID is 1
+# EOS_ID = config.target_SEP_ID
 # Default value for INF
 INF = 1. * 1e7
 
@@ -401,7 +401,7 @@ def beam_search(symbols_to_logits_fn,
                 vocab_size,
                 alpha,
                 states=None,
-                eos_id=EOS_ID,
+                eos_id=None,
                 stop_early=True,
                 use_tpu=False,
                 use_top_k_with_unique=True):

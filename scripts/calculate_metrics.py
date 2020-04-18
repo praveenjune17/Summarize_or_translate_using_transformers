@@ -55,7 +55,7 @@ def convert_wordpiece_to_words(w_piece):
 
 def mask_and_calculate_loss(mask, loss):
     mask   = tf.cast(mask, dtype=loss.dtype)
-    loss *= loss * mask
+    loss = loss * mask
     loss = tf.reduce_sum(loss)/tf.reduce_sum(mask)
     return loss
 
@@ -90,6 +90,7 @@ def loss_function(target_ids, draft_predictions, refine_predictions, model):
     regularization_loss = tf.add_n(model.losses)
     total_loss = tf.reduce_sum([draft_loss, refine_loss, regularization_loss])
     return (total_loss, target)
+    
 
     
 def get_loss_and_accuracy():

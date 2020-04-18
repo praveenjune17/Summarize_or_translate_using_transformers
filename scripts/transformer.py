@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import tensorflow as tf
+import tensorflow_addons as tfa
 from configuration import config
 from model_utils import positional_encoding, draft_decoder
 
@@ -351,13 +352,18 @@ class Transformer(tf.keras.Model):
     def predict(self,
                input_ids,
                dec_padding_mask,
-               decoder_sampling_type='greedy',
-               temperature=0.9, 
-               top_p=0.9, 
-               top_k=25):
+               decoder_sampling_type=config.decoder_type,
+               beam_size=config.beam_size,
+               temperature=config.softmax_temperature, 
+               top_p=config.topp,
+               top_k=config.topk):
 
         # (batch_size, inp_seq_len, d_model)
         # Both dec_padding_mask and enc_padding_mask are same
+        batch_size = tf.shape(input_ids)[0]
+        if decoder_sampling_type=='beam_search':
+            input_ids = tfa.seq2seq.tile_batch(input_ids, multiplier=beam_size)
+            dec_padding_mask = tfa.seq2seq.tile_batch(dec_padding_mask, multiplier=beam_size)
         enc_output = self.encoder(input_ids, False, dec_padding_mask)
         # (batch_size, seq_len, vocab_len), 
         # ()
@@ -365,11 +371,12 @@ class Transformer(tf.keras.Model):
           draft_attention_dist) = draft_decoder(self,
                                                 input_ids,
                                                 enc_output=enc_output,
-                                                beam_size=config.beam_size,
-                                                decoder_type=draft_decoder_sampling_type,
+                                                beam_size=beam_size,
+                                                decoder_type=decoder_sampling_type,
                                                 temperature=temperature,
                                                 top_p=top_p, 
                                                 top_k=top_k,
+                                                batch_size=batch_size
                                                 )
 
         return (predicted_draft_output_sequence, draft_attention_dist, None, None)

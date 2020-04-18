@@ -206,7 +206,8 @@ class Bertified_transformer(tf.keras.Model):
                input_ids,
                dec_padding_mask, 
                draft_decoder_sampling_type=config.decoder_type,
-               refine_decoder_type='topk', 
+               refine_decoder_type='topk',
+               beam_size=config.beam_size, 
                temperature=config.softmax_temperature, 
                top_p=config.topp, 
                top_k=config.topk):
@@ -219,7 +220,7 @@ class Bertified_transformer(tf.keras.Model):
           draft_attention_dist) = draft_decoder(self,
                                                 input_ids,
                                                 enc_output=enc_output,
-                                                beam_size=config.beam_size,
+                                                beam_size=beam_size,
                                                 decoder_type=draft_decoder_sampling_type,
                                                 temperature=temperature,
                                                 top_p=top_p, 

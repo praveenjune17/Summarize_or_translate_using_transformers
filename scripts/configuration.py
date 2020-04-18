@@ -4,20 +4,21 @@ import platform
 from bunch import Bunch
 
 unit_test = {
-      'check_evaluation_pipeline' : False,
+      'check_evaluation_pipeline' : True,
       'check_model_capacity' : False,
       'check_training_pipeline' : False,
       'check_predictions_shape' : False,
+      'clear_log' : True,
       'detokenize_samples' : False,
-      'gpu_memory_test' : True,
+      'gpu_memory_test' : False,
       'init_loss_check' : False,
       'input_independent_baseline_check' : False, 
       'print_config' : True,
       'random_results_check' : False,
-      'samples_to_test' : 5000,
+      'samples_to_test' : 1,
       'save_initial_weights' : False,
       'test_script' : True,
-      'unit_test_dataset_batch_size' : 32
+      'unit_test_dataset_batch_size' : 1
           }
 
 
@@ -51,11 +52,11 @@ training_parms = {
      'min_train_loss' : 1.0,
      'monitor_metric' : 'combined_metric',
      'run_tensorboard': True,
-     'steps_to_print_training_info': 50,                  # print training progress per number of batches specified
+     'steps_to_print_training_info': 2,                  # print training progress per number of batches specified
      'tfds_name' : 'en_tam_parallel_text',     # tfds dataset to be used
      'tolerance' : 0,
      'tolerance_threshold': 3,          # Stop training after the threshold is reached
-     'tokens_per_batch' : 2200,
+     'tokens_per_batch' : 2700,
      'use_tfds' : True,                 # use tfds datasets as to train the model else use the given csv file
      'use_last_recorded_value' : True,
      'valid_samples_to_eval' : 100,     # number of samples used for validation
@@ -103,8 +104,7 @@ file_path = {
         'infer_csv_path' : None,
         'infer_ckpt_path' : None,
         'log_path' : os.path.join(core_path, f"created_files{path_seperator}{dataset_name}{path_seperator}tensorflow.log"),
-        'output_sequence_write_path' : os.path.join(core_path, f"created_files{path_seperator}{dataset_name}{path_seperator}\
-                                                                 summaries{path_seperator}"),
+        'output_sequence_write_path' : os.path.join(core_path, f"created_files{path_seperator}{dataset_name}{path_seperator}summaries{path_seperator}"),
         'serialized_tensor_path' : os.path.join("/content/drive/My Drive/", 'saved_serialized_tensor_3'),
         'tensorboard_log' : os.path.join(core_path, f"created_files{path_seperator}{dataset_name}{path_seperator}tensorboard_logs/"),
         'tfds_data_dir' : os.path.join(core_path, f'Tensorflow_datasets{path_seperator}{dataset_name}_dataset'),
@@ -147,12 +147,15 @@ config.update(file_path)
 if config.test_script:
     if config.unit_test_dataset_batch_size < config.gradient_accumulation_steps:
         config.gradient_accumulation_steps =  config.unit_test_dataset_batch_size
-    if not config.check_model_capacity:
-        config.d_model = 256
-        config.dff = 512
-        config.num_heads = 8
-        config.num_layers = 2
-    config.epochs = 10000000
+    if config.unit_test_dataset_batch_size > config.samples_to_test:
+        config.unit_test_dataset_batch_size = config.samples_to_test
+    if config.steps_to_print_training_info > config.unit_test_dataset_batch_size:
+        config.steps_to_print_training_info = config.unit_test_dataset_batch_size
+    # if not (config.check_model_capacity or config.gpu_memory_test):
+    #     config.d_model = 256
+    #     config.dff = 512
+    #     config.num_heads = 8
+    #     config.num_layers = 2
     config.grad_clipnorm = None
     config.run_tensorboard = False
     config.dropout_rate = config.epsilon_ls = config.l2_norm = 0
@@ -166,3 +169,4 @@ else:
     config.check_model_capacity = False
     config.random_results_check = False
     config.print_config = True
+    config.clear_log = False

@@ -18,14 +18,19 @@ def set_memory_growth(log):
          log.info('GPU memory growth set')
 
 def detokenize(target_tokenizer, id_1, id_2, source_tokenizer=None):
+
     if source_tokenizer is None:
-        source_tokenizer = target_tokenizer
-        detokenized_seq_1 = source_tokenizer.decode([i for i in id_1 if i not in [config.target_CLS_ID, 
+        detokenized_seq_1 = target_tokenizer.decode([i for i in id_1 if i not in [config.target_CLS_ID, 
                                                                                  config.target_SEP_ID, 
                                                                                  config.PAD_ID]])
-        detokenized_seq_2 = target_tokenizer.decode([i for i in id_2 if i not in [config.target_CLS_ID, 
-                                                                                 config.target_SEP_ID, 
+    else:
+        detokenized_seq_1 = source_tokenizer.decode([i for i in id_1 if i not in [config.input_CLS_ID, 
+                                                                                 config.input_SEP_ID, 
                                                                                  config.PAD_ID]])
+    detokenized_seq_2 = target_tokenizer.decode([i for i in id_2 if i not in [config.target_CLS_ID, 
+                                                                             config.target_SEP_ID, 
+                                                                             config.PAD_ID]])
+    
     return (detokenized_seq_1, detokenized_seq_2)
 
 def check_and_create_dir():
@@ -46,7 +51,7 @@ def create_logger():
     log = logging.getLogger('tensorflow')
     log.setLevel(logging.DEBUG)
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    fh = logging.FileHandler(config.log_path, 'a', 'utf-8')
+    fh = logging.FileHandler(config.log_path, 'w' if config.clear_log else 'a', 'utf-8')
     fh.setLevel(logging.DEBUG)
     fh.setFormatter(formatter)
     log.addHandler(fh)

@@ -23,21 +23,43 @@ unit_test_dataset = create_dataset(
                               target_tokenizer=target_tokenizer, 
                               from_=90, 
                               to=100, 
-                              batch_size=config.unit_test_dataset_batch_size
+                              batch_size=config.unit_test_dataset_batch_size,
+                              drop_remainder=True
                               )
+
 def check_gpu_usage():
+
     old_stdout = sys.stdout
     sys.stdout = mystdout = StringIO()
     GPUtil.showUtilization()
     sys.stdout = old_stdout
     gpu_usage = mystdout.getvalue().strip().split('|')[-2].strip()
+
     return gpu_usage
 
+def change_dataset_and_train(addtional_tokens_per_batch, batch_size):
+    
+    memory_test_dataset = create_dataset(
+                              split='train', 
+                              source_tokenizer=source_tokenizer, 
+                              target_tokenizer=target_tokenizer, 
+                              from_=90, 
+                              to=100, 
+                              buffer_size=20000,
+                              batch_size=batch_size
+                              )
+    log.info(f'Training with tokens_per_batch set to {addtional_tokens_per_batch}\
+               and batch_size set to {batch_size}')
+    training_loop(memory_test_dataset.take(1000), False)
+    gpu_usage = check_gpu_usage()
+    log.info(f'GPU memory utilization is {gpu_usage}')
 
+    return gpu_usage
 
 def training_loop(dataset, check_model_capacity, detokenize_samples=None):
+
     if check_model_capacity:
-        dataset = dataset.repeat(int(config.epochs))
+        dataset = dataset.repeat(1000)
     for (step, (input_ids, target_ids)) in tqdm(enumerate(dataset, 1), initial=1):
         min_loss = 10000000
         start=time.time()
@@ -90,7 +112,6 @@ if config.random_results_check:
 
 if config.init_loss_check:
     input_ids, target_ids = next(iter(unit_test_dataset))
-    draft_mask, refine_mask, target_ids_3D = mask_and_calculate_loss(target_ids)
     loss =  eval_step(
                       input_ids,  
                       target_ids, 
@@ -100,24 +121,29 @@ if config.init_loss_check:
     log.info(f'Initial Loss check run completed')
 
 if config.input_independent_baseline_check:
-    for (step, (input_ids, target_ids)) in tqdm(enumerate(unit_test_dataset), initial=1):
+    for (step, (input_ids, target_ids)) in tqdm(enumerate(unit_test_dataset, 1), initial=1):
         start=time.time()
         input_ids = tf.zeros_like(input_ids)
         target_ids = tf.zeros_like(target_ids)
-        draft_mask, refine_mask, target_ids_3D = mask_and_calculate_loss(target_ids)
         grad_accum_flag = True if (step)%config.gradient_accumulation_steps == 0 else False
-        _ = train_step(
-                      input_ids,  
-                      target_ids, 
-                      target_ids_3D, 
-                      draft_mask,
-                      refine_mask,
-                      grad_accum_flag
-                      )
-        batch_run_check(
-                      step,  
-                      start
-                      )
+        predictions = train_step(
+                            input_ids,  
+                            target_ids,
+                            grad_accum_flag
+                            )
+        if grad_accum_flag is not None:
+            if grad_accum_flag:
+                if (step)%config.steps_to_print_training_info==0:
+                    train_loss = batch_run_check(
+                                              step,  
+                                              start
+                                              )
+            else:
+                if (step)%config.steps_to_print_training_info==0:
+                    train_loss = batch_run_check(
+                                              step,  
+                                              start
+                                              )
     log.info('Input Independent baseline run completed')
     sys.exit()
 
@@ -129,7 +155,7 @@ if config.check_training_pipeline:
     training_loop(unit_test_dataset, False)
     
 if config.check_evaluation_pipeline:
-    #ck_pt_mgr = check_ckpt(config.checkpoint_path)
+    ck_pt_mgr = check_ckpt(config.checkpoint_path)
     rouge_score, bert_score = evaluate_validation_set(
                               unit_test_dataset, 
                               1
@@ -142,7 +168,7 @@ if config.check_evaluation_pipeline:
                                     1
                                     )
     if not monitor_early_stop:
-        log.info(f'Validation run completed with ROUGE-avg {rouge} and BERT-f1 {bert}\
+        log.info(f'Validation run completed with ROUGE-avg {rouge_score} and BERT-f1 {bert_score}\
                Check the written summary file in {config.output_sequence_write_path}')
     sys.exit()
     
@@ -189,29 +215,13 @@ if config.check_predictions_shape:
     log.info(f'The output shape of the sample model is {fn_out.shape}')
     sys.exit()
 
-def change_dataset_and_train(addtional_tokens_per_batch, batch_size):
-    
-    memory_test_dataset = create_dataset(
-                              split='train', 
-                              source_tokenizer=source_tokenizer, 
-                              target_tokenizer=target_tokenizer, 
-                              from_=90, 
-                              to=100, 
-                              batch_size=batch_size
-                              )
-    log.info(f'Training with tokens_per_batch set to {addtional_tokens_per_batch}\
-               and batch_size set to {batch_size}')
-    training_loop(memory_test_dataset, False)
-    gpu_usage = check_gpu_usage()
-    log.info(f'GPU memory utilization is {gpu_usage}')
-    return gpu_usage
-
 if config.gpu_memory_test:
 
+    memory_limit = 85
     gpu_usage = check_gpu_usage()
-    while float(gpu_usage[:-1]) < 80:
+    while float(gpu_usage[:-1]) < memory_limit:
         gpu_usage = change_dataset_and_train(config.tokens_per_batch, config.train_batch_size)
-        config.tokens_per_batch += 500
+        config.tokens_per_batch += 50
         #log.info(f'Changing tokens_per_batch to {config.tokens_per_batch}')
-    log.info('GPU memory exceeded "80%" hence stopping the training')
+    log.info(f'GPU memory exceeded {memory_limit}% hence stopping the training')
     sys.exit()
