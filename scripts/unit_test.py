@@ -57,11 +57,17 @@ def change_dataset_and_train(addtional_tokens_per_batch, batch_size):
     return gpu_usage
 
 def training_loop(dataset, check_model_capacity, detokenize_samples=None):
-
+    min_loss = 10000000
     if check_model_capacity:
         dataset = dataset.repeat(1000)
     for (step, (input_ids, target_ids)) in tqdm(enumerate(dataset, 1), initial=1):
-        min_loss = 10000000
+        source, target = detokenize(target_tokenizer, 
+                                    tf.squeeze(input_ids[-1,:]), 
+                                    tf.squeeze(target_ids[-1,:]), 
+                                    source_tokenizer
+                                    )
+        print(f'input sequence:- {source}')
+        print(f'target sequence:- {target}')
         start=time.time()
         grad_accum_flag = (True if ((step)%config.gradient_accumulation_steps) == 0 else False) if config.accmulate_gradients else None
         predictions = train_step(
@@ -69,7 +75,6 @@ def training_loop(dataset, check_model_capacity, detokenize_samples=None):
                                   target_ids, 
                                   grad_accum_flag
                                   )
-
         if grad_accum_flag is not None:
             if grad_accum_flag:
                 if (step)%config.steps_to_print_training_info==0:
@@ -88,17 +93,23 @@ def training_loop(dataset, check_model_capacity, detokenize_samples=None):
                     min_loss = train_loss
                 else:
                     log.warning('Loss not decreasing watch out')
-
-    if detokenize_samples:
-        _ = train_sanity_check(target_tokenizer, predictions, target_ids)
-
+                    monitor_early_stop = monitor_run(
+                                    'not saving', 
+                                    0, 
+                                    0,
+                                    0.0, 
+                                    1,
+                                    copy_best_ckpt=False
+                                    )
+                    
     if check_model_capacity:
       
         if train_loss < config.min_train_loss:
             log.info('Minimum training loss reached')
         else:
-            log.info("Loss didn't reach upto the min_train_loss specified, try to increase \
-                  the parameters of the model and check the run again")
+            log.info("Loss didn't reach upto the min_train_loss specified, try to increase\
+                  the parameters of the model or number of train steps")
+        train_sanity_check(target_tokenizer, predictions, target_ids)
 
 if config.random_results_check:
     training_loop(unit_test_dataset, False)
@@ -108,7 +119,6 @@ if config.random_results_check:
     training_loop(unit_test_dataset, False)
     log.info('Third run completed')
     log.info('Verify whether the loss stays same for the three runs')
-    sys.exit()
 
 if config.init_loss_check:
     input_ids, target_ids = next(iter(unit_test_dataset))
@@ -145,16 +155,19 @@ if config.input_independent_baseline_check:
                                               start
                                               )
     log.info('Input Independent baseline run completed')
-    sys.exit()
+    
 
 if config.check_model_capacity:
+
     training_loop(unit_test_dataset, True)
-    sys.exit()
+    
 
 if config.check_training_pipeline:
+
     training_loop(unit_test_dataset, False)
     
 if config.check_evaluation_pipeline:
+
     ck_pt_mgr = check_ckpt(config.checkpoint_path)
     rouge_score, bert_score = evaluate_validation_set(
                               unit_test_dataset, 
@@ -165,12 +178,14 @@ if config.check_evaluation_pipeline:
                                     bert_score, 
                                     rouge_score,
                                     0.0, 
-                                    1
+                                    1,
+                                    copy_best_ckpt=False
                                     )
     if not monitor_early_stop:
+
         log.info(f'Validation run completed with ROUGE-avg {rouge_score} and BERT-f1 {bert_score}\
                Check the written summary file in {config.output_sequence_write_path}')
-    sys.exit()
+    
     
 
 if config.detokenize_samples:
@@ -182,7 +197,7 @@ if config.detokenize_samples:
     original_string = source_tokenizer.decode(tokenized_string)
     log.info('The original string: {}'.format(original_string))
     assert original_string == sample_string, 'Encoding issue with tokenizer'
-    sys.exit()
+    
 
 if config.check_predictions_shape:
 
@@ -213,7 +228,7 @@ if config.check_predictions_shape:
                              training=False, 
                              )
     log.info(f'The output shape of the sample model is {fn_out.shape}')
-    sys.exit()
+    
 
 if config.gpu_memory_test:
 
@@ -222,6 +237,6 @@ if config.gpu_memory_test:
     while float(gpu_usage[:-1]) < memory_limit:
         gpu_usage = change_dataset_and_train(config.tokens_per_batch, config.train_batch_size)
         config.tokens_per_batch += 50
-        #log.info(f'Changing tokens_per_batch to {config.tokens_per_batch}')
     log.info(f'GPU memory exceeded {memory_limit}% hence stopping the training')
-    sys.exit()
+
+sys.exit()

@@ -196,10 +196,8 @@ def sampling_decoder(decoder_type, decoder_op, batch_size, temperature, p, k):
         predictions = tf.cast(topp_topk(((decoder_op)/ temperature), batch_size, p=p, k=k), tf.int32)
     elif decoder_type == 'random_sampling':
         predictions = tf.cast(sampling(decoder_op/ temperature), tf.int32)
-    # elif decoder_type == 'greedy':
-    #     predictions = tf.cast(tf.argmax(decoder_op, axis=-1), tf.int32)
     else:
-        raise RuntimeError('Incorrect decoder_type given')
+        raise RuntimeError('Incorrect decoder_type')
 
     return predictions
 
@@ -256,7 +254,7 @@ def draft_decoder(self,
                                                   vocab_size=config.target_vocab_size, 
                                                   alpha=config.length_penalty,
                                                   stop_early=False,
-                                                  eos_id=[[9000]]#config.target_SEP_ID
+                                                  eos_id=config.target_SEP_ID
                                                   )
             predicted_output_sequence = predicted_beam_search_op[0][:,0,:]
             attention_dist = None

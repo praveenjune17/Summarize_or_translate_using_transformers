@@ -4,18 +4,18 @@ import platform
 from bunch import Bunch
 
 unit_test = {
-      'check_evaluation_pipeline' : True,
-      'check_model_capacity' : False,
+      'check_evaluation_pipeline' : False,
+      'check_model_capacity' : True,
       'check_training_pipeline' : False,
       'check_predictions_shape' : False,
       'clear_log' : True,
-      'detokenize_samples' : False,
+      'detokenize_samples' : True,
       'gpu_memory_test' : False,
       'init_loss_check' : False,
       'input_independent_baseline_check' : False, 
       'print_config' : True,
       'random_results_check' : False,
-      'samples_to_test' : 100,
+      'samples_to_test' : 2,
       'save_initial_weights' : False,
       'test_script' : True,
       'unit_test_dataset_batch_size' : 32
@@ -25,20 +25,20 @@ unit_test = {
 model_parms = {
      'add_bias' : None,               # set values as True|None Increases the inital bias of Tamil vocabs
      'activation' : 'relu',
-     'bert_score_model' : 'bert-base-multilingual-cased',
      'add_pointer_generator': True,
-     'input_seq_length': 60,
+     'bert_score_model' : 'bert-base-multilingual-cased',
      'd_model': 768,                  # the projected word vector dimension
      'dff': 2048,                      # feed forward network hidden parameters
+     'input_pretrained_bert_model': 'bert-base-uncased',
+     'input_seq_length': 60,
      'input_vocab_size': 8247+2,        # total vocab size + start and end token
+     'model_architecture' : 'transformer',   #bertified_transformer or transformer
      'num_heads': 8,                  # the number of heads in the multi-headed attention unit
      'num_layers': 8,                 # number of transformer blocks
-     'input_pretrained_bert_model': 'bert-base-uncased',
-     'model_architecture' : 'transformer',   #bertified_transformer or transformer
-     'task':'translation',
      'target_pretrained_bert_model' : 'bert-base-multilingual-cased',
      'target_seq_length': 40,
-     'target_vocab_size': 8294+2
+     'target_vocab_size': 8294+2,
+     'task':'translation'
      }   
 
 training_parms = {
@@ -80,8 +80,7 @@ inference_decoder_parms = {
     'topk' : 5
     }    
 h_parms = {
-   'train_batch_size': 32,
-   'beam_size': 4,              # Used  during inference                                                 
+   'beam_size': 1,              # Used  during inference                                                 
    'combined_metric_weights': [0.98, 0.02], #(bert_score, rouge)
    'dropout_rate': 0.1,
    'epochs': 7,
@@ -90,6 +89,7 @@ h_parms = {
    'l2_norm':0.0,
    'learning_rate': None,                # change to None to set learning rate decay
    'length_penalty' : 1,                       # Beam search hyps . Used  during inference                                                 
+   'train_batch_size': 32,
    'validation_batch_size' : 32
    }                                    
 
@@ -102,15 +102,15 @@ file_path = {
         'initial_weights' : os.path.join(core_path, f"initial_weights{path_seperator}{dataset_name}{path_seperator}"),
         'infer_csv_path' : None,
         'infer_ckpt_path' : None,
+        'input_seq_vocab_path' : os.path.join(core_path, f"TFDS_vocab_files{path_seperator}{dataset_name}{path_seperator}vocab_en"),
         'log_path' : os.path.join(core_path, f"created_files{path_seperator}{dataset_name}{path_seperator}tensorflow.log"),
+        'output_seq_vocab_path' : os.path.join(core_path, f"TFDS_vocab_files{path_seperator}{dataset_name}{path_seperator}vocab_ta"),
         'output_sequence_write_path' : os.path.join(core_path, f"created_files{path_seperator}{dataset_name}{path_seperator}summaries{path_seperator}"),
         'serialized_tensor_path' : os.path.join("/content/drive/My Drive/", 'saved_serialized_tensor_3'),
         'tensorboard_log' : os.path.join(core_path, f"created_files{path_seperator}{dataset_name}{path_seperator}tensorboard_logs/"),
         'tfds_data_dir' : os.path.join(core_path, f'Tensorflow_datasets{path_seperator}{dataset_name}_dataset'),
         'tfds_data_version' : None,
-        'train_csv_path' : None,
-        'input_seq_vocab_path' : os.path.join(core_path, f"TFDS_vocab_files{path_seperator}{dataset_name}{path_seperator}vocab_en"),
-        'output_seq_vocab_path' : os.path.join(core_path, f"TFDS_vocab_files{path_seperator}{dataset_name}{path_seperator}vocab_ta"),
+        'train_csv_path' : None
             }
 
 if not training_parms['use_tfds']:
@@ -150,11 +150,6 @@ if config.test_script:
         config.unit_test_dataset_batch_size = config.samples_to_test
     if config.steps_to_print_training_info > config.unit_test_dataset_batch_size:
         config.steps_to_print_training_info = config.unit_test_dataset_batch_size
-    # if not (config.check_model_capacity or config.gpu_memory_test):
-    #     config.d_model = 256
-    #     config.dff = 512
-    #     config.num_heads = 8
-    #     config.num_layers = 2
     config.grad_clipnorm = None
     config.run_tensorboard = False
     config.dropout_rate = config.epsilon_ls = config.l2_norm = 0

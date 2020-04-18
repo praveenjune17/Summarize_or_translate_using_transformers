@@ -140,9 +140,10 @@ def monitor_run(ckpt_save_path,
                 rouge_score, 
                 train_loss,
                 step,
+                copy_best_ckpt=True,
                 to_monitor=config.monitor_metric):
   
-    ckpt_fold, ckpt_string = os.path.split(ckpt_save_path)
+    
     if config.run_tensorboard:
         with valid_output_sequence_writer.as_default():
             tf.summary.scalar('ROUGE_f1', rouge_score, step=step)
@@ -162,17 +163,21 @@ def monitor_run(ckpt_save_path,
                                                                             )
     log.info(f"combined_metric {monitor_metrics['combined_metric']:4f}")
     if config.last_recorded_value < monitor_metrics[to_monitor]:
-        # reset tolerance to zero if the monitor_metric decreases before the tolerance threshold
-        config.tolerance=0
-        config.last_recorded_value =  monitor_metrics[to_monitor]
-        ckpt_files_tocopy = [files for files in os.listdir(os.path.split(ckpt_save_path)[0]) \
-                             if ckpt_string in files]
-        log.info(f'{to_monitor} is {monitor_metrics[to_monitor]:4f} so checkpoint files {ckpt_string} \
-                 will be copied to best checkpoint directory')
-        # copy the best checkpoints
-        shutil.copy2(os.path.join(ckpt_fold, 'checkpoint'), config.best_ckpt_path)
-        for files in ckpt_files_tocopy:
-            shutil.copy2(os.path.join(ckpt_fold, files), config.best_ckpt_path)
+        if copy_best_ckpt:
+            # reset tolerance to zero if the monitor_metric decreases before the tolerance threshold
+            ckpt_fold, ckpt_string = os.path.split(ckpt_save_path)
+            config.tolerance=0
+            config.last_recorded_value =  monitor_metrics[to_monitor]
+            ckpt_files_tocopy = [files for files in os.listdir(os.path.split(ckpt_save_path)[0]) \
+                                 if ckpt_string in files]
+            log.info(f'{to_monitor} is {monitor_metrics[to_monitor]:4f} so checkpoint files {ckpt_string} \
+                     will be copied to best checkpoint directory')
+            # copy the best checkpoints
+            shutil.copy2(os.path.join(ckpt_fold, 'checkpoint'), config.best_ckpt_path)
+            for files in ckpt_files_tocopy:
+                shutil.copy2(os.path.join(ckpt_fold, files), config.best_ckpt_path)
+        else:
+            pass
     else:
         config.tolerance+=1
     

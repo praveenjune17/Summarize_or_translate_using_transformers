@@ -256,7 +256,7 @@ class Bertified_transformer(tf.keras.Model):
             return self.predict(input_ids, dec_padding_mask)
         
 
-if not (config.model_architecture == 'bertified_transformer'):
+if config.model_architecture == 'transformer':
     source_tokenizer = create_vocab(config.input_seq_vocab_path, 'source', log)
     target_tokenizer = create_vocab(config.output_seq_vocab_path, 'target', log)
     Model = Transformer(
@@ -268,7 +268,7 @@ if not (config.model_architecture == 'bertified_transformer'):
                        target_vocab_size=config.target_vocab_size,
                        add_pointer_generator=config.add_pointer_generator
                        )
-else:
+elif config.model_architecture == 'bertified_transformer':
     source_tokenizer = BertTokenizer.from_pretrained(config.input_pretrained_bert_model)
     target_tokenizer = BertTokenizer.from_pretrained(config.target_pretrained_bert_model)
     Model = Bertified_transformer(
@@ -280,3 +280,5 @@ else:
                                   target_vocab_size=config.target_vocab_size,
                                   add_pointer_generator=config.add_pointer_generator
                                   )
+else:
+    raise RuntimeError('Incorrect model_architecture')

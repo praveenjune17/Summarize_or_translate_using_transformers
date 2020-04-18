@@ -118,6 +118,8 @@ def check_recorded_metric_val():
         config['last_recorded_value'] = 0 if config.monitor_metric != 'validation_loss' else float('inf')
 # create metrics dict
 def validate_config_parameters():
+    allowed_decoder_types = ['nucleus', 'topk', 'topktopp', 'random_sampling', 'greedy', 'beam_search']
+    allowed_model_architectures = ['transformer', 'bertified_transformer']
     monitor_metrics = dict()
     monitor_metrics['validation_loss'] = None
     monitor_metrics['BERT_f1'] = None
@@ -127,6 +129,8 @@ def validate_config_parameters():
     assert sum(config.combined_metric_weights) == 1, 'weights should sum to 1'
     assert config.d_model % config.num_heads == 0, 'd_model should be a multiple of num_heads'
     assert config.eval_steps%config.steps_to_print_training_info == 0, ''
+    assert config.decoder_type  in allowed_decoder_types, f'available decoding types are {allowed_decoder_types}'
+    assert config.model_architecture  in allowed_model_architectures, f'available model_architectures are {allowed_model_architectures}'
     if config.task.lower() == 'summarization':
         assert config.input_pretrained_bert_model == config.target_pretrained_bert_model, f'For {config.task}\
         the input and target models must be same'
