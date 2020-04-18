@@ -58,7 +58,7 @@ for (step, (input_ids, target_ids)) in tqdm(enumerate(train_dataset, 1), initial
                                       step,  
                                       start
                                       )
-    if step == config.eval_steps:
+    if step == config.eval_after_steps:
         ckpt_save_path = ck_pt_mgr.save()
         predicted = train_sanity_check(target_tokenizer, predictions, target_ids)
         # Run evaluation only if the predictions made by the teacher forced output is not empty

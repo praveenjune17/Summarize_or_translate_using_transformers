@@ -216,14 +216,15 @@ if config.check_predictions_shape:
                                input_vocab_size=config.input_vocab_size, 
                                target_vocab_size=config.target_vocab_size,
                                add_pointer_generator=config.add_pointer_generator)
-    fn_out, _ = sample_model(temp_input,
-                             dec_padding_mask=None, 
-                             enc_padding_mask=None, 
-                             look_ahead_mask=None,
-                             target_ids=temp_target, 
-                             training=False, 
-                             )
-    log.info(f'The output shape of the sample model is {fn_out.shape}')
+    (draft_predictions, draft_attention_weights, 
+    refine_predictions, refine_attention_weights) = sample_model(temp_input,
+                                                       dec_padding_mask=None, 
+                                                       enc_padding_mask=None, 
+                                                       look_ahead_mask=None,
+                                                       target_ids=temp_target, 
+                                                       training=False, 
+                                                       )
+    log.info(f'The output shape of the sample model is {tf.shape(draft_predictions if refine_predictions is None else refine_predictions)}')
     
 
 if config.gpu_memory_test:

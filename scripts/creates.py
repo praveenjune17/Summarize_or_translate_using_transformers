@@ -128,7 +128,7 @@ def validate_config_parameters():
     assert config.monitor_metric in monitor_metrics.keys(), f'Available metrics to monitor are {monitor_metrics.keys()}'
     assert sum(config.combined_metric_weights) == 1, 'weights should sum to 1'
     assert config.d_model % config.num_heads == 0, 'd_model should be a multiple of num_heads'
-    assert config.eval_steps%config.steps_to_print_training_info == 0, ''
+    assert config.eval_after_steps%config.steps_to_print_training_info == 0, 'steps_to_print_training_info must be a factor of eval_after_steps'
     assert config.decoder_type  in allowed_decoder_types, f'available decoding types are {allowed_decoder_types}'
     assert config.model_architecture  in allowed_model_architectures, f'available model_architectures are {allowed_model_architectures}'
     if config.task.lower() == 'summarization':
