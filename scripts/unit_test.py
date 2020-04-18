@@ -45,7 +45,7 @@ def change_dataset_and_train(addtional_tokens_per_batch, batch_size):
                               target_tokenizer=target_tokenizer, 
                               from_=90, 
                               to=100, 
-                              buffer_size=20000,
+                              buffer_size=config.samples_to_test,
                               batch_size=batch_size
                               )
     log.info(f'Training with tokens_per_batch set to {addtional_tokens_per_batch}\
