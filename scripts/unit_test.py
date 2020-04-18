@@ -33,22 +33,7 @@ def check_gpu_usage():
     gpu_usage = mystdout.getvalue().strip().split('|')[-2].strip()
     return gpu_usage
 
-def change_dataset_and_train(addtional_tokens_per_batch, batch_size):
-    
-    memory_test_dataset = create_dataset(
-                              split='train', 
-                              source_tokenizer=source_tokenizer, 
-                              target_tokenizer=target_tokenizer, 
-                              from_=90, 
-                              to=100, 
-                              batch_size=batch_size
-                              )
-    training_loop(memory_test_dataset.repeat(10), False)
-    gpu_usage = check_gpu_usage()
-    log.info(f'Training with tokens_per_batch set to {addtional_tokens_per_batch}\
-               and batch_size set to {batch_size}')
-    log.info(f'GPU memory utilization is {gpu_usage}')
-    return gpu_usage
+
 
 def training_loop(dataset, check_model_capacity, detokenize_samples=None):
     if check_model_capacity:
@@ -204,12 +189,29 @@ if config.check_predictions_shape:
     log.info(f'The output shape of the sample model is {fn_out.shape}')
     sys.exit()
 
+def change_dataset_and_train(addtional_tokens_per_batch, batch_size):
+    
+    memory_test_dataset = create_dataset(
+                              split='train', 
+                              source_tokenizer=source_tokenizer, 
+                              target_tokenizer=target_tokenizer, 
+                              from_=90, 
+                              to=100, 
+                              batch_size=batch_size
+                              )
+    log.info(f'Training with tokens_per_batch set to {addtional_tokens_per_batch}\
+               and batch_size set to {batch_size}')
+    training_loop(memory_test_dataset, False)
+    gpu_usage = check_gpu_usage()
+    log.info(f'GPU memory utilization is {gpu_usage}')
+    return gpu_usage
+
 if config.gpu_memory_test:
 
     gpu_usage = check_gpu_usage()
     while float(gpu_usage[:-1]) < 80:
         gpu_usage = change_dataset_and_train(config.tokens_per_batch, config.train_batch_size)
         config.tokens_per_batch += 500
-        log.info('Increasing tokens_per_batch to 500')
+        #log.info(f'Changing tokens_per_batch to {config.tokens_per_batch}')
     log.info('GPU memory exceeded "80%" hence stopping the training')
     sys.exit()

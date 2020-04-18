@@ -139,10 +139,10 @@ def create_dataset(split,
                                           ), 
                                  num_parallel_calls=AUTOTUNE
                                  )
-    tf_dataset = tf_dataset.take(num_examples_to_select) 
-    tf_dataset = tf_dataset.cache()
     if buffer_size:
         tf_dataset = tf_dataset.shuffle(buffer_size, seed = 100)
+    tf_dataset = tf_dataset.take(num_examples_to_select) 
+    tf_dataset = tf_dataset.cache()
     tf_dataset = tf_dataset.padded_batch(batch_size, padded_shapes=([-1], [-1]), drop_remainder=drop_remainder)
     tf_dataset = tf_dataset.filter(filter_tokens_per_batch) 
     tf_dataset = tf_dataset.prefetch(buffer_size=AUTOTUNE)

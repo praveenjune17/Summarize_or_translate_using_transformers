@@ -371,6 +371,7 @@ class Transformer(tf.keras.Model):
                                                 top_p=top_p, 
                                                 top_k=top_k,
                                                 )
+
         return (predicted_draft_output_sequence, draft_attention_dist, None, None)
 
     #@tf.function(input_signature=call_signature)

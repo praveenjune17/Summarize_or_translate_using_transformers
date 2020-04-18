@@ -41,7 +41,7 @@ batch_run_details = 'Train_Loss {:.4f} Train_Accuracy {:.4f}'
 gradient_accumulators = []
 train_loss, train_accuracy = get_loss_and_accuracy()
 
-@tf.function(input_signature=train_step_signature)
+#@tf.function(input_signature=train_step_signature)
 def train_step(input_ids, 
                target_ids,
                grad_accum_flag):
@@ -59,7 +59,7 @@ def train_step(input_ids,
                                                                training=True,
                                                                )
         train_variables = Model.trainable_variables
-        loss = loss_function(target_ids, 
+        loss, target = loss_function(target_ids, 
                              draft_predictions,
                              refine_predictions, 
                              Model
@@ -155,13 +155,14 @@ def eval_step(input_ids,
                                                              look_ahead_mask=combined_mask, 
                                                              training=False
                                                              )
-    loss = loss_function(target_ids, 
+    loss, target = loss_function(target_ids, 
                          draft_predictions,
                          refine_predictions, 
                          Model
                          )
     predictions = refine_predictions if refine_predictions else draft_predictions
-    train_accuracy(loss, predictions)
+    train_accuracy(target, predictions)
+    train_loss(loss)
     log.info(Model.summary())
     if config.save_initial_weights:
         initial_weights = os.path.join(config.initial_weights,'initial_weights')

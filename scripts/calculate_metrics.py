@@ -53,17 +53,6 @@ def convert_wordpiece_to_words(w_piece):
         new.append(m)
     return (''.join(new))
 
-# def loss_function(real, pred, mask):
-#     # pred shape == real shape = (batch_size, tar_seq_len, target_vocab_size)
-#     loss_object = tf.keras.losses.CategoricalCrossentropy(
-#                                                       from_logits=True, 
-#                                                       reduction='none'
-#                                                       )
-#     loss_  = loss_object(real, pred)
-#     mask   = tf.cast(mask, dtype=loss_.dtype)
-#     loss_ *= mask
-#     return tf.reduce_sum(loss_)/tf.reduce_sum(mask)
-
 def mask_and_calculate_loss(mask, loss):
     mask   = tf.cast(mask, dtype=loss.dtype)
     loss *= loss * mask
@@ -81,6 +70,7 @@ def loss_function(target_ids, draft_predictions, refine_predictions, model):
     draft_loss  = loss_object(true_ids_3D[:, 1:, :], draft_predictions)
     draft_mask = tf.math.logical_not(tf.math.equal(target_ids[:, 1:], config.PAD_ID))
     draft_loss = mask_and_calculate_loss(draft_mask, draft_loss)
+    target = true_ids_3D[:, 1:, :]
     if refine_predictions:
         refine_loss  = loss_object(true_ids_3D[:, :-1, :], refine_predictions)
         refine_mask = tf.math.logical_not(tf.math.logical_or(tf.math.equal(
@@ -94,11 +84,12 @@ def loss_function(target_ids, draft_predictions, refine_predictions, model):
                                                              )
                                           )
         refine_loss = mask_and_calculate_loss(refine_mask, refine_loss)
+        target = true_ids_3D[:, :-1, :]
     else:
-        refine_loss = [0.0]
+        refine_loss = 0.0
     regularization_loss = tf.add_n(model.losses)
-    total_loss = tf.reduce_sum(draft_loss, refine_loss, regularization_loss)
-    return total_loss
+    total_loss = tf.reduce_sum([draft_loss, refine_loss, regularization_loss])
+    return (total_loss, target)
 
     
 def get_loss_and_accuracy():

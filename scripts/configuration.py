@@ -5,16 +5,16 @@ from bunch import Bunch
 
 unit_test = {
       'check_evaluation_pipeline' : False,
-      'check_model_capacity' : True,
+      'check_model_capacity' : False,
       'check_training_pipeline' : False,
-      'check_predictions_shape' : True,
+      'check_predictions_shape' : False,
       'detokenize_samples' : False,
       'gpu_memory_test' : True,
       'init_loss_check' : False,
       'input_independent_baseline_check' : False, 
       'print_config' : True,
       'random_results_check' : False,
-      'samples_to_test' : -1,
+      'samples_to_test' : 5000,
       'save_initial_weights' : False,
       'test_script' : True,
       'unit_test_dataset_batch_size' : 32
@@ -55,7 +55,7 @@ training_parms = {
      'tfds_name' : 'en_tam_parallel_text',     # tfds dataset to be used
      'tolerance' : 0,
      'tolerance_threshold': 3,          # Stop training after the threshold is reached
-     'tokens_per_batch' : 3200,
+     'tokens_per_batch' : 2200,
      'use_tfds' : True,                 # use tfds datasets as to train the model else use the given csv file
      'use_last_recorded_value' : True,
      'valid_samples_to_eval' : 100,     # number of samples used for validation
