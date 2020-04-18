@@ -196,14 +196,14 @@ def sampling_decoder(decoder_type, decoder_op, batch_size, temperature, p, k):
         predictions = tf.cast(topp_topk(((decoder_op)/ temperature), batch_size, p=p, k=k), tf.int32)
     elif decoder_type == 'random_sampling':
         predictions = tf.cast(sampling(decoder_op/ temperature), tf.int32)
-    # elif decoder_type == 'greedy':
-    #     predictions = tf.cast(tf.argmax(decoder_op, axis=-1), tf.int32)
+    elif decoder_type == 'greedy':
+        predictions = tf.cast(tf.argmax(decoder_op, axis=-1), tf.int32)
     else:
         raise RuntimeError('Incorrect decoder_type given')
 
     return predictions
 
-def query_decoder(self, enc_output, input_ids, dec_input, dec_padding_mask, decoder_type, beam_size, training=False):
+def query_decoder(self, enc_output, input_ids, dec_input, decoder_type, beam_size, training=False):
 
     embeddings = self.decoder_embedding(dec_input) if config.model_architecture == 'bertified_transformer' else dec_input
     _, combined_mask, dec_padding_mask = create_masks(input_ids, embeddings)
@@ -225,7 +225,6 @@ def query_decoder(self, enc_output, input_ids, dec_input, dec_padding_mask, deco
 def draft_decoder(self,
                  input_ids, 
                  enc_output,
-                 dec_padding_mask,
                  beam_size,
                  decoder_type, 
                  temperature, 
@@ -241,13 +240,9 @@ def draft_decoder(self,
         log.info(f"Building: '{decoder_type} decoder'")
         start_ids = tf.repeat(config.target_CLS_ID, repeats=batch_size)
         #end_ids   = tf.repeat(config.target_SEP_ID, repeats=batch_size)
-        if decoder_type in ['beam_search', 'greedy']:
-            input_ids = tfa.seq2seq.tile_batch(input_ids, multiplier=beam_size)
-            enc_output = tfa.seq2seq.tile_batch(enc_output, multiplier=beam_size)
-            dec_padding_mask = tfa.seq2seq.tile_batch(dec_padding_mask, multiplier=beam_size)
-            beam_size = 1 if decoder_type == 'greedy' else beam_size
+        if decoder_type == 'beam_search':
             def perform_beam_search(dec_input):
-                return query_decoder(self, enc_output, input_ids, dec_input, dec_padding_mask, decoder_type, beam_size, training=False)
+                return query_decoder(self, enc_output, input_ids, dec_input, decoder_type, beam_size, training=False)
             predicted_beam_search_op = beam_search(
                                                   perform_beam_search, 
                                                   initial_ids=start_ids, 
@@ -256,7 +251,7 @@ def draft_decoder(self,
                                                   vocab_size=config.target_vocab_size, 
                                                   alpha=config.length_penalty,
                                                   stop_early=False,
-                                                  eos_id=[[9000]]#config.target_SEP_ID
+                                                  eos_id=[[config.target_SEP_ID]]
                                                   )
             predicted_output_sequence = predicted_beam_search_op[0][:,0,:]
             attention_dist = None
@@ -268,7 +263,6 @@ def draft_decoder(self,
                                                             enc_output, 
                                                             input_ids,
                                                             predicted_output_sequence,
-                                                            dec_padding_mask,
                                                             decoder_type,
                                                             beam_size=None, 
                                                             training=False

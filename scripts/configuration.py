@@ -15,10 +15,10 @@ unit_test = {
       'input_independent_baseline_check' : False, 
       'print_config' : True,
       'random_results_check' : False,
-      'samples_to_test' : 1,
+      'samples_to_test' : 100,
       'save_initial_weights' : False,
       'test_script' : True,
-      'unit_test_dataset_batch_size' : 1
+      'unit_test_dataset_batch_size' : 32
           }
 
 
@@ -70,8 +70,7 @@ special_tokens = {
     'MASK_ID' : 103,
     'PAD_ID' : 0,
     'target_CLS_ID' : 101,
-    'target_SEP_ID' : 102,
-    'UNK_ID' : 100
+    'target_SEP_ID' : 102
     }
 
 inference_decoder_parms = {
@@ -82,7 +81,7 @@ inference_decoder_parms = {
     }    
 h_parms = {
    'train_batch_size': 32,
-   'beam_size': 1,              # Used  during inference                                                 
+   'beam_size': 4,              # Used  during inference                                                 
    'combined_metric_weights': [0.98, 0.02], #(bert_score, rouge)
    'dropout_rate': 0.1,
    'epochs': 7,
