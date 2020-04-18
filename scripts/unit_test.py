@@ -12,8 +12,8 @@ from tqdm import tqdm
 from preprocess import create_dataset
 from configuration import config
 from calculate_metrics import mask_and_calculate_loss, monitor_run
-from creates import log
-from create_model import source_tokenizer, target_tokenizer
+from creates import log, detokenize
+from create_model import source_tokenizer, target_tokenizer, Transformer, Bertified_transformer
 from local_tf_ops import (check_ckpt, eval_step, train_step, batch_run_check, 
                           train_sanity_check, evaluate_validation_set)
 
@@ -57,17 +57,11 @@ def change_dataset_and_train(addtional_tokens_per_batch, batch_size):
     return gpu_usage
 
 def training_loop(dataset, check_model_capacity, detokenize_samples=None):
+
     min_loss = 10000000
     if check_model_capacity:
-        dataset = dataset.repeat(1000)
+        dataset = dataset.repeat(670)
     for (step, (input_ids, target_ids)) in tqdm(enumerate(dataset, 1), initial=1):
-        source, target = detokenize(target_tokenizer, 
-                                    tf.squeeze(input_ids[-1,:]), 
-                                    tf.squeeze(target_ids[-1,:]), 
-                                    source_tokenizer
-                                    )
-        print(f'input sequence:- {source}')
-        print(f'target sequence:- {target}')
         start=time.time()
         grad_accum_flag = (True if ((step)%config.gradient_accumulation_steps) == 0 else False) if config.accmulate_gradients else None
         predictions = train_step(
@@ -78,6 +72,7 @@ def training_loop(dataset, check_model_capacity, detokenize_samples=None):
         if grad_accum_flag is not None:
             if grad_accum_flag:
                 if (step)%config.steps_to_print_training_info==0:
+                    predicted_ids = train_sanity_check(target_tokenizer, predictions, target_ids)
                     train_loss = batch_run_check(
                                               step,  
                                               start
@@ -103,13 +98,14 @@ def training_loop(dataset, check_model_capacity, detokenize_samples=None):
                                     )
                     
     if check_model_capacity:
-      
+        log.info(f'target_ids are {target_ids}')
+        log.info(f'predicted ids are {predicted_ids}')
         if train_loss < config.min_train_loss:
             log.info('Minimum training loss reached')
         else:
             log.info("Loss didn't reach upto the min_train_loss specified, try to increase\
                   the parameters of the model or number of train steps")
-        train_sanity_check(target_tokenizer, predictions, target_ids)
+        
 
 if config.random_results_check:
     training_loop(unit_test_dataset, False)

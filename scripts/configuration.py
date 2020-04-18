@@ -5,9 +5,9 @@ from bunch import Bunch
 
 unit_test = {
       'check_evaluation_pipeline' : False,
-      'check_model_capacity' : True,
-      'check_training_pipeline' : False,
-      'check_predictions_shape' : False,
+      'check_model_capacity' : False,
+      'check_training_pipeline' : True,
+      'check_predictions_shape' : True,
       'clear_log' : True,
       'detokenize_samples' : True,
       'gpu_memory_test' : False,
@@ -15,7 +15,7 @@ unit_test = {
       'input_independent_baseline_check' : False, 
       'print_config' : True,
       'random_results_check' : False,
-      'samples_to_test' : 2,
+      'samples_to_test' : 10,
       'save_initial_weights' : False,
       'test_script' : True,
       'unit_test_dataset_batch_size' : 32
@@ -49,17 +49,17 @@ training_parms = {
      'eval_steps' : 5000,              # Evaluate once this many samples are trained
      'gradient_accumulation_steps': 2,   
      'last_recorded_value': None,
-     'min_train_loss' : 1.0,
+     'min_train_loss' : 3.2,
      'monitor_metric' : 'combined_metric',
      'run_tensorboard': True,
-     'steps_to_print_training_info': 2,                  # print training progress per number of batches specified
+     'steps_to_print_training_info': 50,                  # print training progress per number of batches specified
      'tfds_name' : 'en_tam_parallel_text',     # tfds dataset to be used
      'tolerance' : 0,
      'tolerance_threshold': 3,          # Stop training after the threshold is reached
      'tokens_per_batch' : 2700,
      'use_tfds' : True,                 # use tfds datasets as to train the model else use the given csv file
      'use_last_recorded_value' : True,
-     'valid_samples_to_eval' : 100,     # number of samples used for validation
+     'valid_samples_to_eval' : 10000,     # number of samples used for validation
      'write_summary_op': True           # write the first batch of validation set summary to a file
      }                                    
 
@@ -74,7 +74,7 @@ special_tokens = {
     }
 
 inference_decoder_parms = {
-    'decoder_type' : 'beam_search',   # or topktopp
+    'decoder_type' : 'greedy',   # or topktopp
     'softmax_temperature'  : 0.9, 
     'topp' : 0.9, 
     'topk' : 5
@@ -83,8 +83,8 @@ h_parms = {
    'beam_size': 1,              # Used  during inference                                                 
    'combined_metric_weights': [0.98, 0.02], #(bert_score, rouge)
    'dropout_rate': 0.1,
-   'epochs': 7,
-   'epsilon_ls': 0.2,                    # label_smoothing hyper parameter
+   'epochs': 1,
+   'epsilon_ls': 0.1,                    # label_smoothing hyper parameter
    'grad_clipnorm':None,
    'l2_norm':0.0,
    'learning_rate': None,                # change to None to set learning rate decay

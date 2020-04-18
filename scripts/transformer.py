@@ -16,6 +16,7 @@ call_signature = [
 def scaled_dot_product_attention(q, k, v, mask):
     # (..., seq_len_q, seq_len_k)
     matmul_qk = tf.matmul(q, k, transpose_b=True)  
+    matmul_qk = tf.cast(matmul_qk, tf.float32)
     # scale matmul_qk
     dk = tf.cast(tf.shape(k)[-1], tf.float32)
     scaled_attention_logits = matmul_qk / tf.math.sqrt(dk)
@@ -27,6 +28,7 @@ def scaled_dot_product_attention(q, k, v, mask):
     # (..., seq_len_q, seq_len_k)
     attention_weights = tf.nn.softmax(scaled_attention_logits, axis=-1)
     # (..., seq_len_q, depth_v)
+    v = tf.cast(v, tf.float32)
     output = tf.matmul(attention_weights, v)  
 
     return output, attention_weights
@@ -141,12 +143,12 @@ class DecoderLayer(tf.keras.layers.Layer):
         self.mha1 = MultiHeadAttention(d_model, num_heads)
         self.mha2 = MultiHeadAttention(d_model, num_heads)
         self.ffn = point_wise_feed_forward_network(d_model, dff)
-        self.layernorm1 = tf.keras.layers.LayerNormalization(epsilon=1e-6)
-        self.layernorm2 = tf.keras.layers.LayerNormalization(epsilon=1e-6)
-        self.layernorm3 = tf.keras.layers.LayerNormalization(epsilon=1e-6)
-        self.dropout1 = tf.keras.layers.Dropout(rate)
-        self.dropout2 = tf.keras.layers.Dropout(rate)
-        self.dropout3 = tf.keras.layers.Dropout(rate)
+        self.layernorm1 = tf.keras.layers.LayerNormalization(epsilon=1e-6, dtype='float32')
+        self.layernorm2 = tf.keras.layers.LayerNormalization(epsilon=1e-6, dtype='float32')
+        self.layernorm3 = tf.keras.layers.LayerNormalization(epsilon=1e-6, dtype='float32')
+        self.dropout1 = tf.keras.layers.Dropout(rate, dtype='float32')
+        self.dropout2 = tf.keras.layers.Dropout(rate, dtype='float32')
+        self.dropout3 = tf.keras.layers.Dropout(rate, dtype='float32')
       
     def call(self, target_ids, enc_output, training, 
              look_ahead_mask, padding_mask):
@@ -157,6 +159,8 @@ class DecoderLayer(tf.keras.layers.Layer):
                                                look_ahead_mask
                                                )  
         attn1 = self.dropout1(attn1, training=training)
+        attn1 = tf.cast(attn1, tf.float32)
+        target_ids = tf.cast(target_ids, tf.float32)
         layer_norm_out1 = self.layernorm1(attn1 + target_ids)
         attn2, attn_weights_block2 = self.mha2(
                                                enc_output, 

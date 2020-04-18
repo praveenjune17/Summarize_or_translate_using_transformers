@@ -1,8 +1,7 @@
 *) Client script creation (spell check, preprocess) 
 *) encode without tf.py_function https://colab.research.google.com/drive/1IAIeaTdl4bJlWxDJS6AXFnBCg1B92E5Z#scrollTo=NsaUPscGZ-Mq
-
 ###################################################### 
-Base paper http://www.iitp.ac.in/~sukanta.pcs15/pubs/WAT_2018_paper_12.pdf 
+Base paper:-  http://www.iitp.ac.in/~sukanta.pcs15/pubs/WAT_2018_paper_12.pdf 
 ###########3333
 Testing Rules
 
@@ -25,7 +24,6 @@ Watch out:-
 	#) test cases on whether inference decoders
 
 work on:-
-	#) combined and look ahead mask are same, if they are then maintain a same name
 	#) run unit test on all three architectures
 	#) BLEU score scareBLEU or from official.transformer import compute_bleu
 	#) seperate out translation and summarize 

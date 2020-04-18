@@ -1,5 +1,3 @@
-#code adapted from a) https://github.com/ShenakhtPajouh/GPT-language-model-tf.keras/blob/master/utils.py
-#                  b)https://github.com/raufer/bert-summarization/tree/master/models
 import tensorflow as tf
 import numpy as np
 tf.random.set_seed(100)

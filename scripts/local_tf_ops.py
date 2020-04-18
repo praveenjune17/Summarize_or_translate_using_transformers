@@ -210,17 +210,14 @@ def batch_run_check(batch, start):
 
 
 def train_sanity_check(tokenizer, predictions, target_id):
-    
-    train_loss.reset_states()
-    train_accuracy.reset_states()
     # use the last sample in the batch
     predicted, target = detokenize(tokenizer, 
                                    tf.squeeze(tf.argmax(predictions,axis=-1)[-1:]), 
                                    tf.squeeze(target_id[:, :-1][-1:])
                                    )
     log.info(f'the true output_sequence is {target}')
-    log.info(f'the predicted output_seq with teacher forcing is \
-      {        predicted if predicted else "empty hence evaluation will be skipped"}')
+    log.info(f'the predicted output_seq with teacher forcing is\
+              {predicted if predicted else "empty hence evaluation will be skipped"}')
     return predicted
 
 def training_results(
@@ -230,7 +227,8 @@ def training_results(
                     timing_info,
                     ckpt_save_path
                     ):
-
+      train_loss.reset_states()
+      train_accuracy.reset_states()
       log.info(
                 model_metrics.format(
                                     step, 

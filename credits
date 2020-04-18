@@ -2,5 +2,10 @@
 *) Transformer_architecture :- https://www.tensorflow.org/tutorials/text/transformer#training_and_checkpointing
 *) Bertified_transformer :- https://github.com/raufer/bert-summarization
 *) test script inspired by :- http://karpathy.github.io/2019/04/25/recipe/
+*) beam search adapted from :- https://github.com/tensorflow/tensor2tensor/blob/master/tensor2tensor/utils/beam_search.py
+*) nucleus, topk sampling
+	adapted from :- a) https://github.com/ShenakhtPajouh/GPT-language-model-tf.keras/blob/master/utils.py
+					b)https://github.com/raufer/bert-summarization/tree/master/models
 
+					
 
