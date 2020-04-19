@@ -56,7 +56,7 @@ training_parms = {
      'tfds_name' : 'en_tam_parallel_text',     # tfds dataset to be used
      'tolerance' : 0,
      'tolerance_threshold': 3,          # Stop training after the threshold is reached
-     'tokens_per_batch' : 4150,
+     'tokens_per_batch' : 4050,
      'use_tfds' : True,                 # use tfds datasets as to train the model else use the given csv file
      'use_last_recorded_value' : True,
      'valid_samples_to_eval' : 10000,     # number of samples used for validation
