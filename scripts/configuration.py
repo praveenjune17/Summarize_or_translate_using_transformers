@@ -44,21 +44,20 @@ model_parms = {
 training_parms = {
      'accumulate_gradients' : True,
      'display_model_summary' : True,
-     'early_stop' : True,
+     'early_stop' : False,
      'enable_jit' : True,
      'eval_after_steps' : 1000,              # Evaluate after these many training steps
      'gradient_accumulation_steps': 2,   
-     'last_recorded_value': None,
-     'min_train_loss' : 3.2,
+     'last_recorded_value': 0.66,
+     'min_train_loss' : 1.0,
      'monitor_metric' : 'combined_metric',
      'run_tensorboard': True,
      'steps_to_print_training_info': 50,                  # print training progress per number of batches specified
      'tfds_name' : 'en_tam_parallel_text',     # tfds dataset to be used
      'tolerance' : 0,
-     'tolerance_threshold': 3,          # Stop training after the threshold is reached
+     'tolerance_threshold': 8,          # Stop training after the threshold is reached
      'tokens_per_batch' : 4050,
      'use_tfds' : True,                 # use tfds datasets as to train the model else use the given csv file
-     'use_last_recorded_value' : True,
      'valid_samples_to_eval' : 10000,     # number of samples used for validation
      'write_summary_op': True           # write the first batch of validation set summary to a file
      }                                    
@@ -83,7 +82,7 @@ h_parms = {
    'beam_size': 1,              # Used  during inference                                                 
    'combined_metric_weights': [0.98, 0.02], #(bert_score, rouge)
    'dropout_rate': 0.1,
-   'epochs': 1,
+   'epochs': 2,
    'epsilon_ls': 0.1,                    # label_smoothing hyper parameter
    'grad_clipnorm':None,
    'l2_norm':0.0,

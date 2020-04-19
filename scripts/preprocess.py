@@ -145,7 +145,7 @@ def create_dataset(split,
     if shuffle:
         tf_dataset = tf_dataset.shuffle(record_count, seed = 100)
     tf_dataset = tf_dataset.padded_batch(batch_size, padded_shapes=([-1], [-1]), drop_remainder=drop_remainder)
-    tf_dataset = tf_dataset.filter(filter_tokens_per_batch)
+    #tf_dataset = tf_dataset.filter(filter_tokens_per_batch)
     tf_dataset = tf_dataset.prefetch(buffer_size=AUTOTUNE)
     log.info(f'{split} tf_dataset created')
     return tf_dataset

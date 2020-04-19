@@ -114,12 +114,15 @@ def write_output_sequence(tar_real, predictions, step, write_output_seq):
         avg_rouge_f1 = np.mean([np.mean([rouge_scores['rouge-1']["f"], 
                                         rouge_scores['rouge-2']["f"], 
                                         rouge_scores['rouge-l']["f"]]) for rouge_scores in rouges])
-        _, _, bert_f1 = b_score(ref_sents, hyp_sents, model_type=config.bert_score_model)
-        avg_bert_f1 = np.mean(bert_f1.numpy())
+        try:
+            _, _, bert_f1 = b_score(ref_sents, hyp_sents, model_type=config.bert_score_model)
+            avg_bert_f1 = np.mean(bert_f1.numpy())
+        except:
+            log.warning('Some problem while calculating BERT score so setting it to zero')
+            avg_bert_f1 = 0
     except:
-        log.warning('Some problem while calculating ROUGE so setting ROUGE score to zero')
+        log.warning('Some problem while calculating ROUGE so setting it to zero')
         avg_rouge_f1 = 0
-        avg_bert_f1 = 0
     
     if write_output_seq:
         with tf.io.gfile.GFile(config.output_sequence_write_path+str(step.numpy()), 'w') as f:
@@ -162,7 +165,7 @@ def monitor_run(ckpt_save_path,
                                                                             2
                                                                             )
     log.info(f"combined_metric {monitor_metrics['combined_metric']:4f}")
-    if config.last_recorded_value < monitor_metrics[to_monitor]:
+    if config.last_recorded_value <= monitor_metrics[to_monitor]:
         if copy_best_ckpt:
             # reset tolerance to zero if the monitor_metric decreases before the tolerance threshold
             ckpt_fold, ckpt_string = os.path.split(ckpt_save_path)

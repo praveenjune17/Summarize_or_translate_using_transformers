@@ -159,5 +159,5 @@ set_memory_growth(log)
 validate_config_parameters()
 (train_output_sequence_writer,
 valid_output_sequence_writer) = create_tensorboard_parms()
-if config.use_last_recorded_value:
+if config.last_recorded_value is None:
     check_recorded_metric_val()

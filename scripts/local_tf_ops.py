@@ -29,10 +29,10 @@ val_step_signature = [
                       tf.TensorSpec(shape=(None), dtype=tf.bool)
                      ]
   
-model_metrics = 'Step {}\n,\
-                 Train Loss {:.4f}\n,\
-                 Train_Accuracy {:.4f}\n,\
-                 ROUGE_f1 {:4f}\n,\
+model_metrics = 'Step {},\n\
+                 Train Loss {:.4f},\n\
+                 Train_Accuracy {:.4f},\n\
+                 ROUGE_f1 {:4f},\n\
                  BERT_f1 {:4f}\n'
 evaluation_step  = 'Time taken for {} step : {} secs' 
 checkpoint_details = 'Saving checkpoint at step {} on {}'
@@ -227,8 +227,7 @@ def training_results(
                     timing_info,
                     ckpt_save_path
                     ):
-      train_loss.reset_states()
-      train_accuracy.reset_states()
+
       log.info(
                 model_metrics.format(
                                     step, 
@@ -240,3 +239,5 @@ def training_results(
               )
       log.info(evaluation_step.format(step, timing_info))
       log.info(checkpoint_details.format(step, ckpt_save_path))
+      train_loss.reset_states()
+      train_accuracy.reset_states()
