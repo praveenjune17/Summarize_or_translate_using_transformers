@@ -20,13 +20,15 @@ def set_memory_growth(log):
 def detokenize(target_tokenizer, id_1, id_2, source_tokenizer=None):
 
     if source_tokenizer is None:
-        detokenized_seq_1 = target_tokenizer.decode([i for i in id_1 if i not in [config.target_CLS_ID, 
-                                                                                 config.target_SEP_ID, 
-                                                                                 config.PAD_ID]])
+        source_tokenizer = target_tokenizer
+        cls_id = config.target_CLS_ID
+        sep_id = config.target_SEP_ID
     else:
-        detokenized_seq_1 = source_tokenizer.decode([i for i in id_1 if i not in [config.input_CLS_ID, 
-                                                                                 config.input_SEP_ID, 
-                                                                                 config.PAD_ID]])
+        cls_id = config.input_CLS_ID
+        sep_id = config.input_SEP_ID
+    detokenized_seq_1 = source_tokenizer.decode([i for i in id_1 if i not in [cls_id, 
+                                                                             sep_id, 
+                                                                             config.PAD_ID]])
     detokenized_seq_2 = target_tokenizer.decode([i for i in id_2 if i not in [config.target_CLS_ID, 
                                                                              config.target_SEP_ID, 
                                                                              config.PAD_ID]])
@@ -39,8 +41,8 @@ def check_and_create_dir():
             if key == 'tensorboard_log':
                 try:
                     shutil.rmtree(config[key])
-                except FileNotFoundError:
-                    pass
+                except (FileNotFoundError, OSError) as e:
+                    continue
                 os.makedirs(config[key])
             if not os.path.exists(config[key]):
                 os.makedirs(config[key])

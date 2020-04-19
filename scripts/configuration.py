@@ -48,7 +48,7 @@ training_parms = {
      'enable_jit' : True,
      'eval_after_steps' : 1000,              # Evaluate after these many training steps
      'gradient_accumulation_steps': 2,   
-     'last_recorded_value': 0.66,
+     'last_recorded_value': 0.64,
      'min_train_loss' : 1.0,
      'monitor_metric' : 'combined_metric',
      'run_tensorboard': True,
