@@ -97,7 +97,7 @@ def create_tensorboard_parms():
 def check_recorded_metric_val():
     # Get last_recorded_value of monitor_metric from the log
     try:
-        with open(config.log_path) as f:
+        with open(config.log_path, 'r', encoding='utf-8') as f:
             for line in reversed(f.readlines()):
                 if ('- tensorflow - INFO - '+ config.monitor_metric in line) and \
                     (line[[i for i,char in enumerate((line)) if char.isdigit()][-1]+1] == '\n'):

@@ -68,7 +68,7 @@ def train_step(input_ids,
         scaled_loss = optimizer.get_scaled_loss(loss)
     scaled_gradients  = tape.gradient(scaled_loss, train_variables)
     gradients = optimizer.get_unscaled_gradients(scaled_gradients)
-    if config.accmulate_gradients:
+    if config.accumulate_gradients:
         # Initialize the shadow variables with same type as the gradients 
         if not gradient_accumulators:
             for tv in gradients:

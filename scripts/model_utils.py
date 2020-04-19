@@ -213,7 +213,7 @@ def query_decoder(self, enc_output, input_ids, dec_input, dec_padding_mask, deco
                                                )        
 
     # (batch_size, 1, vocab)
-    if decoder_type=='beam_search':
+    if decoder_type in ['beam_search', 'greedy']:
         return dec_output[:, -1: ,:]
     else:
         return (dec_output[:, -1: ,:], attention_dist)

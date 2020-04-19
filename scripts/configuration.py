@@ -10,14 +10,14 @@ unit_test = {
       'check_predictions_shape' : False,
       'clear_log' : True,
       'detokenize_samples' : False,
-      'gpu_memory_test' : True,
+      'gpu_memory_test' : False,
       'init_loss_check' : False,
       'input_independent_baseline_check' : False, 
       'print_config' : True,
       'random_results_check' : False,
-      'samples_to_test' : 420000,
+      'samples_to_test' : 10,
       'save_initial_weights' : False,
-      'test_script' : True,
+      'test_script' : False,
       'unit_test_dataset_batch_size' : 1
           }
 
@@ -42,7 +42,7 @@ model_parms = {
      }   
 
 training_parms = {
-     'accmulate_gradients' : True,
+     'accumulate_gradients' : True,
      'display_model_summary' : True,
      'early_stop' : True,
      'enable_jit' : True,
@@ -117,8 +117,10 @@ if not training_parms['use_tfds']:
     training_parms['num_examples_to_train'] = None     # If None then all the examples in the dataset will be used to train
     training_parms['num_examples_to_infer'] = None
     training_parms['test_size'] = 0.05                 # test set split size
-if training_parms['accmulate_gradients']==False:
+if training_parms['accumulate_gradients']==False:
     training_parms['gradient_accumulation_steps'] = 1
+if training_parms['gradient_accumulation_steps'] == 1:
+    training_parms['accumulate_gradients']==False
 
 if not (model_parms['model_architecture']=='bertified_transformer'):
     model_parms['num_of_decoders'] = 1

@@ -85,7 +85,7 @@ def create_dataset(split,
                    from_, 
                    to, 
                    batch_size,
-                   buffer_size=None,
+                   shuffle=None,
                    use_tfds=True, 
                    csv_path=None,
                    drop_remainder=False,
@@ -117,7 +117,7 @@ def create_dataset(split,
     for i,j  in en_tam_ds.keys():
         record_count+=(sum([i.num_examples for i in  list(en_tam_ds[(i, j)][1].splits.values())]))
     if not config.test_script:
-        log.info(f'Total record count is {record_count}')
+        log.info(f'Total record count without filtering is {record_count}')
     #initialize the first dataset to the train_examples variable
     #Concatenate all the train datasets
     if split == 'train':
@@ -139,12 +139,13 @@ def create_dataset(split,
                                           ), 
                                  num_parallel_calls=AUTOTUNE
                                  )
+    tf_dataset = tf_dataset.filter(filter_max_length)
     tf_dataset = tf_dataset.take(num_examples_to_select) 
     tf_dataset = tf_dataset.cache()
-    if buffer_size:
-        tf_dataset = tf_dataset.shuffle(buffer_size, seed = 100)
+    if shuffle:
+        tf_dataset = tf_dataset.shuffle(record_count, seed = 100)
     tf_dataset = tf_dataset.padded_batch(batch_size, padded_shapes=([-1], [-1]), drop_remainder=drop_remainder)
-    tf_dataset = tf_dataset.filter(filter_tokens_per_batch) 
+    tf_dataset = tf_dataset.filter(filter_tokens_per_batch)
     tf_dataset = tf_dataset.prefetch(buffer_size=AUTOTUNE)
     log.info(f'{split} tf_dataset created')
     return tf_dataset

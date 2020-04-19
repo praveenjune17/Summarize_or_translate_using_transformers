@@ -21,7 +21,7 @@ train_dataset = create_dataset(
                               from_=90, 
                               to=100, 
                               batch_size=config.train_batch_size,
-                              buffer_size=420000
+                              shuffle=True
                               )
 val_dataset = create_dataset(
                              split='validation', 
@@ -39,26 +39,26 @@ total_steps = int(config.epochs * (config.gradient_accumulation_steps))
 train_dataset = train_dataset.repeat(total_steps)
 for (step, (input_ids, target_ids)) in tqdm(enumerate(train_dataset, 1), initial=1):
     start=time.time()
-    grad_accum_flag = (True if ((step)%config.gradient_accumulation_steps) == 0 else False) if config.accmulate_gradients else None
+    grad_accum_flag = (True if ((step)%config.gradient_accumulation_steps) == 0 else False) if config.accumulate_gradients else None
     predictions = train_step(
                             input_ids,  
                             target_ids,
                             grad_accum_flag
                             )
-    if grad_accum_flag is not None:
-        if grad_accum_flag:
-            if (step)%config.steps_to_print_training_info==0:
-                train_loss = batch_run_check(
-                                          step,  
-                                          start
-                                          )
-    else:
-        if (step)%config.steps_to_print_training_info==0:
-            train_loss = batch_run_check(
-                                      step,  
-                                      start
-                                      )
-    if step == config.eval_after_steps:
+    #if grad_accum_flag is not None:
+        #if grad_accum_flag:
+    if (step % config.steps_to_print_training_info)==0:
+        train_loss = batch_run_check(
+                                  step,  
+                                  start
+                                  )
+    # #else:
+    #     if (step)%config.steps_to_print_training_info==0:
+    #         train_loss = batch_run_check(
+    #                                   step,  
+    #                                   start
+    #                                   )
+    if (step % config.eval_after_steps) == 0:
         ckpt_save_path = ck_pt_mgr.save()
         predicted = train_sanity_check(target_tokenizer, predictions, target_ids)
         # Run evaluation only if the predictions made by the teacher forced output is not empty

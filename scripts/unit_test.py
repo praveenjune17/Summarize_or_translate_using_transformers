@@ -45,7 +45,7 @@ def change_dataset_and_train(addtional_tokens_per_batch, batch_size):
                               target_tokenizer=target_tokenizer, 
                               from_=90, 
                               to=100, 
-                              buffer_size=config.samples_to_test,
+                              shuffle=True,
                               batch_size=batch_size
                               )
     log.info(f'Training with tokens_per_batch set to {addtional_tokens_per_batch}\
@@ -63,7 +63,7 @@ def training_loop(dataset, check_model_capacity, detokenize_samples=None):
         dataset = dataset.repeat(670)
     for (step, (input_ids, target_ids)) in tqdm(enumerate(dataset, 1), initial=1):
         start=time.time()
-        grad_accum_flag = (True if ((step)%config.gradient_accumulation_steps) == 0 else False) if config.accmulate_gradients else None
+        grad_accum_flag = (True if ((step)%config.gradient_accumulation_steps) == 0 else False) if config.accumulate_gradients else None
         predictions = train_step(
                                   input_ids,  
                                   target_ids, 
