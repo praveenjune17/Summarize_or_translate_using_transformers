@@ -45,19 +45,12 @@ for (step, (input_ids, target_ids)) in tqdm(enumerate(train_dataset, 1), initial
                             target_ids,
                             grad_accum_flag
                             )
-    #if grad_accum_flag is not None:
-        #if grad_accum_flag:
     if (step % config.steps_to_print_training_info)==0:
         train_loss = batch_run_check(
                                   step,  
                                   start
                                   )
-    # #else:
-    #     if (step)%config.steps_to_print_training_info==0:
-    #         train_loss = batch_run_check(
-    #                                   step,  
-    #                                   start
-    #                                   )
+    
     if (step % config.eval_after_steps) == 0:
         ckpt_save_path = ck_pt_mgr.save()
         predicted = train_sanity_check(target_tokenizer, predictions, target_ids)
