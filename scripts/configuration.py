@@ -36,7 +36,7 @@ model_parms = {
      'num_heads': 4,                  # the number of heads in the multi-headed attention unit
      'num_layers': 4,                 # number of transformer blocks
      'target_pretrained_bert_model' : 'bert-base-multilingual-cased',
-     'target_seq_length': 90,
+     'target_seq_length': 100,
      'target_vocab_size': 8294+2,
      'task':'translation'
      }
@@ -48,14 +48,14 @@ training_parms = {
      'enable_jit' : True,
      'eval_after_steps' : 1000,              # Evaluate after these many training steps
      'gradient_accumulation_steps': 1,   
-     'last_recorded_value': 0.53,
+     'last_recorded_value': 0.72,
      'min_train_loss' : 1.0,
      'monitor_metric' : 'combined_metric',
      'run_tensorboard': True,
      'steps_to_print_training_info': 50,                  # print training progress per number of batches specified
      'tfds_name' : 'en_tam_parallel_text',     # tfds dataset to be used
      'tolerance' : 0,
-     'tolerance_threshold': 8,          # Stop training after the threshold is reached
+     'tolerance_threshold': 3,          # Stop training after the threshold is reached
      'tokens_per_batch' : 4050,
      'use_tfds' : True,                 # use tfds datasets as to train the model else use the given csv file
      'valid_samples_to_eval' : 10000,     # number of samples used for validation
@@ -88,7 +88,7 @@ h_parms = {
    'l2_norm':0.0,
    'learning_rate': None,                # change to None to set learning rate decay
    'length_penalty' : 1,                       # Beam search hyps . Used  during inference                                                 
-   'train_batch_size': 128,
+   'train_batch_size': 64,
    'validation_batch_size' : 32
    }                                    
 

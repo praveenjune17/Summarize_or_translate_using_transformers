@@ -6,6 +6,8 @@
 *) nucleus, topk sampling
 	adapted from :- a) https://github.com/ShenakhtPajouh/GPT-language-model-tf.keras/blob/master/utils.py
 					b)https://github.com/raufer/bert-summarization/tree/master/models
+*) BERT score :- https://pypi.org/project/bert-score/
+*) ROUGE score :- https://pypi.org/project/rouge/
 
 					
 

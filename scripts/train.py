@@ -83,6 +83,7 @@ for (step, (input_ids, target_ids)) in tqdm(enumerate(train_dataset, 1), initial
                                                     val_dataset, 
                                                     step
                                                     )
+ckpt_save_path = ck_pt_mgr.save()
 training_results(
                   step, 
                   rouge_score, 
