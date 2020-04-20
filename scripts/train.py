@@ -78,4 +78,16 @@ for (step, (input_ids, target_ids)) in tqdm(enumerate(train_dataset, 1), initial
                                         )
         if not monitor_early_stop:
             break
+
+(rouge_score, bert_score) = evaluate_validation_set(
+                                                    val_dataset, 
+                                                    step
+                                                    )
+training_results(
+                  step, 
+                  rouge_score, 
+                  bert_score,
+                  (time.time() - start),
+                  ckpt_save_path
+                  )
 log.info(f'Training completed at step {step}')

@@ -27,19 +27,19 @@ model_parms = {
      'activation' : 'relu',
      'add_pointer_generator': True,
      'bert_score_model' : 'bert-base-multilingual-cased',
-     'd_model': 768,                  # the projected word vector dimension
-     'dff': 2048,                      # feed forward network hidden parameters
+     'd_model': 256,                  # the projected word vector dimension
+     'dff': 1024,                      # feed forward network hidden parameters
      'input_pretrained_bert_model': 'bert-base-uncased',
-     'input_seq_length': 60,
+     'input_seq_length': 100,
      'input_vocab_size': 8247+2,        # total vocab size + start and end token
      'model_architecture' : 'transformer',   #bertified_transformer or transformer
-     'num_heads': 8,                  # the number of heads in the multi-headed attention unit
-     'num_layers': 8,                 # number of transformer blocks
+     'num_heads': 4,                  # the number of heads in the multi-headed attention unit
+     'num_layers': 4,                 # number of transformer blocks
      'target_pretrained_bert_model' : 'bert-base-multilingual-cased',
-     'target_seq_length': 40,
+     'target_seq_length': 90,
      'target_vocab_size': 8294+2,
      'task':'translation'
-     }   
+     }
 
 training_parms = {
      'accumulate_gradients' : True,
@@ -47,8 +47,8 @@ training_parms = {
      'early_stop' : False,
      'enable_jit' : True,
      'eval_after_steps' : 1000,              # Evaluate after these many training steps
-     'gradient_accumulation_steps': 2,   
-     'last_recorded_value': 0.64,
+     'gradient_accumulation_steps': 1,   
+     'last_recorded_value': 0.53,
      'min_train_loss' : 1.0,
      'monitor_metric' : 'combined_metric',
      'run_tensorboard': True,
@@ -88,7 +88,7 @@ h_parms = {
    'l2_norm':0.0,
    'learning_rate': None,                # change to None to set learning rate decay
    'length_penalty' : 1,                       # Beam search hyps . Used  during inference                                                 
-   'train_batch_size': 32,
+   'train_batch_size': 128,
    'validation_batch_size' : 32
    }                                    
 

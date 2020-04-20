@@ -14,10 +14,9 @@ def translate():
     start = time.time()
     input_ids = tf.convert_to_tensor([[config.input_CLS_ID] + target_tokenizer.encode(input('Enter the sentence to be translated ')) + [config.input_SEP_ID]])
     dec_padding_mask = create_padding_mask(input_ids)
-    preds_draft_summary, _, _, _ = Model.predict(input_ids,
-                                                 dec_padding_mask,
-                                                 'greedy'
-                                                 )
+    preds_draft_summary, _, _, _ = Model(input_ids,
+                                          dec_padding_mask
+                                          )
                                                 
     translated_sequence = target_tokenizer.decode([i for i in tf.squeeze(preds_draft_summary) if i not in [config.target_CLS_ID, 
                                                                                                            config.target_SEP_ID, 
