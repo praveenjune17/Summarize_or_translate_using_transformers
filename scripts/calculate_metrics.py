@@ -31,14 +31,6 @@ def label_smoothing(inputs, epsilon=config.epsilon_ls):
     V = tf.cast(V, dtype=inputs.dtype)
     return ((1-epsilon) * inputs) + (epsilon / V)
 
-# def mask_and_calculate_loss(target):
-#     draft_mask = tf.math.logical_not(tf.math.equal(target[:, 1:], config.PAD_ID))
-#     refine_mask = tf.math.logical_not(tf.math.logical_or(tf.math.equal(target[:, :-1], config.target_CLS_ID), 
-#                                                          tf.math.equal(target[:, :-1], config.PAD_ID)
-#                                                          )
-#                                       )
-#     target_ids_3D = label_smoothing(tf.one_hot(target, depth=config.target_vocab_size))
-#     return (draft_mask, refine_mask, target_ids_3D)
 
 def convert_wordpiece_to_words(w_piece):
     new=[]
@@ -161,7 +153,7 @@ def monitor_run(ckpt_save_path,
     monitor_metrics['combined_metric'] = round(
                                         tf.reduce_sum([(i*j) for i,j in zip(monitor_metrics['combined_metric'],  
                                                                             config.combined_metric_weights)]).numpy(), 
-                                                                            2
+                                                                            4
                                                                             )
     log.info(f"combined_metric {monitor_metrics['combined_metric']:4f}")
     if config.last_recorded_value <= monitor_metrics[to_monitor]:

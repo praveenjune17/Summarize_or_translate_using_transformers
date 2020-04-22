@@ -44,11 +44,11 @@ model_parms = {
 training_parms = {
      'accumulate_gradients' : True,
      'display_model_summary' : True,
-     'early_stop' : False,
+     'early_stop' : True,
      'enable_jit' : True,
-     'eval_after_steps' : 1000,              # Evaluate after these many training steps
-     'gradient_accumulation_steps': 1,   
-     'last_recorded_value': 0.72,
+     'eval_after_steps' : 10000,              # Evaluate after these many training steps
+     'gradient_accumulation_steps': 32,   
+     'last_recorded_value': 0.6969,
      'min_train_loss' : 1.0,
      'monitor_metric' : 'combined_metric',
      'run_tensorboard': True,
@@ -80,15 +80,15 @@ inference_decoder_parms = {
     }    
 h_parms = {
    'beam_size': 1,              # Used  during inference                                                 
-   'combined_metric_weights': [0.98, 0.02], #(bert_score, rouge)
+   'combined_metric_weights': [0.9, 0.1], #(bert_score, rouge)
    'dropout_rate': 0.1,
-   'epochs': 2,
+   'epochs': 4,
    'epsilon_ls': 0.1,                    # label_smoothing hyper parameter
    'grad_clipnorm':None,
    'l2_norm':0.0,
    'learning_rate': None,                # change to None to set learning rate decay
    'length_penalty' : 1,                       # Beam search hyps . Used  during inference                                                 
-   'train_batch_size': 64,
+   'train_batch_size': 2,
    'validation_batch_size' : 32
    }                                    
 

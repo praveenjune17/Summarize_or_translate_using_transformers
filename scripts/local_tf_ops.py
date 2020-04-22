@@ -124,6 +124,8 @@ def evaluate_validation_set(
                            ):
     rouge_score_total = 0
     bert_score_total = 0
+    rouge_exclude_in_total = 0
+    bert_exclude_in_total = 0
     for (batch, (input_ids, target_ids)) in enumerate(validation_dataset):
         # calculate rouge and bert score for only the first batch
         if batch == 0:
@@ -138,10 +140,14 @@ def evaluate_validation_set(
                                                step, 
                                                False
                                                )
+        if not rouge_score:
+            rouge_exclude_in_total+=1
+        if not bert_score:
+            bert_exclude_in_total+=1
         rouge_score_total+=rouge_score
         bert_score_total+=bert_score
-    return (rouge_score_total/(batch+1), 
-            bert_score_total/(batch+1))
+    return (rouge_score_total/(batch+1-rouge_exclude_in_total), 
+            bert_score_total/(batch+1-bert_exclude_in_total))
 
 def eval_step(input_ids, 
                target_ids, 

@@ -64,6 +64,19 @@ def filter_max_length(x, y):
                           tf.math.count_nonzero(y) <= config.target_seq_length
                          )
 
+def filter_special_max_length(x, y):
+    return tf.logical_and(
+                          tf.math.count_nonzero(x) <= 2000,
+                          tf.math.count_nonzero(y) <= 2000
+                         )
+
+# Set threshold for input_sequence and  output_sequence length
+def filter_min_length(x, y):
+    return tf.logical_and(
+                          tf.math.count_nonzero(x) >= 650,
+                          tf.math.count_nonzero(y) >= 650
+                         )
+
 def filter_tokens_per_batch(x, y):
     return tf.math.less_equal(
                               (tf.size(x) + tf.size(y)), 
@@ -139,7 +152,12 @@ def create_dataset(split,
                                           ), 
                                  num_parallel_calls=AUTOTUNE
                                  )
-    tf_dataset = tf_dataset.filter(filter_max_length)
+    
+    if split == 'train':
+        tf_dataset = tf_dataset.filter(filter_min_length)
+        tf_dataset = tf_dataset.filter(filter_special_max_length)
+    else:
+        tf_dataset = tf_dataset.filter(filter_max_length)
     tf_dataset = tf_dataset.take(num_examples_to_select) 
     tf_dataset = tf_dataset.cache()
     if shuffle:

@@ -23,19 +23,39 @@ Watch out:-
 	#) separate script for python ops
 	#) test cases on whether inference decoders
 
-work on:-
-	#) run unit test on all three architectures
-	#) BLEU score scareBLEU or from official.transformer import compute_bleu
+Post-training improvements:-
+    #) Hyper parameter tuning on beam size, length penalty, dropout, label smoothing
+	#) Multiple occurences of stop values in beam search and stop repeated occurences of words
+	#) Add (follow the same preprocessing in the tfds pipeline) in the client script and also remove vulgar words, add spell correction, lower casing 
+
+Work on:-
+
+	#) embedding projector in tensorboard :- https://www.tensorflow.org/tensorboard/tensorboard_projector_plugin
+	#) test early stopping once
 	#) seperate out translation and summarize 
 		#) metrics
 		#) preprocess 
 		#) start and end IDS
-	#) checkpoint test. run a model store its checkpoint and restart it
-	#) check the output of mask and loss
-	#) gradient accumulation test
-	#) estimated memory calculation
-	#) embedding projector in tensorboard
+	#) BLEU score scareBLEU or from official.transformer import compute_bleu
+	#) A single class for all the evaluation metrics
+	#) run unit test for the last architecture
+	#) Data augumentation :- https://colab.research.google.com/drive/1RGWrQv3e0CRDPDROQ3ZmUWTmlRljasGi?authuser=0#scrollTo=E9RYnn9VDE4N
+	
+	#) gradient accumulation test :- run a accuracy check code with and without grad accum
+	
+			import numpy as np
+			import tensorflow as tf
+			import tensorboard as tb
+			tf.io.gfile = tb.compat.tensorflow_stub.io.gfile
+			from torch.utils.tensorboard import SummaryWriter
 
+			vectors = np.array([[0,0,1], [0,1,0], [1,0,0], [1,1,1]])
+			metadata = ['001', '010', '100', '111']  # labels
+			writer = SummaryWriter()
+			writer.add_embedding(vectors, metadata)
+			writer.close()
+			%load_ext tensorboard
+			%tensorboard --logdir=runs
 ##########################################################
 #) GPU profiler
 #) Tensorflow graph optimizations
