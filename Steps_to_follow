@@ -31,6 +31,7 @@ Post-training improvements:-
 Work on:-
 
 	#) embedding projector in tensorboard :- https://www.tensorflow.org/tensorboard/tensorboard_projector_plugin
+		*) positional encoded embeddings
 	#) test early stopping once
 	#) seperate out translation and summarize 
 		#) metrics
@@ -43,38 +44,15 @@ Work on:-
 	
 	#) gradient accumulation test :- run a accuracy check code with and without grad accum
 	
-			import numpy as np
-			import tensorflow as tf
-			import tensorboard as tb
-			tf.io.gfile = tb.compat.tensorflow_stub.io.gfile
-			from torch.utils.tensorboard import SummaryWriter
-
-			vectors = np.array([[0,0,1], [0,1,0], [1,0,0], [1,1,1]])
-			metadata = ['001', '010', '100', '111']  # labels
-			writer = SummaryWriter()
-			writer.add_embedding(vectors, metadata)
-			writer.close()
-			%load_ext tensorboard
-			%tensorboard --logdir=runs
 ##########################################################
 #) GPU profiler
 #) Tensorflow graph optimizations
+#) Tensorflow implementation of BERT score
 
 
 =======
 a)  create a single project
 Testing Rules
-*) seq length test
-#####################################################
-#) checkpoint test. run a model store its checkpoint and restart it
-#) gradient accumulation check
-#) remove eval_after bug
-#) tokens per batch
-#) filter function in preprocess
-#) two architecutre:- vanilla transformer, BERT_based_NLG, change the configs accordingly
-#) add decoding hyper parameters to config
-#) hyper parameter tuning
-#) BLEU score scareBLEU
 ########################################################
 #) meaning full names
 #) if same code is repeated then use a function
@@ -83,11 +61,7 @@ Testing Rules
 #) one method that clearly say what it does
 #) remove composite switch statements
 #) identify memory leakage
-####################################################
-#) embedding projector in tensorboard
-#) time taken for evaluation pipeline.
-#) GPU profiler
-#) Tensorflow graph optimizations
-#) Tensorflow implementation of BERT score
+#################################
+
 
 

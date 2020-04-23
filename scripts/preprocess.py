@@ -153,11 +153,11 @@ def create_dataset(split,
                                  num_parallel_calls=AUTOTUNE
                                  )
     
-    if split == 'train':
-        tf_dataset = tf_dataset.filter(filter_min_length)
-        tf_dataset = tf_dataset.filter(filter_special_max_length)
-    else:
-        tf_dataset = tf_dataset.filter(filter_max_length)
+    # if split == 'train':
+    #     tf_dataset = tf_dataset.filter(filter_min_length)
+    #     tf_dataset = tf_dataset.filter(filter_special_max_length)
+    # else:
+    tf_dataset = tf_dataset.filter(filter_max_length)
     tf_dataset = tf_dataset.take(num_examples_to_select) 
     tf_dataset = tf_dataset.cache()
     if shuffle:

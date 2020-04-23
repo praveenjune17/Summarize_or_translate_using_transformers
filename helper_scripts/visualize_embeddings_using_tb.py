@@ -1,72 +1,73 @@
-import io
-import numpy as np
-import string
+from __future__ import absolute_import, division, print_function, unicode_literals
+import tensorflow as tf
+tf.keras.backend.clear_session()
+tf.random.set_seed(100)
 import time
-from google.colab import files
-from transformers import BertTokenizer, TFBertModel
-
-table = str.maketrans(dict.fromkeys(string.punctuation))  # OR {key: None for key in string.punctuation}
-
-def embedding_projector_files(pretrained_model_to_use, paragraph, agg='mean', filename=str(time.time())):
-  words = []
-  vecs  = []
-  filename = filename+'_'+agg
-  out_v = io.open(f'vecs_{filename}.tsv', 'w', encoding='utf-8')
-  out_m = io.open(f'meta_{filename}.tsv', 'w', encoding='utf-8')
-  config_json = io.open('config.json', 'w', encoding='utf-8')
-  tokenizer = BertTokenizer.from_pretrained(pretrained_model_to_use)
-  model = TFBertModel.from_pretrained(pretrained_model_to_use)
-  embedding_layer = model.get_weights()[0]
-  # Remove tabs, newlines and spaces from the paragraph
-  for word in (' '.join(paragraph.split())).split():
-    if word:
-      # remove punctuation
-      word = word.translate(table)
-      ids = tokenizer.encode(word, add_special_tokens=False)
-      # aggregation operation #sum, mean
-      if agg=='sum':
-        vec = np.sum(embedding_layer[ids,:], axis=0)
-      elif agg=='mean':
-        vec = np.mean(embedding_layer[ids,:], axis=0)
-      out_m.write(word + "\n")
-      words.append(word)
-      out_v.write('\t'.join([str(x) for x in vec]) + "\n")
-      vecs.append(vec)
-  rows, cols = np.asarray(vecs).shape
-  print(f'Shape of the embedding tensor created is {rows}, {cols}')
-  config_json.write('''{
-  "embeddings": [
-    {
-      "tensorName": "My tensor",
-      "tensorShape": [
-        '''+str(cols)+''',
-        '''+str(rows)+'''
-      ],
-      "tensorPath": "https://raw.githubusercontent.com/praveenjune17/Summarize_and_translate/master/Visualize/embedding_projector_files/vecs_'''+str(filename)+'''.tsv",
-      "metadataPath": "https://raw.githubusercontent.com/praveenjune17/Summarize_and_translate/master/Visualize/embedding_projector_files/meta_'''+str(filename)+'''.tsv"
-    }
-  ]
-}''')
-  assert len(vecs) == len(words), '# of words is not equal to # of embedding vecs '
-  out_v.close()
-  out_m.close()
-  config_json.close()
-  print('files are created and ready to download. Update the tensorpath and \
-         metadatapath in the config file and host the config in the \
-         github gist should look something like\
-         https://projector.tensorflow.org/?config=https://gist.githubusercontent.com/'+\
-        'praveenjune17/9c9a399697256971d5d68357455750ac/raw/43673d4717b475895c5d26946b37d82e211f0330/embedding_info.json')
-  files.download(f'vecs_{filename}.tsv')
-  files.download(f'meta_{filename}.tsv')
-  files.download('config.json')
-  return (words, vecs)
+from tqdm import tqdm
+from configuration import config
+from create_model import source_tokenizer, target_tokenizer, Model
+from local_tf_ops import check_ckpt
 
 
-paragraph = '''மூச்சுத் திவலை அல்லது சுவாசத் துளி (Respiratory droplet) என்பது பெரும்பாலும் நீரைக் கொண்டுள்ள ஒரு துகள் ஆகும். இது உற்பத்தி செய்யப்பட்ட பின்னர் விரைவாக தரையில் விழும் அளவுக்கு பெரியது. பெரும்பாலும் 5 மைக்ரோமீட்டருக்கும் அதிகமான விட்டம் கொண்டதாக வரையறுக்கப்படுகிறது. சுவாசிப்பது, பேசுவது, தும்மல், 
-               இருமல் அல்லது வாந்தியெடுத்தல் போன்ற செயல்பாடுகளின் விளைவாக சுவாசத் துளி இயற்கையாகவே உற்பத்தி செய்யப்படுகிறது. அல்லது தூசுப்படலத்தை உருவாக்கும் மருத்துவ நடைமுறைகள், 
-               கழிப்பறைகளை சுத்தப்படுத்துதல் அல்லது பிற வீட்டு வேலை நடவடிக்கைகள் மூலம் செயற்கையாகவும் இத்துளிகளை உருவாக்க முடியும்.சுவாச நீர்த்துளிகள் நீர்த்துளி உட்கருக்களிலிருந்து வேறுபட்டவையாகும். 
-               நீர்த்துளி உட்கருக்கள் 5 மைக்ரோமீட்டரை விட சிறிய அளவு கொண்டவையாகும். அவை குறிப்பிடத்தக்க காலத்திற்கு காற்றில் தொங்கியிருக்க முடியும். இதனால் நீர்த்துளி உட்கருக்கள் காற்றுவழி நோய்களுக்கான நோய்க்காவிநோய்ப்பரப்பியாக இருக்கின்றன. சுவாசத் துளிகள் மூலம் காற்றுவழி நோய்கள் பரவுவதில்லை.
+ck_pt_mgr = check_ckpt(config.checkpoint_path)
+
+temp_input = tf.random.uniform((64, 38), dtype=tf.int64, minval=0, maxval=200)
+temp_target = tf.random.uniform((64, 36), dtype=tf.int64, minval=0, maxval=200)
+(draft_predictions, draft_attention_weights, 
+refine_predictions, refine_attention_weights) = Model(temp_input,
+                                                    dec_padding_mask=None, 
+                                                    enc_padding_mask=None, 
+                                                    look_ahead_mask=None,
+                                                    target_ids=temp_target, 
+                                                    training=False, 
+                                                    )
+
+
+def embedding_projector_files(target_tokenizer, model, paragraph, agg='mean', filename=str(time.time())):
+    words = []
+    word_vector  = []
+    filename = filename+'_'+agg
+    out_m = io.open(os.path.join(log_dir, 'metadata.tsv'), "w", encoding='utf-8')
+    # Remove start and end token embedding
+    target_embedding_layer = Model.layers[1].get_weights()[0][1:-1, :]  
+    # Remove tabs, newlines and spaces from the paragraph
+    for word in (' '.join(paragraph.split())).split():
+        if word:
+            # remove punctuation
+            word = word.translate(table)
+            target_ids = target_tokenizer.encode(word)
+            # aggregation operation #sum, mean
+            if agg=='sum':
+                vec = np.sum(target_embedding_layer[target_ids,:], axis=0)
+            elif agg=='mean':
+                vec = np.mean(target_embedding_layer[target_ids,:], axis=0)
+            out_m.write(word + "\n")
+            words.append(word)
+            word_vector.append(vec)
+    rows, cols = np.asarray(word_vector).shape
+    print(f'Shape of the embedding tensor created is {rows}, {cols} and length of meta data is {len(words)}')
+    
+    checkpoint = tf.train.Checkpoint(embedding=tf.Variable(word_vector))
+    checkpoint.save(os.path.join(log_dir, "embedding.ckpt"))
+    #
+    #assert len(vecs) == len(words), '# of words is not equal to # of embedding vecs '
+    out_m.close()
+    # Set up config
+    config = projector.ProjectorConfig()
+    embedding = config.embeddings.add()
+    # The name of the tensor will be suffixed by `/.ATTRIBUTES/VARIABLE_VALUE`
+    embedding.tensor_name = "embedding/.ATTRIBUTES/VARIABLE_VALUE"
+    embedding.metadata_path = 'metadata.tsv'
+    projector.visualize_embeddings(log_dir, config)
+    return (words, np.asarray(word_vector))
+
+
+paragraph = '''புவி சூரியனிலிருந்து மூன்றாவதாக உள்ள கோள், விட்டம், நிறை மற்றும் அடர்த்தி கொண்டு ஒப்பிடுகையில் சூரிய மண்டலத்தில் உள்ள மிகப் பெரிய உட் கோள்களில் ஒன்று. இதனை உலகம், நீலக்கோள் எனவும் குறிப்பிடுகின்றனர். மாந்தர்கள் உட்பட பல்லாயிரக்கணக்கான உயிரினங்கள் வாழும் இடமான இந்த புவி, அண்டத்தில் உயிர்கள் இருப்பதாக அறியப்படும் ஒரே இடமாக கருதப்படுகின்றது. இந்தக் கோள் சுமார் 4.54 பில்லியன் ஆண்டுகளுக்கு முன்னர் உருவானது. மேலும் ஒரு பில்லியன் ஆண்டுகளுக்குள் அதன் மேற்பரப்பில் உயிரினங்கள் தோன்றின. அது முதல் புவியின் உயிர்க்கோளம் குறிப்பிடும் வகையில் அதன் வளிமண்டலம் மற்றும் உயிரற்ற காரணிகளை மாற்றியுள்ளது
             '''
-
-pretrained_model_to_use = 'bert-base-multilingual-cased'
-words, vecs = embedding_projector_files(pretrained_model_to_use, paragraph, agg='mean')
+words, vecs = embedding_projector_files(target_tokenizer, Model, paragraph, agg='mean', filename='temp')
+if not os.path.exists(log_dir):
+    try:
+        shutil.rmtree(log_dir)
+    except:
+        pass
+    os.makedirs(log_dir)
