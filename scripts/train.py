@@ -57,7 +57,9 @@ for (step, (input_ids, target_ids)) in tqdm(enumerate(train_dataset, 1), initial
         # Run evaluation only if the predictions made by the teacher forced output is not empty
         if predicted:
             (rouge_score, bert_score) = evaluate_validation_set(
-                                                              val_dataset, 
+                                                              val_dataset,
+                                                              config.beam_size,
+                                                              config.length_penalty, 
                                                               step
                                                               )
         else:
@@ -81,6 +83,8 @@ for (step, (input_ids, target_ids)) in tqdm(enumerate(train_dataset, 1), initial
 
 (rouge_score, bert_score) = evaluate_validation_set(
                                                     val_dataset, 
+                                                    config.beam_size,
+                                                    config.length_penalty,
                                                     step
                                                     )
 ckpt_save_path = ck_pt_mgr.save()

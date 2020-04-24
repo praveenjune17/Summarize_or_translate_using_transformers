@@ -116,7 +116,7 @@ def write_output_sequence(tar_real, predictions, step, write_output_seq):
         log.warning('Some problem while calculating BERT score so setting it to zero')
         avg_bert_f1 = 0
     if write_output_seq:
-        with tf.io.gfile.GFile(config.output_sequence_write_path+str(step.numpy()), 'w') as f:
+        with tf.io.gfile.GFile(config.output_sequence_write_path+str(step.numpy()), 'a') as f:
             for ref, hyp in zip(ref_sents, hyp_sents):
                 f.write(ref+'\t'+hyp+'\n')
     return (avg_rouge_f1, avg_bert_f1)

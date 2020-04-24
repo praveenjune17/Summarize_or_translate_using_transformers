@@ -15,7 +15,7 @@ unit_test = {
       'input_independent_baseline_check' : False, 
       'print_config' : True,
       'random_results_check' : False,
-      'samples_to_test' : 10,
+      'samples_to_test' : 128,
       'save_initial_weights' : False,
       'test_script' : False,
       'unit_test_dataset_batch_size' : 1
@@ -30,13 +30,13 @@ model_parms = {
      'd_model': 256,                  # the projected word vector dimension
      'dff': 1024,                      # feed forward network hidden parameters
      'input_pretrained_bert_model': 'bert-base-uncased',
-     'input_seq_length': 100,
+     'input_seq_length': 50,
      'input_vocab_size': 8247+2,        # total vocab size + start and end token
      'model_architecture' : 'transformer',   #bertified_transformer or transformer
      'num_heads': 4,                  # the number of heads in the multi-headed attention unit
      'num_layers': 4,                 # number of transformer blocks
      'target_pretrained_bert_model' : 'bert-base-multilingual-cased',
-     'target_seq_length': 100,
+     'target_seq_length': 150,
      'target_vocab_size': 8294+2,
      'task':'translation'
      }
@@ -46,13 +46,13 @@ training_parms = {
      'display_model_summary' : True,
      'early_stop' : True,
      'enable_jit' : True,
-     'eval_after_steps' : 10000,              # Evaluate after these many training steps
-     'gradient_accumulation_steps': 32,   
+     'eval_after_steps' : 1000,              # Evaluate after these many training steps
+     'gradient_accumulation_steps': 1,   
      'last_recorded_value': 0.6969,
      'min_train_loss' : 1.0,
      'monitor_metric' : 'combined_metric',
      'run_tensorboard': True,
-     'steps_to_print_training_info': 50,                  # print training progress per number of batches specified
+     'steps_to_print_training_info': 1,                  # print training progress per number of batches specified
      'tfds_name' : 'en_tam_parallel_text',     # tfds dataset to be used
      'tolerance' : 0,
      'tolerance_threshold': 3,          # Stop training after the threshold is reached
@@ -73,13 +73,13 @@ special_tokens = {
     }
 
 inference_decoder_parms = {
-    'decoder_type' : 'greedy',   # or topktopp
+    'decoder_type' : 'beam_search',   # or topktopp
     'softmax_temperature'  : 0.9, 
     'topp' : 0.9, 
     'topk' : 5
     }    
 h_parms = {
-   'beam_size': 1,              # Used  during inference                                                 
+   'beam_size': 7,              # Used  during inference                                                 
    'combined_metric_weights': [0.9, 0.1], #(bert_score, rouge)
    'dropout_rate': 0.1,
    'epochs': 4,
@@ -87,8 +87,8 @@ h_parms = {
    'grad_clipnorm':None,
    'l2_norm':0.0,
    'learning_rate': None,                # change to None to set learning rate decay
-   'length_penalty' : 1,                       # Beam search hyps . Used  during inference                                                 
-   'train_batch_size': 2,
+   'length_penalty' : 1,               # Beam search hyps . Used  during inference                                                 
+   'train_batch_size': 32,
    'validation_batch_size' : 32
    }                                    
 
@@ -97,10 +97,10 @@ core_path = os.getcwd()
 path_seperator = '\\' if platform.system() == 'Windows' else '/'
 file_path = {
         'best_ckpt_path' : os.path.join(core_path, f"best_checkpoints{path_seperator}{dataset_name}{path_seperator}"),  
-        'checkpoint_path' : os.path.join(core_path, f"checkpoints{path_seperator}{dataset_name}{path_seperator}"),
+        'checkpoint_path' : os.path.join(core_path, f"temp/checkpoints{path_seperator}{dataset_name}{path_seperator}"),
         'initial_weights' : os.path.join(core_path, f"initial_weights{path_seperator}{dataset_name}{path_seperator}"),
         'infer_csv_path' : None,
-        'infer_ckpt_path' : None,
+        'infer_ckpt_path' : 'D:\\Local_run\\best_checkpoints\\en_tam_parallel_text\\ckpt-213',
         'input_seq_vocab_path' : os.path.join(core_path, f"TFDS_vocab_files{path_seperator}{dataset_name}{path_seperator}vocab_en"),
         'log_path' : os.path.join(core_path, f"created_files{path_seperator}{dataset_name}{path_seperator}tensorflow.log"),
         'output_seq_vocab_path' : os.path.join(core_path, f"TFDS_vocab_files{path_seperator}{dataset_name}{path_seperator}vocab_ta"),

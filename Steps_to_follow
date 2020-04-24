@@ -29,9 +29,9 @@ Post-training improvements:-
 	#) Add (follow the same preprocessing in the tfds pipeline) in the client script and also remove vulgar words, add spell correction, lower casing 
 
 Work on:-
-
+	#) GPU profiler
+	#) Client script
 	#) embedding projector in tensorboard :- https://www.tensorflow.org/tensorboard/tensorboard_projector_plugin
-		*) positional encoded embeddings
 	#) test early stopping once
 	#) seperate out translation and summarize 
 		#) metrics
@@ -41,11 +41,8 @@ Work on:-
 	#) A single class for all the evaluation metrics
 	#) run unit test for the last architecture
 	#) Data augumentation :- https://colab.research.google.com/drive/1RGWrQv3e0CRDPDROQ3ZmUWTmlRljasGi?authuser=0#scrollTo=E9RYnn9VDE4N
-	
-	#) gradient accumulation test :- run a accuracy check code with and without grad accum
-	
 ##########################################################
-#) GPU profiler
+
 #) Tensorflow graph optimizations
 #) Tensorflow implementation of BERT score
 

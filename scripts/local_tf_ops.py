@@ -94,7 +94,7 @@ def train_step(input_ids,
 def val_step(
              input_ids,
              target_ids,
-             step, 
+             step,
              write_output_seq):
 
     dec_padding_mask = create_padding_mask(input_ids)
@@ -105,7 +105,7 @@ def val_step(
                                     target_ids=None,
                                     enc_padding_mask=None, 
                                     look_ahead_mask=None, 
-                                    training=None,
+                                    training=None
                                     )
     
     if refine_predictions:
@@ -120,6 +120,8 @@ def val_step(
 
 def evaluate_validation_set(
                            validation_dataset, 
+                           beam_size,
+                           length_penalty,
                            step
                            ):
     rouge_score_total = 0
@@ -132,13 +134,18 @@ def evaluate_validation_set(
           rouge_score, bert_score = val_step(input_ids,
                                              target_ids,  
                                              step, 
+                                             beam_size,
+                                             length_penalty,
                                              config.write_summary_op
                                              )
+          config.write_summary_op = False
         else:
           rouge_score, bert_score  =  val_step(input_ids,
                                                target_ids, 
                                                step, 
-                                               False
+                                               beam_size,
+                                               length_penalty,
+                                               config.write_summary_op
                                                )
         if not rouge_score:
             rouge_exclude_in_total+=1

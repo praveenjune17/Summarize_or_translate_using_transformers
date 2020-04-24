@@ -358,6 +358,7 @@ class Transformer(tf.keras.Model):
                dec_padding_mask,
                decoder_sampling_type=config.decoder_type,
                beam_size=config.beam_size,
+               length_penalty=config.length_penalty,
                temperature=config.softmax_temperature, 
                top_p=config.topp,
                top_k=config.topk):
@@ -374,6 +375,7 @@ class Transformer(tf.keras.Model):
                                                 enc_output=enc_output,
                                                 dec_padding_mask=dec_padding_mask,
                                                 beam_size=beam_size,
+                                                length_penalty=length_penalty,
                                                 decoder_type=decoder_sampling_type,
                                                 temperature=temperature,
                                                 top_p=top_p, 

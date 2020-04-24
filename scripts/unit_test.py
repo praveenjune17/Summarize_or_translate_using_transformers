@@ -13,7 +13,7 @@ from preprocess import create_dataset
 from configuration import config
 from calculate_metrics import mask_and_calculate_loss, monitor_run
 from creates import log, detokenize
-from create_model import source_tokenizer, target_tokenizer, Transformer, Bertified_transformer
+from create_model import source_tokenizer, target_tokenizer, Model
 from local_tf_ops import (check_ckpt, eval_step, train_step, batch_run_check, 
                           train_sanity_check, evaluate_validation_set)
 
@@ -167,6 +167,8 @@ if config.check_evaluation_pipeline:
     ck_pt_mgr = check_ckpt(config.checkpoint_path)
     rouge_score, bert_score = evaluate_validation_set(
                               unit_test_dataset, 
+                              config.beam_size,
+                              config.length_penalty,
                               1
                               )
     monitor_early_stop = monitor_run(
@@ -199,25 +201,8 @@ if config.check_predictions_shape:
 
     temp_input = tf.random.uniform((64, 38), dtype=tf.int64, minval=0, maxval=200)
     temp_target = tf.random.uniform((64, 36), dtype=tf.int64, minval=0, maxval=200)
-    if config.model_architecture == 'bertified_transformer':
-        sample_model = Bertified_transformer(
-                                num_layers=config.num_layers, 
-                                d_model=config.d_model, 
-                                num_heads=config.num_heads, 
-                                dff=config.dff, 
-                                input_vocab_size=config.input_vocab_size,
-                                target_vocab_size=config.target_vocab_size
-                                )
-    else:
-        sample_model = Transformer(num_layers=config.num_layers, 
-                               d_model=config.d_model, 
-                               num_heads=config.num_heads, 
-                               dff=config.dff, 
-                               input_vocab_size=config.input_vocab_size, 
-                               target_vocab_size=config.target_vocab_size,
-                               add_pointer_generator=config.add_pointer_generator)
     (draft_predictions, draft_attention_weights, 
-    refine_predictions, refine_attention_weights) = sample_model(temp_input,
+    refine_predictions, refine_attention_weights) = Model(temp_input,
                                                        dec_padding_mask=None, 
                                                        enc_padding_mask=None, 
                                                        look_ahead_mask=None,
