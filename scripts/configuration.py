@@ -30,13 +30,13 @@ model_parms = {
      'd_model': 256,                  # the projected word vector dimension
      'dff': 1024,                      # feed forward network hidden parameters
      'input_pretrained_bert_model': 'bert-base-uncased',
-     'input_seq_length': 50,
+     'input_seq_length': 100,
      'input_vocab_size': 8247+2,        # total vocab size + start and end token
      'model_architecture' : 'transformer',   #bertified_transformer or transformer
      'num_heads': 4,                  # the number of heads in the multi-headed attention unit
      'num_layers': 4,                 # number of transformer blocks
      'target_pretrained_bert_model' : 'bert-base-multilingual-cased',
-     'target_seq_length': 150,
+     'target_seq_length': 100,
      'target_vocab_size': 8294+2,
      'task':'translate'            # must be translate or summarize
      }
@@ -47,8 +47,8 @@ training_parms = {
      'early_stop' : True,
      'enable_jit' : True,
      'eval_after_steps' : 1000,              # Evaluate after these many training steps
-     'gradient_accumulation_steps': 1,   
-     'last_recorded_value': 0.6969,
+     'gradient_accumulation_steps': 2,   
+     'last_recorded_value': 0.7000,
      'min_train_loss' : 1.0,
      'monitor_metric' : 'combined_metric',
      'run_tensorboard': True,
@@ -79,7 +79,7 @@ inference_decoder_parms = {
     'topk' : 5
     }    
 h_parms = {
-   'beam_size': 7,              # Used  during inference                                                 
+   'beam_size': 1,              # Used  during inference                                                 
    'combined_metric_weights': [0.9, 0.1], #(bert_score, rouge)
    'dropout_rate': 0.1,
    'epochs': 4,
@@ -88,7 +88,7 @@ h_parms = {
    'l2_norm':0.0,
    'learning_rate': None,                # change to None to set learning rate decay
    'length_penalty' : 1,               # Beam search hyps . Used  during inference                                                 
-   'train_batch_size': 32,
+   'train_batch_size': 128,
    'validation_batch_size' : 32
    }                                    
 
@@ -97,7 +97,7 @@ core_path = os.getcwd()
 path_seperator = '\\' if platform.system() == 'Windows' else '/'
 file_path = {
         'best_ckpt_path' : os.path.join(core_path, f"best_checkpoints{path_seperator}{dataset_name}{path_seperator}"),  
-        'checkpoint_path' : os.path.join(core_path, f"temp/checkpoints{path_seperator}{dataset_name}{path_seperator}"),
+        'checkpoint_path' : os.path.join(core_path, f"checkpoints{path_seperator}{dataset_name}{path_seperator}"),
         'initial_weights' : os.path.join(core_path, f"initial_weights{path_seperator}{dataset_name}{path_seperator}"),
         'infer_csv_path' : None,
         'infer_ckpt_path' : 'D:\\Local_run\\best_checkpoints\\en_tam_parallel_text\\ckpt-213',
