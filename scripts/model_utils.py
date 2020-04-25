@@ -235,7 +235,7 @@ def draft_decoder(self,
         """
         Inference call, builds a draft output_sequence auto-regressively
         """
-        log.info(f"Building: '{decoder_type} decoder'")
+        #log.info(f"Building: '{decoder_type} decoder'")
         start_ids = tf.repeat(config.target_CLS_ID, repeats=batch_size)
         #end_ids   = tf.repeat(config.target_SEP_ID, repeats=batch_size)
         if decoder_type in ['beam_search', 'greedy']:

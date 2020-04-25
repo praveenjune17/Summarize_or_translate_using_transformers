@@ -1,14 +1,27 @@
 import time
+import re
 import tensorflow as tf
 from create_model import  source_tokenizer,target_tokenizer, Model
 from creates import detokenize
 from model_utils import create_padding_mask
 from configuration import config
 
- 
+
+en_blacklist = '"#$%&\()*+-./:;<=>@[\\]^_`♪{|}~='
+cleantxt = re.compile('<.*?>')
 def translate():
     start = time.time()
-    input_ids = tf.convert_to_tensor([[config.input_CLS_ID] + source_tokenizer.encode(input('Enter the sentence to be translated ')) + [config.input_SEP_ID]])
+    en_input = input('Enter the sentence to be translated ')
+    # Lower case english lines
+    l1 = en_input.lower()
+    # Remove unwanted html tags from text
+    l1 = re.sub(cleantxt, '', l1)
+    # Remove english text in tamil sentence and tamil text in english sentence
+    cleaned_l1 = ''.join([ch for ch in l1 if ch not in en_blacklist])
+    # Remove duplicate empty spaces
+    cleaned_l1 = " ".join(cleaned_l1.split())
+    print(cleaned_l1)
+    input_ids = tf.convert_to_tensor([[config.input_CLS_ID] + source_tokenizer.encode() + [config.input_SEP_ID]])
     dec_padding_mask = create_padding_mask(input_ids)
     preds_draft_summary, _, _, _ = Model.predict(input_ids,
                                                 dec_padding_mask
@@ -26,6 +39,6 @@ if __name__ == '__main__':
                                Model=Model
                               )
     ckpt.restore(config.infer_ckpt_path).expect_partial()
-    translate()
-
- 
+    translate()    
+    
+    

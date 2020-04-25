@@ -38,7 +38,7 @@ model_parms = {
      'target_pretrained_bert_model' : 'bert-base-multilingual-cased',
      'target_seq_length': 150,
      'target_vocab_size': 8294+2,
-     'task':'translation'
+     'task':'translate'            # must be translate or summarize
      }
 
 training_parms = {
