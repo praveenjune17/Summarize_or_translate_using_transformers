@@ -120,32 +120,25 @@ def val_step(
 
 def evaluate_validation_set(
                            validation_dataset, 
-                           beam_size,
-                           length_penalty,
                            step
                            ):
     rouge_score_total = 0
     bert_score_total = 0
     rouge_exclude_in_total = 0
     bert_exclude_in_total = 0
-    for (batch, (input_ids, target_ids)) in enumerate(validation_dataset):
+    for (batch, (input_ids, target_ids)) in enumerate(validation_dataset, 1):
         # calculate rouge and bert score for only the first batch
-        if batch == 0:
+        if batch == 1:
           rouge_score, bert_score = val_step(input_ids,
                                              target_ids,  
                                              step, 
-                                             beam_size,
-                                             length_penalty,
                                              config.write_summary_op
                                              )
-          config.write_summary_op = False
         else:
           rouge_score, bert_score  =  val_step(input_ids,
                                                target_ids, 
                                                step, 
-                                               beam_size,
-                                               length_penalty,
-                                               config.write_summary_op
+                                               False
                                                )
         if not rouge_score:
             rouge_exclude_in_total+=1
@@ -153,8 +146,8 @@ def evaluate_validation_set(
             bert_exclude_in_total+=1
         rouge_score_total+=rouge_score
         bert_score_total+=bert_score
-    return (rouge_score_total/(batch+1-rouge_exclude_in_total), 
-            bert_score_total/(batch+1-bert_exclude_in_total))
+    return (rouge_score_total/(batch-rouge_exclude_in_total), 
+            bert_score_total/(batch-bert_exclude_in_total))
 
 def eval_step(input_ids, 
                target_ids, 

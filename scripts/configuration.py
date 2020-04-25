@@ -52,7 +52,7 @@ training_parms = {
      'min_train_loss' : 1.0,
      'monitor_metric' : 'combined_metric',
      'run_tensorboard': True,
-     'steps_to_print_training_info': 1,                  # print training progress per number of batches specified
+     'steps_to_print_training_info': 100,      # print training progress per number of batches specified
      'tfds_name' : 'en_tam_parallel_text',     # tfds dataset to be used
      'tolerance' : 0,
      'tolerance_threshold': 3,          # Stop training after the threshold is reached
@@ -79,7 +79,7 @@ inference_decoder_parms = {
     'topk' : 5
     }    
 h_parms = {
-   'beam_size': 1,              # Used  during inference                                                 
+   'beam_size': 7,              # Used  during inference                                                 
    'combined_metric_weights': [0.9, 0.1], #(bert_score, rouge)
    'dropout_rate': 0.1,
    'epochs': 4,
