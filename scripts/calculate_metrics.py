@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 import tempfile
-import shutil
-import os
 import tensorflow as tf
 import numpy as np
 from rouge import Rouge
@@ -11,7 +9,7 @@ from configuration import config
 from creates import log, valid_output_sequence_writer, detokenize
 from create_model import source_tokenizer, target_tokenizer 
 
-calculate_combined_metric = tf.keras.metrics.Mean(name='mean', dtype=None)
+
 
 class evaluation_metrics:
 
@@ -194,68 +192,68 @@ def tf_write_output_sequence(input_ids, tar_real, predictions, step, write_outpu
                           )
     
 
-def monitor_run(ckpt_save_path, 
-                bert_score, 
-                rouge_score, 
-                bleu,
-                train_loss,
-                step,
-                copy_best_ckpt=True,
-                to_monitor=config.monitor_metric):
+# def monitor_run(ckpt_save_path, 
+#                 bert_score, 
+#                 rouge_score, 
+#                 bleu,
+#                 train_loss,
+#                 step,
+#                 copy_best_ckpt=True,
+#                 to_monitor=config.monitor_metric):
   
     
-    if config.run_tensorboard:
-        with valid_output_sequence_writer.as_default():
-            tf.summary.scalar('ROUGE_f1', rouge_score, step=step)
-            tf.summary.scalar('BERT_f1', bert_score, step=step)
-            tf.summary.scalar('BLEU', bleu, step=step)
-    monitor_metrics = dict()
-    monitor_metrics['BERT_f1'] = bert_score
-    monitor_metrics['ROUGE_f1'] = rouge_score
-    monitor_metrics['bleu'] = bleu
-    monitor_metrics['combined_metric'] = [
-                                          monitor_metrics['BERT_f1'], 
-                                          monitor_metrics['ROUGE_f1'],
-                                          monitor_metrics['bleu']
-                                          ]
-    assert config.monitor_metric in monitor_metrics.keys(), f'Available metrics to monitor are {monitor_metrics.keys()}'
-    assert sum(config.combined_metric_weights) == 1, 'weights should sum to 1'
-    monitor_metrics['combined_metric'] = calculate_combined_metric(monitor_metrics['combined_metric'], 
-                                                                   sample_weight=config.combined_metric_weights)
-    log.info(f"combined_metric {monitor_metrics['combined_metric'].numpy()}")
-    if config.last_recorded_value <= monitor_metrics[to_monitor]:
-        if copy_best_ckpt:
-            # reset tolerance to zero if the monitor_metric decreases before the tolerance threshold
-            ckpt_fold, ckpt_string = os.path.split(ckpt_save_path)
-            config.tolerance=0
-            config.last_recorded_value =  monitor_metrics[to_monitor]
-            ckpt_files_tocopy = [files for files in os.listdir(os.path.split(ckpt_save_path)[0]) \
-                                 if ckpt_string in files]
-            log.info(f'{to_monitor} is {monitor_metrics[to_monitor]:4f} so checkpoint files {ckpt_string} \
-                     will be copied to best checkpoint directory')
-            # copy the best checkpoints
-            shutil.copy2(os.path.join(ckpt_fold, 'checkpoint'), config.best_ckpt_path)
-            for files in ckpt_files_tocopy:
-                shutil.copy2(os.path.join(ckpt_fold, files), config.best_ckpt_path)
-        else:
-            pass
-    else:
-        config.tolerance+=1
+#     if config.run_tensorboard:
+#         with valid_output_sequence_writer.as_default():
+#             tf.summary.scalar('ROUGE_f1', rouge_score, step=step)
+#             tf.summary.scalar('BERT_f1', bert_score, step=step)
+#             tf.summary.scalar('BLEU', bleu, step=step)
+#     monitor_metrics = dict()
+#     monitor_metrics['BERT_f1'] = bert_score
+#     monitor_metrics['ROUGE_f1'] = rouge_score
+#     monitor_metrics['bleu'] = bleu
+#     monitor_metrics['combined_metric'] = [
+#                                           monitor_metrics['BERT_f1'], 
+#                                           monitor_metrics['ROUGE_f1'],
+#                                           monitor_metrics['bleu']
+#                                           ]
+#     assert config.monitor_metric in monitor_metrics.keys(), f'Available metrics to monitor are {monitor_metrics.keys()}'
+#     assert sum(config.combined_metric_weights) == 1, 'weights should sum to 1'
+#     monitor_metrics['combined_metric'] = calculate_combined_metric(monitor_metrics['combined_metric'], 
+#                                                                    sample_weight=config.combined_metric_weights)
+#     log.info(f"combined_metric {monitor_metrics['combined_metric'].numpy()}")
+#     if config.last_recorded_value <= monitor_metrics[to_monitor]:
+#         if copy_best_ckpt:
+#             # reset tolerance to zero if the monitor_metric decreases before the tolerance threshold
+#             ckpt_fold, ckpt_string = os.path.split(ckpt_save_path)
+#             config.tolerance=0
+#             config.last_recorded_value =  monitor_metrics[to_monitor]
+#             ckpt_files_tocopy = [files for files in os.listdir(os.path.split(ckpt_save_path)[0]) \
+#                                  if ckpt_string in files]
+#             log.info(f'{to_monitor} is {monitor_metrics[to_monitor]:4f} so checkpoint files {ckpt_string} \
+#                      will be copied to best checkpoint directory')
+#             # copy the best checkpoints
+#             shutil.copy2(os.path.join(ckpt_fold, 'checkpoint'), config.best_ckpt_path)
+#             for files in ckpt_files_tocopy:
+#                 shutil.copy2(os.path.join(ckpt_fold, files), config.best_ckpt_path)
+#         else:
+#             pass
+#     else:
+#         config.tolerance+=1
     
-    # stop if minimum training loss is reached
-    if train_loss < config.min_train_loss:
-        log.warning(f'Minimum training loss reached')
-        config.tolerance+=1
-    # Warn and early stop
-    if config.tolerance > config.tolerance_threshold:
-        log.warning('Tolerance exceeded')
-        if config.early_stop:
-            log.info(f'Early stopping since the {to_monitor} reached the tolerance threshold')
-            return True
-        else:
-            return False
-    else:
-        return False
+#     # stop if minimum training loss is reached
+#     if train_loss < config.min_train_loss:
+#         log.warning(f'Minimum training loss reached')
+#         config.tolerance+=1
+#     # Warn and early stop
+#     if config.tolerance > config.tolerance_threshold:
+#         log.warning('Tolerance exceeded')
+#         if config.early_stop:
+#             log.info(f'Early stopping since the {to_monitor} reached the tolerance threshold')
+#             return True
+#         else:
+#             return False
+#     else:
+#         return False
 
 def get_optimizer():
 

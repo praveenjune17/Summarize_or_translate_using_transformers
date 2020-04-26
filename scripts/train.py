@@ -10,17 +10,17 @@ import time
 from tqdm import tqdm
 from preprocess import create_dataset
 from configuration import config
-from calculate_metrics import mask_and_calculate_loss, monitor_run
+from calculate_metrics import mask_and_calculate_loss
 from creates import log
 from create_model import source_tokenizer, target_tokenizer
 from local_tf_ops import (check_ckpt, eval_step, train_step, batch_run_check, 
-                          save_and_evaluate_model)
+                          save_evaluate_monitor)
 
 train_dataset = create_dataset(
                               split='train', 
                               source_tokenizer=source_tokenizer, 
                               target_tokenizer=target_tokenizer, 
-                              from_=90, 
+                              from_=0, 
                               to=100, 
                               batch_size=config.train_batch_size,
                               shuffle=True
@@ -41,6 +41,7 @@ total_steps = int(config.epochs * (config.gradient_accumulation_steps))
 train_dataset = train_dataset.repeat(total_steps)
 
 for (step, (input_ids, target_ids)) in tqdm(enumerate(train_dataset, 1), initial=1):
+
     start_time = time.time()
     grad_accum_flag = (True if (step%config.gradient_accumulation_steps) == 0 else False) if config.accumulate_gradients else None
     predictions = train_step(
@@ -48,25 +49,18 @@ for (step, (input_ids, target_ids)) in tqdm(enumerate(train_dataset, 1), initial
                             target_ids,
                             grad_accum_flag
                             )
-    if (step % config.steps_to_print_training_info)==0:
+    if (step % config.steps_to_print_training_info) == 0:
         train_loss = batch_run_check(
                                   step,  
                                   start_time
                                   )
     if (step % config.eval_after_steps) == 0:
-        save_and_evaluate_model(ck_pt_mgr, val_dataset, 
-                      target_tokenizer, predictions, target_ids, step, start_time)
-        early_stop = monitor_run(
-                                ckpt_save_path, 
-                                bert_score, 
-                                rouge_score,
-                                bleu,
-                                train_loss, 
-                                step
-                                )
+        early_stop = save_evaluate_monitor(ck_pt_mgr, val_dataset, 
+                      target_tokenizer, predictions, train_loss, target_ids, step, start_time)
         if early_stop:
             break
+
 if not early_stop:
-    save_and_evaluate_model(ck_pt_mgr, val_dataset, 
-      target_tokenizer, predictions, target_ids, step, start_time)
+    _ = save_evaluate_monitor(ck_pt_mgr, val_dataset, 
+            target_tokenizer, predictions, target_ids, step, start_time)
 log.info(f'Training completed at step {step}')

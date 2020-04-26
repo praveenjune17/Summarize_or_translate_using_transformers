@@ -64,7 +64,7 @@ training_parms = {
 
 # Special Tokens
 special_tokens = {
-    'input_CLS_ID' : 101,
+    'input_CLS_ID' : 101,                   # Please donot change these
     'input_SEP_ID' : 102,
     'MASK_ID' : 103,
     'PAD_ID' : 0,

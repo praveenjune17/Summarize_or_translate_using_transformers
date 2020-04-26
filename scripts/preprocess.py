@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import tensorflow as tf
 import numpy as np
-import pandas as pd
 import tensorflow_datasets as tfds
 from functools import partial
 from collections import defaultdict
@@ -83,16 +82,6 @@ def filter_tokens_per_batch(x, y):
                               config.tokens_per_batch
                              )
           
-def read_csv(path, num_examples):
-
-    df = pd.read_csv(path)
-    df.columns = [i.capitalize() for i in df.columns if i.lower() in ['input_sequence', 'output_sequence']]
-    assert len(df.columns) == 2, 'column names should be input_sequence and output_sequence'
-    df = df[:num_examples]
-    assert not df.isnull().any().any(), 'dataset contains  nans'
-
-    return (df["input_sequence"].values, df["output_sequence"].values)
-
 def create_dataset(split, 
                    source_tokenizer, 
                    target_tokenizer, 
@@ -100,7 +89,6 @@ def create_dataset(split,
                    to, 
                    batch_size,
                    shuffle=None,
-                   use_tfds=True, 
                    drop_remainder=False,
                    num_examples_to_select=config.samples_to_test):
 
@@ -116,7 +104,6 @@ def create_dataset(split,
                  'Ubuntu_v14.10_en_AU_to_ta', 'Ubuntu_v14.10_en_CA_to_ta', 'Ubuntu_v14.10_en_NZ_to_ta', 
                  'Ubuntu_v14.10_en_US_to_ta', 'OpenSubtitles_v2018_en_to_ta', 'OpenSubtitles_v2016_en_to_ta',
                  'en_ta', 'github_joshua_en_ta']
-
         for name in dataset_names:
             en_tam_ds[(name,'metadata_'+name)] = tfds.load(f'{config.tfds_name}/'+name, 
                                                           with_info=True, 

@@ -1,5 +1,7 @@
 import tensorflow as tf
 import time
+import os
+import shutil
 from tensorflow.keras.mixed_precision import experimental as mixed_precision
 from preprocess import create_dataset
 from configuration import config
@@ -14,9 +16,10 @@ from calculate_metrics import (get_loss_and_accuracy, loss_function,
 tf.config.optimizer.set_jit(config.enable_jit)
 policy = mixed_precision.Policy('mixed_float16')
 mixed_precision.set_policy(policy)
-avg_rouge = tf.keras.metrics.Mean()
-avg_bleu = tf.keras.metrics.Mean()
-avg_bert_score = tf.keras.metrics.Mean()
+avg_rouge = tf.keras.metrics.Mean(name='rouge_f1_mean')
+avg_bleu = tf.keras.metrics.Mean(name='bleu_mean')
+avg_bert_score = tf.keras.metrics.Mean(name='bert_f1_mean')
+calculate_combined_metric = tf.keras.metrics.Mean(name='combined_metric_mean', dtype=None)
 optimizer = get_optimizer()
 optimizer = mixed_precision.LossScaleOptimizer(optimizer, loss_scale='dynamic')
 
@@ -204,6 +207,70 @@ def check_ckpt(checkpoint_path):
         log.info('Training from scratch')
     return (ckpt_manager)
 
+def monitor_run(ckpt_save_path, 
+                bert_score, 
+                rouge_score, 
+                bleu,
+                train_loss,
+                step,
+                copy_best_ckpt=True,
+                to_monitor=config.monitor_metric):
+  
+    
+    if config.run_tensorboard:
+        with valid_output_sequence_writer.as_default():
+            tf.summary.scalar('ROUGE_f1', rouge_score, step=step)
+            tf.summary.scalar('BERT_f1', bert_score, step=step)
+            tf.summary.scalar('BLEU', bleu, step=step)
+    monitor_metrics = dict()
+    monitor_metrics['BERT_f1'] = bert_score
+    monitor_metrics['ROUGE_f1'] = rouge_score
+    monitor_metrics['bleu'] = bleu
+    monitor_metrics['combined_metric'] = [
+                                          monitor_metrics['BERT_f1'], 
+                                          monitor_metrics['ROUGE_f1'],
+                                          monitor_metrics['bleu']
+                                          ]
+    assert config.monitor_metric in monitor_metrics.keys(), f'Available metrics to monitor are {monitor_metrics.keys()}'
+    assert sum(config.combined_metric_weights) == 1, 'weights should sum to 1'
+    monitor_metrics['combined_metric'] = calculate_combined_metric(monitor_metrics['combined_metric'], 
+                                                                   sample_weight=config.combined_metric_weights)
+    log.info(f"combined_metric {monitor_metrics['combined_metric'].numpy()}")
+    if config.last_recorded_value <= monitor_metrics[to_monitor]:
+        if copy_best_ckpt:
+            # reset tolerance to zero if the monitor_metric decreases before the tolerance threshold
+            ckpt_fold, ckpt_string = os.path.split(ckpt_save_path)
+            config.tolerance=0
+            config.last_recorded_value =  monitor_metrics[to_monitor]
+            ckpt_files_tocopy = [files for files in os.listdir(os.path.split(ckpt_save_path)[0]) \
+                                 if ckpt_string in files]
+            log.info(f'{to_monitor} is {monitor_metrics[to_monitor]:4f} so checkpoint files {ckpt_string} \
+                     will be copied to best checkpoint directory')
+            # copy the best checkpoints
+            shutil.copy2(os.path.join(ckpt_fold, 'checkpoint'), config.best_ckpt_path)
+            for files in ckpt_files_tocopy:
+                shutil.copy2(os.path.join(ckpt_fold, files), config.best_ckpt_path)
+        else:
+            pass
+    else:
+        config.tolerance+=1
+    
+    # stop if minimum training loss is reached
+    if train_loss < config.min_train_loss:
+        log.warning(f'Minimum training loss reached')
+        config.tolerance+=1
+    # Warn and early stop
+    if config.tolerance > config.tolerance_threshold:
+        log.warning('Tolerance exceeded')
+        if config.early_stop:
+            log.info(f'Early stopping since the {to_monitor} reached the tolerance threshold')
+            return True
+        else:
+            return False
+    else:
+        return False
+
+
 # run every batch
 def batch_run_check(batch, start_time):
     if config.run_tensorboard:
@@ -259,7 +326,7 @@ def training_results(
       train_loss.reset_states()
       train_accuracy.reset_states()
 
-def save_and_evaluate_model(ck_pt_mgr, val_dataset, target_tokenizer, predictions, target_ids, step, start_time):
+def save_evaluate_monitor(ck_pt_mgr, val_dataset, target_tokenizer, predictions, train_loss, target_ids, step, start_time):
 
     ckpt_save_path = ck_pt_mgr.save()
     # print the detokenized training output of a single sample
@@ -277,3 +344,12 @@ def save_and_evaluate_model(ck_pt_mgr, val_dataset, target_tokenizer, prediction
                       (time.time() - start_time),
                       ckpt_save_path
                       )
+    early_stop = monitor_run(
+                              ckpt_save_path, 
+                              bert_score, 
+                              rouge_score,
+                              bleu,
+                              train_loss, 
+                              step
+                              )
+    return early_stop
