@@ -29,9 +29,12 @@ def detokenize(target_tokenizer, id_1, id_2, source_tokenizer=None):
     detokenized_seq_1 = source_tokenizer.decode([i for i in id_1 if i not in [cls_id, 
                                                                              sep_id, 
                                                                              config.PAD_ID]])
-    detokenized_seq_2 = target_tokenizer.decode([i for i in id_2 if i not in [config.target_CLS_ID, 
+    if id_2 is not None:
+        detokenized_seq_2 = target_tokenizer.decode([i for i in id_2 if i not in [config.target_CLS_ID, 
                                                                              config.target_SEP_ID, 
                                                                              config.PAD_ID]])
+    else:
+        detokenized_seq_2 = None
     
     return (detokenized_seq_1, detokenized_seq_2)
 
@@ -88,13 +91,16 @@ def create_tensorboard_parms():
         current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
         train_log_dir = config.tensorboard_log + current_time + '/train'
         validation_log_dir = config.tensorboard_log + current_time + '/validation'
+        embedding_projector_dir = config.tensorboard_log + current_time + '/embedding_projector'
         train_output_sequence_writer = tf.summary.create_file_writer(train_log_dir)
         valid_output_sequence_writer = tf.summary.create_file_writer(validation_log_dir)
     else:
         train_output_sequence_writer = None
         valid_output_sequence_writer = None
+        embedding_projector_dir = None
     return (train_output_sequence_writer,
-            valid_output_sequence_writer)
+            valid_output_sequence_writer,
+            embedding_projector_dir)
 
 def check_recorded_metric_val():
     # Get last_recorded_value of monitor_metric from the log
@@ -122,13 +128,7 @@ def check_recorded_metric_val():
 def validate_config_parameters():
     allowed_decoder_types = ['nucleus', 'topk', 'topktopp', 'random_sampling', 'greedy', 'beam_search']
     allowed_model_architectures = ['transformer', 'bertified_transformer']
-    monitor_metrics = dict()
-    monitor_metrics['validation_loss'] = None
-    monitor_metrics['BERT_f1'] = None
-    monitor_metrics['ROUGE_f1'] = None
-    monitor_metrics['combined_metric'] = (monitor_metrics['BERT_f1'], monitor_metrics['ROUGE_f1'])
-    assert config.monitor_metric in monitor_metrics.keys(), f'Available metrics to monitor are {monitor_metrics.keys()}'
-    assert sum(config.combined_metric_weights) == 1, 'weights should sum to 1'
+    
     assert config.d_model % config.num_heads == 0, 'd_model should be a multiple of num_heads'
     assert config.eval_after_steps%config.steps_to_print_training_info == 0, 'steps_to_print_training_info must be a factor of eval_after_steps'
     assert config.decoder_type  in allowed_decoder_types, f'available decoding types are {allowed_decoder_types}'
@@ -161,6 +161,7 @@ log = create_logger()
 set_memory_growth(log)
 validate_config_parameters()
 (train_output_sequence_writer,
-valid_output_sequence_writer) = create_tensorboard_parms()
+valid_output_sequence_writer,
+embedding_projector_dir) = create_tensorboard_parms()
 if config.last_recorded_value is None:
     check_recorded_metric_val()

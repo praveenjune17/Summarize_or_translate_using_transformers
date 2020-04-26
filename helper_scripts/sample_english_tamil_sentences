@@ -1,0 +1,28 @@
+english_sentences = ['''This is awesome''', 
+                    '''Hi''', 
+                    '''sense of comedy''',
+                    '''Associative Pages''',
+                    '''After war started in Italy, since they already faced several losses, Italian dictator Mussolini was thrown out from his power and was arrested.''',
+                    '''XML-IT IS USED TO TRANSFER MESSAGES''',
+                    '''Indo-China,Madagascar,Algeria are those countries which are excluded from the list of countries were colonalism was overthrown peacefully.''',
+                    '''Category: view''',
+                    '''Several Soviet citizens and Poland, Latvia, Estonia, Lithuania, and German war prisoners were killed in the Kulak, Soviet's compulsory camps, as they supported Germany. 60% of Soviet war prisoners were died in the hands of Germans.''',
+                    '''wealth given by identifying quality''',
+                    '''The production of the Japan and Germany is increased by making the many people to to work for it.''',
+                    '''After polland war the soviet union has taken forward the troop.''',
+                    '''First Started in March 1944'''
+                   ]
+tamil_sentences = ['''இது அருமை''', 
+                  '''வணக்கம்''',
+                  '''கோமாளித்தனம்''',
+                  '''தொடர்பான பக்கங்கள்''',
+                  '''இத்தாலிய மண் மீது போர் துவங்கியதாலும் ஏற்கனவே பல தோல்விகளை சந்தித்ததாலும் இத்தாலிய சர்வாதிகாரி முசோலினி பதவியில் இருந்து தள்ளப் பட்டு கைது செய்யப்பட்டார்.''',
+                  '''XML - வழங்கிக்கும் உலாவிக்குமான தகவற் பரிமாற்றத்தை ஒழுங்குபடுத்தப்பட்ட வடிவத்தில் கடத்த உதவுகிறது.''',
+                  '''இந்தோ-சீனம் மடகாஸ்கர் இந்தோனேசியா அல்ஜீரியா தவிற மற்ற நாடுகளில் காலனீய ஒழிப்பு சமாதான மாக முடிந்தது.''',
+                  '''பகுப்பு:உணர்வுகள்''',
+                  '''இதைத் தவிர குலக் எனப்படுகிற சோவியத் கட்டாய பணி முகாம்கள்களில் போலந்தினர் லாட்வியர் எஸ்டோனியர் லிதுவேனியர் மற்றும் ஜெர்மன் போர் கைதிகள் ஜெர்மனிக்கு ஆதரவு கொடுத்ததாக குற்றம் சாட்டப்பட்ட சோவியத் குடிமகன்கள் கொல்லப் பட்டனர் .ஜெர்மானியர் கையில் 60% சோவியத் போர் கைதிகள் மடிந்தனர்.''',
+                  '''தரங்கண்டு தந்த தனம்.''',
+                  '''தங்கள் உற்பத்தியை பெருக்க ஜப்பானும் ஜெர்மனியும் பல மில்லியன் அடிமை தொழிலாளர்களை உட்படுத்தியது.''',
+                  '''போலந்து ஆக்கிரமிப்பு பிறகு சோவியத் யூனியன் பால்டிய நாடுகளில் தன் துருப்புகளை முன்னேற்றியது.''',
+                  '''முதலாவது மார்ச் 1944ல் தொடங்கிற்று.'''
+               ]

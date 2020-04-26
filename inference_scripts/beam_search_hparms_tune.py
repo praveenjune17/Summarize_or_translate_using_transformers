@@ -36,7 +36,7 @@ val_dataset = create_dataset(
 step=0
 max_combined_metric = 0
 for beam_size in [7]:
-  for length_penalty in [0.4, 0.45, 0.5, 0.55, 0.6, 0.65]:
+  for length_penalty in np.linspace(0.51, 0.6):
     step+=1
     (rouge_score, bert_score) = evaluate_validation_set(val_dataset, beam_size, length_penalty, step)
     combined_metric = (0.8*bert_score) +  (0.2*rouge_score)

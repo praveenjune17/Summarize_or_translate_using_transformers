@@ -19,15 +19,22 @@ def pad(l, n, pad=config.PAD_ID):
 
 def encode(sent_1, sent_2, source_tokenizer, target_tokenizer, input_seq_len, output_seq_len):
     
-    input_ids = source_tokenizer.encode(sent_1.numpy().decode('utf-8'))
-    target_ids = target_tokenizer.encode(sent_2.numpy().decode('utf-8'))
-    # Account for [CLS] and [SEP] with "- 2"
-    if len(input_ids) > input_seq_len - 2:
-        input_ids = input_ids[0:(input_seq_len - 2)]
-    if len(target_ids) > (output_seq_len + 1) - 2:
-        target_ids = target_ids[0:((output_seq_len + 1) - 2)]
-    input_ids = pad(input_ids, input_seq_len)
-    target_ids = pad(target_ids, output_seq_len + 1)    
+    if config.model_architecture == 'bertified_transformer':
+        input_ids = [config.input_CLS_ID] + source_tokenizer.encode(sent_1.numpy().decode('utf-8'), 
+                                            add_special_tokens=False) + [config.input_SEP_ID]
+        target_ids = [config.target_CLS_ID] + target_tokenizer.encode(sent_2.numpy().decode('utf-8'), 
+                                            add_special_tokens=False) + [config.target_SEP_ID]
+        # Account for [CLS] and [SEP] with "- 2"
+        if len(input_ids) > input_seq_len - 2:
+            input_ids = input_ids[0:(input_seq_len - 2)]
+        if len(target_ids) > (output_seq_len + 1) - 2:
+            target_ids = target_ids[0:((output_seq_len + 1) - 2)]
+        input_ids = pad(input_ids, input_seq_len)
+        target_ids = pad(target_ids, output_seq_len + 1)
+    else:    
+      input_ids = [config.input_CLS_ID] + source_tokenizer.encode(sent_1.numpy()) + [config.input_SEP_ID]
+      target_ids = [config.target_CLS_ID] + target_tokenizer.encode(sent_2.numpy()) + [config.target_SEP_ID]
+
     return input_ids, target_ids
 
 
@@ -84,24 +91,21 @@ def create_dataset(split,
                    from_, 
                    to, 
                    batch_size,
-                   buffer_size=None,
-                   use_tfds=True, 
-                   csv_path=None,
+                   shuffle=None,
+                   use_tfds=True,
+                   drop_remainder=False, 
                    num_examples_to_select=config.samples_to_test):
 
-  if use_tfds:
-      raw_dataset, _ = tfds.load(
-                                 config.tfds_name, 
-                                 with_info=True,
-                                 as_supervised=True, 
-                                 data_dir=config.tfds_data_dir,
-                                 builder_kwargs=config.tfds_data_version,
-                                 split=tfds.core.ReadInstruction(split, from_=from_, to=to, unit='%')
-                                )        
-  else:
-    input_seq, output_seq = read_csv(csv_path, num_examples_to_select)
-    raw_dataset = tf.data.Dataset.from_tensor_slices((input_seq, output_seq))
-    buffer_size = len(input_seq)
+  
+  raw_dataset, ds_info = tfds.load(
+                             config.tfds_name, 
+                             with_info=True,
+                             as_supervised=True, 
+                             data_dir=config.tfds_data_dir,
+                             builder_kwargs=config.tfds_data_version,
+                             split=tfds.core.ReadInstruction(split, from_=from_, to=to, unit='%')
+                            )
+
   tf_dataset = raw_dataset.map(
                                tf_encode(
                                         source_tokenizer,
@@ -111,12 +115,14 @@ def create_dataset(split,
                                         ), 
                                num_parallel_calls=AUTOTUNE
                                )
-  tf_dataset = tf_dataset.filter(filter_combined_length)
+  tf_dataset = tf_dataset.filter(filter_max_length)
   tf_dataset = tf_dataset.take(num_examples_to_select) 
   tf_dataset = tf_dataset.cache()
-  if buffer_size:
+  if shuffle:
+     buffer_size = (sum([i.num_examples for i in  list(ds_info.splits.values())]))
      tf_dataset = tf_dataset.shuffle(buffer_size, seed = 100)
-  tf_dataset = tf_dataset.padded_batch(batch_size, padded_shapes=([-1], [-1]))
+  tf_dataset = tf_dataset.padded_batch(batch_size, padded_shapes=([-1], [-1]), drop_remainder=drop_remainder)
   tf_dataset = tf_dataset.prefetch(buffer_size=AUTOTUNE)
   log.info(f'{split} tf_dataset created')
+
   return tf_dataset

@@ -213,7 +213,7 @@ def query_decoder(self, enc_output, input_ids, dec_input, dec_padding_mask, deco
                                                )        
 
     # (batch_size, 1, vocab)
-    if decoder_type in ['beam_search', 'greedy']:
+    if decoder_type == 'beam_search':
         return dec_output[:, -1: ,:]
     else:
         return (dec_output[:, -1: ,:], attention_dist)
@@ -237,14 +237,15 @@ def draft_decoder(self,
         """
         #log.info(f"Building: '{decoder_type} decoder'")
         start_ids = tf.repeat(config.target_CLS_ID, repeats=batch_size)
-        #end_ids   = tf.repeat(config.target_SEP_ID, repeats=batch_size)
-        if decoder_type in ['beam_search', 'greedy']:
+        if decoder_type == 'beam_search':
             input_ids = tfa.seq2seq.tile_batch(input_ids, multiplier=beam_size)
             enc_output = tfa.seq2seq.tile_batch(enc_output, multiplier=beam_size)
             dec_padding_mask = tfa.seq2seq.tile_batch(dec_padding_mask, multiplier=beam_size)
-            beam_size = 1 if decoder_type == 'greedy' else beam_size
+            
             def perform_beam_search(dec_input):
-                return query_decoder(self, enc_output, input_ids, dec_input, dec_padding_mask, decoder_type, beam_size, training=False)
+
+                return query_decoder(self, enc_output, input_ids, dec_input, 
+                  dec_padding_mask, decoder_type, beam_size, training=False)
             predicted_beam_search_op = beam_search(
                                                   perform_beam_search, 
                                                   initial_ids=start_ids, 

@@ -8,12 +8,16 @@ from creates import (log, train_output_sequence_writer,
 from create_model import source_tokenizer, target_tokenizer, Model
 from model_utils import create_padding_mask, create_masks
 from calculate_metrics import (get_loss_and_accuracy, loss_function, 
-                               optimizer, tf_write_output_sequence)
+                               get_optimizer, tf_write_output_sequence)
 
 
 tf.config.optimizer.set_jit(config.enable_jit)
 policy = mixed_precision.Policy('mixed_float16')
 mixed_precision.set_policy(policy)
+avg_rouge = tf.keras.metrics.Mean()
+avg_bleu = tf.keras.metrics.Mean()
+avg_bert_score = tf.keras.metrics.Mean()
+optimizer = get_optimizer()
 optimizer = mixed_precision.LossScaleOptimizer(optimizer, loss_scale='dynamic')
 
 train_step_signature = [
@@ -33,6 +37,7 @@ model_metrics = 'Step {},\n\
                  Train Loss {:.4f},\n\
                  Train_Accuracy {:.4f},\n\
                  ROUGE_f1 {:4f},\n\
+                 Bleu {:4f},\n\
                  BERT_f1 {:4f}\n'
 evaluation_step  = 'Time taken for {} step : {} secs' 
 checkpoint_details = 'Saving checkpoint at step {} on {}'
@@ -112,42 +117,46 @@ def val_step(
       predictions = refine_predictions
     else:
       predictions = draft_predictions
-    rouge, bert = tf_write_output_sequence(target_ids[:, 1:], 
+    rouge_f1, bert_f1, bleu = tf_write_output_sequence(
+                                           input_ids,
+                                           target_ids[:, 1:], 
                                            predictions[:, 1:], 
                                            step, 
                                            write_output_seq)  
-    return (rouge, bert)
+    return (rouge_f1, bert_f1, bleu)
 
 def evaluate_validation_set(
                            validation_dataset, 
                            step
                            ):
-    rouge_score_total = 0
-    bert_score_total = 0
-    rouge_exclude_in_total = 0
-    bert_exclude_in_total = 0
+    avg_rouge.reset_states()
+    avg_bert_score.reset_states()
+    avg_bleu.reset_states()
     for (batch, (input_ids, target_ids)) in enumerate(validation_dataset, 1):
         # calculate rouge and bert score for only the first batch
         if batch == 1:
-          rouge_score, bert_score = val_step(input_ids,
+          rouge_f1, bert_f1, bleu = val_step(input_ids,
                                              target_ids,  
                                              step, 
                                              config.write_summary_op
                                              )
         else:
-          rouge_score, bert_score  =  val_step(input_ids,
+          rouge_f1, bert_f1, bleu  =  val_step(input_ids,
                                                target_ids, 
                                                step, 
                                                False
                                                )
-        if not rouge_score:
-            rouge_exclude_in_total+=1
-        if not bert_score:
-            bert_exclude_in_total+=1
-        rouge_score_total+=rouge_score
-        bert_score_total+=bert_score
-    return (rouge_score_total/(batch-rouge_exclude_in_total), 
-            bert_score_total/(batch-bert_exclude_in_total))
+        if rouge_f1:
+            avg_rouge.update_state(rouge_f1)
+        if bert_f1:
+            avg_bert_score.update_state(bert_f1)
+        # bleu ranges from 0-100
+        if bleu:
+            avg_bleu.update_state(bleu/100)
+    return (avg_rouge.result().numpy(), 
+            avg_bert_score.result().numpy(), 
+            avg_bleu.result().numpy()
+            )
 
 def eval_step(input_ids, 
                target_ids, 
@@ -196,14 +205,14 @@ def check_ckpt(checkpoint_path):
     return (ckpt_manager)
 
 # run every batch
-def batch_run_check(batch, start):
+def batch_run_check(batch, start_time):
     if config.run_tensorboard:
         with train_output_sequence_writer.as_default():
           tf.summary.scalar('train_loss', train_loss.result(), step=batch)
           tf.summary.scalar('train_accuracy', train_accuracy.result(), step=batch)
     if config.display_model_summary:
         log.info(Model.summary())
-        log.info(batch_zero.format(time.time()-start))
+        log.info(batch_zero.format(time.time()-start_time))
         config.display_model_summary = False
     log.info(
              batch_run_details.format(
@@ -230,6 +239,7 @@ def training_results(
                     step, 
                     rouge_score, 
                     bert_score,
+                    bleu,
                     timing_info,
                     ckpt_save_path
                     ):
@@ -239,11 +249,31 @@ def training_results(
                                     step, 
                                     train_loss.result(), 
                                     train_accuracy.result(), 
-                                    rouge_score, 
-                                    bert_score
+                                    rouge_score*100,
+                                    bleu*100, 
+                                    bert_score*100
                                     )
               )
       log.info(evaluation_step.format(step, timing_info))
       log.info(checkpoint_details.format(step, ckpt_save_path))
       train_loss.reset_states()
       train_accuracy.reset_states()
+
+def save_and_evaluate_model(ck_pt_mgr, val_dataset, target_tokenizer, predictions, target_ids, step, start_time):
+
+    ckpt_save_path = ck_pt_mgr.save()
+    # print the detokenized training output of a single sample
+    predicted = train_sanity_check(target_tokenizer, predictions, target_ids)
+    # Run evaluation only if the predictions made by the teacher forced output is not empty
+    (rouge_score, bert_score, bleu) = evaluate_validation_set(       
+                                                      val_dataset,
+                                                      step
+                                                      )  if predicted else 0
+    training_results(
+                      step, 
+                      rouge_score, 
+                      bert_score,
+                      bleu,
+                      (time.time() - start_time),
+                      ckpt_save_path
+                      )

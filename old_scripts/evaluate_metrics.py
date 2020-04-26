@@ -3,16 +3,16 @@ from rouge import Rouge
 import sacrebleu
 
 class eval_metrics(object):
-	def __init__(self, hypothesis, references):
+	def __init__(self, hypothesis_output, references):
 		super(eval_metrics, self).__init__()
 
-		self.hypothesis = hypothesis
+		self.hypothesis_output = hypothesis_output
 		self.references = references
 
 	def calculate_rouge():
 		rouge_all = Rouge()
 		try:
-			rouges_scores = rouge_all.get_scores(self.references , self.hypothesis)
+			rouges_scores = rouge_all.get_scores(self.references , self.hypothesis_output)
 			avg_rouge_f1 = np.mean([np.mean([rscore['rouge-1']["f"], 
 	                                        rscore['rouge-2']["f"], 
 	                                        rscore['rouge-l']["f"]]) for rscore in rouges_scores])
@@ -23,7 +23,7 @@ class eval_metrics(object):
 
 	def calculate_bert_score():
 		try:
-			_, _, bert_f1 = b_score(self.references, self.hypothesis, model_type=config.bert_score_model)
+			_, _, bert_f1 = b_score(self.references, self.hypothesis_output, model_type=config.bert_score_model)
 			avg_bert_f1 = np.mean(bert_f1.numpy())
 		except:
 			log.warning('Some problem while calculating BERT_F1 score so setting it to zero')
@@ -32,7 +32,7 @@ class eval_metrics(object):
 
 	def calculate_bleu_score():
 		try:
-			bleu = sacrebleu.corpus_bleu(self.references, self.hypothesis, lowercase=True)
+			bleu = sacrebleu.corpus_bleu(self.references, self.hypothesis_output, lowercase=True)
 		except:
 			log.warning('Some problem while calculating BLEU score so setting it to zero')
 			bleu = 0

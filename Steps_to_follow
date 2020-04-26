@@ -17,48 +17,42 @@ for batch_size in [single, multiple]:
 	run train pipeline
 	run eval pipeline
 
-Watch out:-
-	# one line space after function name and before return
-	#) check duplicates
-	#) separate script for python ops
-	#) test cases on whether inference decoders
-
 Post-training improvements:-
     #) Hyper parameter tuning on beam size, length penalty, dropout, label smoothing
 	#) Multiple occurences of stop values in beam search and stop repeated occurences of words
 	#) Add (follow the same preprocessing in the tfds pipeline) in the client script and also remove vulgar words, add spell correction, lower casing 
 
 Work on:-
-	#) GPU profiler
+
 	#) Client script
 	#) embedding projector in tensorboard :- https://www.tensorflow.org/tensorboard/tensorboard_projector_plugin
-	#) test early stopping once
 	#) seperate out translation and summarize 
 		#) metrics
 		#) preprocess 
 		#) start and end IDS
-	#) BLEU score scareBLEU or from official.transformer import compute_bleu
-	#) A single class for all the evaluation metrics
 	#) run unit test for the last architecture
-	#) Data augumentation :- https://colab.research.google.com/drive/1RGWrQv3e0CRDPDROQ3ZmUWTmlRljasGi?authuser=0#scrollTo=E9RYnn9VDE4N
-##########################################################
-
-#) Tensorflow graph optimizations
-#) Tensorflow implementation of BERT score
 
 
-=======
-a)  create a single project
-Testing Rules
+Things to watchout for when coding
 ########################################################
 #) meaning full names
-#) if same code is repeated then use a function
 #) separate script for specific functions
 #) functions should be small
 #) one method that clearly say what it does
 #) remove composite switch statements
 #) identify memory leakage
+#  one line space after function name and before return
+#) check duplicate code
+#) separate script for python ops
+#) test cases on inference decoders
 #################################
-
-
+Expected improvements:-
+	*) GPU profiler
+	*) Make the model predict the output_seq_len
+	*) Data augumentation https://colab.research.google.com/drive/1RGWrQv3e0CRDPDROQ3ZmUWTmlRljasGi?authuser=0#scrollTo=E9RYnn9VDE4N
+	*) Tensorflow graph optimizations
+    *) Tensorflow implementation of BERT score
+##################
+Additional enhancements
+	a) Scheduled sampling :- perform teacher forcing or autoregressive training for a coin toss
 

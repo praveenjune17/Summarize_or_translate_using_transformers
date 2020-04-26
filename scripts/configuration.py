@@ -48,7 +48,7 @@ training_parms = {
      'enable_jit' : True,
      'eval_after_steps' : 1000,              # Evaluate after these many training steps
      'gradient_accumulation_steps': 2,   
-     'last_recorded_value': 0.7000,
+     'last_recorded_value': 0.6259,
      'min_train_loss' : 1.0,
      'monitor_metric' : 'combined_metric',
      'run_tensorboard': True,
@@ -79,8 +79,8 @@ inference_decoder_parms = {
     'topk' : 5
     }    
 h_parms = {
-   'beam_size': 7,              # Used  during inference                                                 
-   'combined_metric_weights': [0.9, 0.1], #(bert_score, rouge)
+   'beam_size': 1,              # Used  during inference                                                 
+   'combined_metric_weights': [0.8, 0.1, 0.1], #(bert_score, rouge, bleu)
    'dropout_rate': 0.1,
    'epochs': 4,
    'epsilon_ls': 0.1,                    # label_smoothing hyper parameter
@@ -106,7 +106,7 @@ file_path = {
         'output_seq_vocab_path' : os.path.join(core_path, f"TFDS_vocab_files{path_seperator}{dataset_name}{path_seperator}vocab_ta"),
         'output_sequence_write_path' : os.path.join(core_path, f"created_files{path_seperator}{dataset_name}{path_seperator}summaries{path_seperator}"),
         'serialized_tensor_path' : os.path.join("/content/drive/My Drive/", 'saved_serialized_tensor_3'),
-        'tensorboard_log' : os.path.join(core_path, f"created_files{path_seperator}{dataset_name}{path_seperator}tensorboard_logs/"),
+        'tensorboard_log' : os.path.join(core_path, f"created_files{path_seperator}{dataset_name}{path_seperator}tensorboard_logs{path_seperator}"),
         'tfds_data_dir' : os.path.join(core_path, f'Tensorflow_datasets{path_seperator}{dataset_name}_dataset'),
         'tfds_data_version' : None,
         'train_csv_path' : None
@@ -120,6 +120,10 @@ if training_parms['accumulate_gradients']==False:
     training_parms['gradient_accumulation_steps'] = 1
 if training_parms['gradient_accumulation_steps'] == 1:
     training_parms['accumulate_gradients']==False
+
+if inference_decoder_parms['decoder_type'] == 'greedy':
+    inference_decoder_parms['decoder_type'] = 'beam_search'
+    h_parms['beam_size'] = 1
 
 if not (model_parms['model_architecture']=='bertified_transformer'):
     model_parms['num_of_decoders'] = 1
