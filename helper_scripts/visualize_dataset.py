@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-
-import tempfile
+import sys
+sys.path.insert(0, 'D:\\Local_run\\Summarize_and_translate\\scripts')
 import tensorflow as tf
 import matplotlib
 import tensorflow_datasets as tfds
@@ -10,10 +10,12 @@ plt.style.use('seaborn-deep')
 import numpy as np
 import pandas as pd
 import time
-from create_model import source_tokenizer, target_tokenizer
+from create_model import finalize_tokenizer_and_architecture
 from configuration import config
 from preprocess import tf_encode
 from creates import detokenize
+
+(source_tokenizer, target_tokenizer, _) = finalize_tokenizer_and_architecture
 # histogram of tokens per batch_size
 # arg1 :- must be a padded_batch dataset
 def hist_tokens_per_batch(tf_dataset, 

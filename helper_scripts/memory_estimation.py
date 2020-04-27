@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+
+### Not verified yet#######################
 from __future__ import absolute_import, division, print_function, unicode_literals
 import sys
 sys.path.insert(0, '/content/Summarize_and_translate/scripts')

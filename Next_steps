@@ -1,21 +1,14 @@
-*) Client script creation (spell check, preprocess) 
-*) encode without tf.py_function https://colab.research.google.com/drive/1IAIeaTdl4bJlWxDJS6AXFnBCg1B92E5Z#scrollTo=NsaUPscGZ-Mq
 ###################################################### 
-Base paper:-  http://www.iitp.ac.in/~sukanta.pcs15/pubs/WAT_2018_paper_12.pdf 
-###########3333
-Testing Rules
+En_tam Machine translation paper:-  http://www.iitp.ac.in/~sukanta.pcs15/pubs/WAT_2018_paper_12.pdf 
+######################################
 
-Flow test
+*) cast issues with bertified-arch, remove commented code
+b) load vocab size automatically
 
-for single_batch_size:
-	model_capacity check
-	input independent baseline
-	randomness check
-	initial loss check
 
-for batch_size in [single, multiple]:
-	run train pipeline
-	run eval pipeline
+Machine translation vs summarization:-
+	a) change inference decoder hyper parameters for summarization
+	b)
 
 Post-training improvements:-
     #) Hyper parameter tuning on beam size, length penalty, dropout, label smoothing
@@ -23,13 +16,10 @@ Post-training improvements:-
 	#) Add (follow the same preprocessing in the tfds pipeline) in the client script and also remove vulgar words, add spell correction, lower casing 
 
 Work on:-
-
+	#) reduce size of monitor
+	#) test bertified arch and summarize
+	#) Add bertified refine decoder
 	#) Client script
-	#) embedding projector in tensorboard :- https://www.tensorflow.org/tensorboard/tensorboard_projector_plugin
-	#) seperate out translation and summarize 
-		#) metrics
-		#) preprocess 
-		#) start and end IDS
 	#) run unit test for the last architecture
 
 

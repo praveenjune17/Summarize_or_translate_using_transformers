@@ -3,12 +3,12 @@ import re
 import pickle
 import tensorflow as tf
 from profanity_check import predict_prob as vulgar_check
-from create_model import  source_tokenizer,target_tokenizer, Model
+from create_model import  finalize_tokenizer_and_architecture
 from creates import detokenize
 from model_utils import create_padding_mask
 from configuration import config
 
-
+(source_tokenizer, target_tokenizer, Model) = finalize_tokenizer_and_architecture()
 en_blacklist = '"#$%&\()*+-./:;<=>@[\\]^_`♪{|}~='
 cleantxt = re.compile('<.*?>')
 

@@ -5,21 +5,24 @@ import shutil
 from tensorflow.keras.mixed_precision import experimental as mixed_precision
 from preprocess import create_dataset
 from configuration import config
-from creates import (log, train_output_sequence_writer, 
-                    valid_output_sequence_writer, detokenize)
-from create_model import source_tokenizer, target_tokenizer, Model
+from creates import log, create_tensorboard_parms, detokenize
+from create_model import finalize_tokenizer_and_architecture
 from model_utils import create_padding_mask, create_masks
 from calculate_metrics import (get_loss_and_accuracy, loss_function, 
                                get_optimizer, tf_write_output_sequence)
 
 
-tf.config.optimizer.set_jit(config.enable_jit)
-policy = mixed_precision.Policy('mixed_float16')
-mixed_precision.set_policy(policy)
+(train_output_sequence_writer, 
+  valid_output_sequence_writer, _) = create_tensorboard_parms()
 avg_rouge = tf.keras.metrics.Mean(name='rouge_f1_mean')
 avg_bleu = tf.keras.metrics.Mean(name='bleu_mean')
 avg_bert_score = tf.keras.metrics.Mean(name='bert_f1_mean')
 calculate_combined_metric = tf.keras.metrics.Mean(name='combined_metric_mean', dtype=None)
+(source_tokenizer, target_tokenizer, Model) = finalize_tokenizer_and_architecture()
+
+tf.config.optimizer.set_jit(config.enable_jit)
+policy = mixed_precision.Policy('mixed_float16')
+mixed_precision.set_policy(policy)
 optimizer = get_optimizer()
 optimizer = mixed_precision.LossScaleOptimizer(optimizer, loss_scale='dynamic')
 
@@ -188,10 +191,9 @@ def eval_step(input_ids,
     if config.save_initial_weights:
         initial_weights = os.path.join(config.initial_weights,'initial_weights')
         Model.save_weights(initial_weights)
+
     return loss
     
-
-
 def check_ckpt(checkpoint_path):
     ckpt = tf.train.Checkpoint(
                                Model=Model,

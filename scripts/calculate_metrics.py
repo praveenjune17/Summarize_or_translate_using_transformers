@@ -6,10 +6,11 @@ from rouge import Rouge
 from bert_score import score as b_score
 from official.nlp.transformer import compute_bleu
 from configuration import config
-from creates import log, valid_output_sequence_writer, detokenize
-from create_model import source_tokenizer, target_tokenizer 
+from creates import log, detokenize
+from create_model import finalize_tokenizer_and_architecture
 
 
+(source_tokenizer, target_tokenizer, _) = finalize_tokenizer_and_architecture()
 
 class evaluation_metrics:
 
@@ -157,7 +158,6 @@ def write_output_sequence(input_ids, true_target_ids, predictions, step, write_o
     ref_sents = []
     hyp_sents = []
     inp_sents = []
-    rouge_all = Rouge()
     for input_id, true_target_id, ref_hyp in zip(input_ids, true_target_ids, predictions):
         detokenized_refs, detokenized_hyp_sents = detokenize(target_tokenizer, 
                                                            tf.squeeze(true_target_id), 

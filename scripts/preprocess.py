@@ -20,10 +20,8 @@ def pad(l, n, pad=config.PAD_ID):
 def encode(sent_1, sent_2, source_tokenizer, target_tokenizer, input_seq_len, output_seq_len):
     
     if config.model_architecture == 'bertified_transformer':
-        input_ids = [config.input_CLS_ID] + source_tokenizer.encode(sent_1.numpy().decode('utf-8'), 
-                                            add_special_tokens=False) + [config.input_SEP_ID]
-        target_ids = [config.target_CLS_ID] + target_tokenizer.encode(sent_2.numpy().decode('utf-8'), 
-                                            add_special_tokens=False) + [config.target_SEP_ID]
+        input_ids = source_tokenizer.encode(sent_1.numpy().decode('utf-8'), add_special_tokens=False) 
+        target_ids = target_tokenizer.encode(sent_2.numpy().decode('utf-8'), add_special_tokens=False) 
         # Account for [CLS] and [SEP] with "- 2"
         if len(input_ids) > input_seq_len - 2:
             input_ids = input_ids[0:(input_seq_len - 2)]
@@ -90,7 +88,7 @@ def create_dataset(split,
                    batch_size,
                    shuffle=None,
                    drop_remainder=False,
-                   num_examples_to_select=config.samples_to_test):
+                   num_examples_to_select=config.batches_to_train):
 
     if config.tfds_name == 'en_tam_parallel_text':
         en_tam_ds = defaultdict(list)

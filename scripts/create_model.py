@@ -3,8 +3,8 @@ import tensorflow_datasets as tfds
 from tensorflow.keras.initializers import Constant
 from transformers import TFBertModel, BertTokenizer
 from transformer import Decoder, Encoder, Transformer
-from creates import log, create_vocab
-from configuration import config
+from creates import log
+from configuration import config, create_vocab
 from model_utils import (tile_and_mask_diagonal, sampling_decoder, 
                          with_column, mask_timestamp, draft_decoder)
 
@@ -21,15 +21,15 @@ def _embedding_from_bert():
 
     log.info("Extracting pretrained word embeddings weights from BERT")
     with tf.device("CPU:0"):  
-        encoder = TFBertModel.from_pretrained(config.input_pretrained_bert_model, 
+        input_pretrained_bert = TFBertModel.from_pretrained(config.input_pretrained_bert_model, 
                                               trainable=False, 
                                               name=config.input_pretrained_bert_model)
-        decoder = TFBertModel.from_pretrained(config.target_pretrained_bert_model, 
+        target_pretrained_bert = TFBertModel.from_pretrained(config.target_pretrained_bert_model, 
                                               trainable=False, 
                                               name=config.target_pretrained_bert_model)
-    decoder_embedding = decoder.get_weights()[0]
+    decoder_embedding = target_pretrained_bert.get_weights()[0]
     log.info(f"Decoder_Embedding matrix shape '{decoder_embedding.shape}'")
-    return (decoder_embedding, encoder, decoder)
+    return (decoder_embedding, input_pretrained_bert, target_pretrained_bert)
 
 class Bertified_transformer(tf.keras.Model):
     """
@@ -43,8 +43,9 @@ class Bertified_transformer(tf.keras.Model):
                   num_heads, 
                   dff, 
                   input_vocab_size, 
-                  target_vocab_size, 
-                  rate):
+                  target_vocab_size,
+                  rate=config.dropout_rate, 
+                  add_pointer_generator=None):
         super(Bertified_transformer, self).__init__()
 
         self.target_vocab_size = target_vocab_size
@@ -58,7 +59,7 @@ class Bertified_transformer(tf.keras.Model):
                                        name='Decoder-embedding'
                                        )
         self.decoder = Decoder(num_layers, d_model, num_heads, dff, target_vocab_size, rate, 
-                               add_pointer_generator=True)
+                               add_pointer_generator=add_pointer_generator)
     def draft_summary(self,
                       input_ids,
                       enc_output,
@@ -289,4 +290,12 @@ def finalize_tokenizer_and_architecture():
 
     return (source_tokenizer, target_tokenizer, Model)
 
-(source_tokenizer, target_tokenizer, Model) = finalize_tokenizer_and_architecture()
+# import sys
+# source_tokenizer = create_vocab(config.input_seq_vocab_path, 'source', log)
+# print(source_tokenizer.vocab_size)
+# source_tokenizer = BertTokenizer.from_pretrained(config.input_pretrained_bert_model)
+# target_tokenizer = BertTokenizer.from_pretrained(config.target_pretrained_bert_model)
+
+# print(source_tokenizer.vocab_size)
+# print(target_tokenizer.vocab_size)
+# sys.exit()

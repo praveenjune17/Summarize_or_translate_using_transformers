@@ -4,7 +4,7 @@ tf.random.set_seed(100)
 import tensorflow_addons as tfa
 from configuration import config
 from creates import log
-from beam_search import beam_search
+from tensor2tensor.utils.beam_search import beam_search
 
 def with_column(x, i, column):
     """
@@ -59,7 +59,7 @@ def tile_and_mask_diagonal(x, mask_with):
     masked = tf.concat([first, masked], axis=2)    
     masked = tf.reshape(masked, [N*T, T+1])
 
-    return maskeds
+    return masked
 
 def get_angles(pos, i, d_model):
     '''Get angle rate for the projected embedding output (d_model)
@@ -235,7 +235,7 @@ def draft_decoder(self,
         """
         Inference call, builds a draft output_sequence auto-regressively
         """
-        #log.info(f"Building: '{decoder_type} decoder'")
+        log.info(f"Building: '{decoder_type} decoder'")
         start_ids = tf.repeat(config.target_CLS_ID, repeats=batch_size)
         if decoder_type == 'beam_search':
             input_ids = tfa.seq2seq.tile_batch(input_ids, multiplier=beam_size)

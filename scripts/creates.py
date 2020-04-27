@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import datetime
 import tensorflow as tf
-import tensorflow_datasets as tfds
 import os
 import shutil
 import logging
@@ -62,29 +61,6 @@ def create_logger():
     log.addHandler(fh)
     log.propagate = False
     return log
-
-def create_vocab(tokenizer_path, tok_type, log):
-
-    try:
-        tokenizer = tfds.features.text.SubwordTextEncoder.load_from_file(tokenizer_path)
-    except FileNotFoundError:
-        log.warning(f'Vocab files not available in {tokenizer_path} so building it from the training set')
-        if config.use_tfds:
-            examples, metadata = tfds.load(config.tfds_name, with_info=True, as_supervised=True)
-            train_examples = examples['train']
-            if tok_type=='source':
-              tokenizer = tfds.features.text.SubwordTextEncoder.build_from_corpus(
-                      (ip_seq.numpy() for ip_seq, _ in train_examples), target_vocab_size=2**13)
-            else:
-              tokenizer = tfds.features.text.SubwordTextEncoder.build_from_corpus(
-                      (op_seq.numpy() for _, op_seq in train_examples), target_vocab_size=2**13)
-        tokenizer.save_to_file(tokenizer_path)
-    if tok_type=='source':
-        assert(tokenizer.vocab_size+2 == config.input_vocab_size),f'{tok_type} vocab size in configuration script should be {tokenizer.vocab_size+2}'
-    else:
-        assert(tokenizer.vocab_size+2 == config.target_vocab_size),f'{tok_type} vocab size in configuration script should be {tokenizer.vocab_size+2}'
-    log.info(f'{tok_type} vocab file created and saved to {tokenizer_path}')
-    return tokenizer
 
 def create_tensorboard_parms():
     if config.run_tensorboard:
@@ -160,8 +136,5 @@ check_and_create_dir()
 log = create_logger()
 set_memory_growth(log)
 validate_config_parameters()
-(train_output_sequence_writer,
-valid_output_sequence_writer,
-embedding_projector_dir) = create_tensorboard_parms()
 if config.last_recorded_value is None:
     check_recorded_metric_val()
