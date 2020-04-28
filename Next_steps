@@ -1,27 +1,24 @@
+############
+packages
+	*) langdetect
+	*) Rouge score
+	*) bert score
+	*) clone bleu score repo
+
 ###################################################### 
 En_tam Machine translation paper:-  http://www.iitp.ac.in/~sukanta.pcs15/pubs/WAT_2018_paper_12.pdf 
 ######################################
-
-*) cast issues with bertified-arch, remove commented code
-b) load vocab size automatically
-
-
-Machine translation vs summarization:-
-	a) change inference decoder hyper parameters for summarization
-	b)
+*) code walk through :- reduce size of monitor, remove extra comments, name tensors, remove duplicate operations
+*) test summarize
 
 Post-training improvements:-
     #) Hyper parameter tuning on beam size, length penalty, dropout, label smoothing
 	#) Multiple occurences of stop values in beam search and stop repeated occurences of words
-	#) Add (follow the same preprocessing in the tfds pipeline) in the client script and also remove vulgar words, add spell correction, lower casing 
+	#) bug in topktopp
 
 Work on:-
-	#) reduce size of monitor
-	#) test bertified arch and summarize
-	#) Add bertified refine decoder
+	
 	#) Client script
-	#) run unit test for the last architecture
-
 
 Things to watchout for when coding
 ########################################################
@@ -44,5 +41,5 @@ Expected improvements:-
     *) Tensorflow implementation of BERT score
 ##################
 Additional enhancements
-	a) Scheduled sampling :- perform teacher forcing or autoregressive training for a coin toss
+	a) Scheduled sampling :- toss a coin and perform teacher forcing if it is a heads else perform autoregressive training 
 

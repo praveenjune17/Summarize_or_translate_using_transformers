@@ -3,23 +3,20 @@ import re
 import pickle
 import tensorflow as tf
 from profanity_check import predict_prob as vulgar_check
-from create_model import  finalize_tokenizer_and_architecture
-from creates import detokenize
+from create_model import  Model
+from utilities import detokenize
 from model_utils import create_padding_mask
-from configuration import config
-
-(source_tokenizer, target_tokenizer, Model) = finalize_tokenizer_and_architecture()
-en_blacklist = '"#$%&\()*+-./:;<=>@[\\]^_`♪{|}~='
-cleantxt = re.compile('<.*?>')
-
+from configuration import config, source_tokenizer, target_tokenizer
 
 with open('correction_dictonary.pickle', 'rb') as handle:
     correction_dictonary = pickle.load(handle)
 
 def preprocess(sentence):
+    en_blacklist = '"#$%&\()*+-./:;<=>@[\\]^_`♪{|}~='
+    cleantxt = re.compile('<.*?>')
     # Lower case english lines
     sentence_lower = sentence.lower()
-    # Remove unwanted html tags from text
+    # Remove html tags from text
     cleaned_sentence = re.sub(cleantxt, '', sentence_lower)
     # Remove english text in tamil sentence and tamil text in english sentence
     cleaned_sentence = ''.join([ch for ch in cleaned_sentence if ch not in en_blacklist])

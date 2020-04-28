@@ -7,7 +7,7 @@ from configuration import config
 from rouge import Rouge
 from create_model import target_tokenizer 
 from bert_score import score as b_score
-from creates import log, valid_output_sequence_writer, detokenize
+from utilities import log, valid_output_sequence_writer, detokenize
 
 
 class CustomSchedule(tf.keras.optimizers.schedules.LearningRateSchedule):

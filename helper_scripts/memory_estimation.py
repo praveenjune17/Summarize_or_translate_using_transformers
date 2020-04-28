@@ -15,7 +15,7 @@ from tqdm import tqdm
 from preprocess import create_dataset
 from configuration import config
 from calculate_metrics import mask_and_calculate_loss, monitor_run
-from creates import log, detokenize
+from utilities import log, detokenize
 from create_model import source_tokenizer, target_tokenizer, Transformer, Bertified_transformer
 from local_tf_ops import (check_ckpt, eval_step, train_step, batch_run_check, 
                           train_sanity_check, evaluate_validation_set)

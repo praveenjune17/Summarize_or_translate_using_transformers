@@ -2,7 +2,7 @@
 import os
 import tensorflow_datasets as tfds
 from configuration import config
-from creates import log
+from utilities import log
 
 
 

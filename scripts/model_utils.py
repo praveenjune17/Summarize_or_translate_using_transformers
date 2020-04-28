@@ -3,7 +3,7 @@ import numpy as np
 tf.random.set_seed(100)
 import tensorflow_addons as tfa
 from configuration import config
-from creates import log
+from utilities import log
 from tensor2tensor.utils.beam_search import beam_search
 
 def with_column(x, i, column):
@@ -199,10 +199,10 @@ def sampling_decoder(decoder_type, decoder_op, batch_size, temperature, p, k):
 
     return predictions
 
-def query_decoder(self, enc_output, input_ids, dec_input, dec_padding_mask, decoder_type, beam_size, training=False):
+def query_decoder(self, enc_output, input_ids, dec_input, decoder_type, beam_size, training=False):
 
+    _, combined_mask, dec_padding_mask = create_masks(input_ids, dec_input)
     embeddings = self.decoder_embedding(dec_input) if config.model_architecture == 'bertified_transformer' else dec_input
-    _, combined_mask, dec_padding_mask = create_masks(input_ids, embeddings)
     # (batch_size, i+1, vocab), (_)            
     dec_output, attention_dist = self.decoder(input_ids,
                                                embeddings, 
@@ -221,7 +221,6 @@ def query_decoder(self, enc_output, input_ids, dec_input, dec_padding_mask, deco
 def draft_decoder(self,
                  input_ids, 
                  enc_output,
-                 dec_padding_mask,
                  beam_size,
                  length_penalty,
                  decoder_type, 
@@ -240,12 +239,12 @@ def draft_decoder(self,
         if decoder_type == 'beam_search':
             input_ids = tfa.seq2seq.tile_batch(input_ids, multiplier=beam_size)
             enc_output = tfa.seq2seq.tile_batch(enc_output, multiplier=beam_size)
-            dec_padding_mask = tfa.seq2seq.tile_batch(dec_padding_mask, multiplier=beam_size)
             
             def perform_beam_search(dec_input):
 
                 return query_decoder(self, enc_output, input_ids, dec_input, 
-                  dec_padding_mask, decoder_type, beam_size, training=False)
+                  decoder_type, beam_size, training=False)
+
             predicted_beam_search_op = beam_search(
                                                   perform_beam_search, 
                                                   initial_ids=start_ids, 
@@ -262,16 +261,15 @@ def draft_decoder(self,
             predicted_output_sequence = tf.expand_dims(start_ids, 1)
             for i in (range(0, config.target_seq_length)):
                 # (batch_size, i+1, d_bert)
-                dec_output_i,attention_dist = query_decoder(self,
+                dec_output,attention_dist = query_decoder(self,
                                                             enc_output, 
                                                             input_ids,
                                                             predicted_output_sequence,
-                                                            dec_padding_mask,
                                                             decoder_type,
                                                             beam_size=None, 
                                                             training=False
                                                             )
-                predictions = sampling_decoder(decoder_type, dec_output_i, batch_size, temperature, 
+                predictions = sampling_decoder(decoder_type, dec_output, batch_size, temperature, 
                                               top_p, top_k)
                 predicted_output_sequence = tf.concat([predicted_output_sequence, predictions], 
                                                       axis=-1

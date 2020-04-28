@@ -3,23 +3,13 @@ import tensorflow_datasets as tfds
 from tensorflow.keras.initializers import Constant
 from transformers import TFBertModel, BertTokenizer
 from transformer import Decoder, Encoder, Transformer
-from creates import log
+from utilities import log
 from configuration import config, create_vocab
-from model_utils import (tile_and_mask_diagonal, sampling_decoder, 
+from model_utils import (tile_and_mask_diagonal, sampling_decoder, create_masks, 
                          with_column, mask_timestamp, draft_decoder)
-
-call_signature = [
-                tf.TensorSpec(shape=(None, None), dtype=tf.int32),
-                tf.TensorSpec(shape=(None, None), dtype=tf.int32),
-                tf.TensorSpec(shape=(None, None), dtype=tf.bool),
-                tf.TensorSpec(shape=(None, None), dtype=tf.bool),
-                tf.TensorSpec(shape=(None, None), dtype=tf.bool),
-                tf.TensorSpec(shape=(None), dtype=tf.bool)
-                ]
 
 def _embedding_from_bert():
 
-    log.info("Extracting pretrained word embeddings weights from BERT")
     with tf.device("CPU:0"):  
         input_pretrained_bert = TFBertModel.from_pretrained(config.input_pretrained_bert_model, 
                                               trainable=False, 
@@ -29,6 +19,7 @@ def _embedding_from_bert():
                                               name=config.target_pretrained_bert_model)
     decoder_embedding = target_pretrained_bert.get_weights()[0]
     log.info(f"Decoder_Embedding matrix shape '{decoder_embedding.shape}'")
+
     return (decoder_embedding, input_pretrained_bert, target_pretrained_bert)
 
 class Bertified_transformer(tf.keras.Model):
@@ -92,12 +83,12 @@ class Bertified_transformer(tf.keras.Model):
         T = config.target_seq_length
         # (batch_size x (seq_len - 1), seq_len) 
         dec_inp_ids = tile_and_mask_diagonal(target, mask_with=config.MASK_ID)
+        # (batch_size x (seq_len - 1), seq_len, d_bert)
+        context_vectors = self.decoder_bert_model(dec_inp_ids)[0]
         # (batch_size x (seq_len - 1), seq_len, d_bert) 
         enc_output = tf.tile(enc_output, [T-1, 1, 1])
         # (batch_size x (seq_len - 1), 1, 1, seq_len) 
         padding_mask = tf.tile(padding_mask, [T-1, 1, 1, 1])
-        # (batch_size x (seq_len - 1), seq_len, d_bert)
-        context_vectors = self.decoder_bert_model(dec_inp_ids)[0]
         # (batch_size x (seq_len - 1), seq_len, vocab_len), (_)
         refined_logits, refine_attention_dist = self.decoder(
                                                            tf.tile(input_ids, [T-1, 1]),
@@ -142,7 +133,7 @@ class Bertified_transformer(tf.keras.Model):
                                          input_ids, 
                                          enc_output, 
                                          draft_output_sequence, 
-                                         padding_mask, 
+                                         batch_size, 
                                          decoder_type='greedy', 
                                          temperature=0.9, 
                                          p=0.9, 
@@ -157,26 +148,28 @@ class Bertified_transformer(tf.keras.Model):
         
         log.info(f"Building: 'Refined {decoder_type} decoder'")
         #tf.shape(enc_output)[0]
-        refined_output_sequence = draft_output_sequence
+        dec_input = draft_output_sequence
         for i in (range(1, config.target_seq_length)):    
+
             # (batch_size, seq_len)
-            masked_refined_output_sequence = mask_timestamp(refined_output_sequence, i, config.MASK_ID)
+            dec_input = mask_timestamp(dec_input, i, config.MASK_ID)
+            _, _, dec_padding_mask = create_masks(input_ids, dec_input)
             # (batch_size, seq_len, d_bert)
-            context_vectors = self.decoder_bert_model(masked_refined_output_sequence)[0]
+            context_vectors = self.decoder_bert_model(dec_input)[0]
             # (batch_size, seq_len, d_bert), (_)
             dec_output,  attention_dist =  self.decoder(input_ids,
                                                         context_vectors,
                                                         enc_output,
                                                         training=training,
                                                         look_ahead_mask=None,
-                                                        padding_mask=padding_mask
+                                                        padding_mask=dec_padding_mask
                                                       )
             # (batch_size, 1, vocab_len)
             dec_output_i = dec_output[:, i:i+1 ,:]
-            predictions = sampling_decoder(decoder_type, dec_output_i, temperature, p, k)
-            refined_output_sequence = with_column(refined_output_sequence, i, predictions)
+            predictions = sampling_decoder(decoder_type, dec_output_i, batch_size, temperature, p, k)
+            dec_input = with_column(dec_input, i, predictions)
         # (batch_size, seq_len, vocab_len), (_)        
-        return refined_output_sequence, attention_dist
+        return dec_input, attention_dist
 
     def fit(self, input_ids, target_ids, training, enc_padding_mask, 
            look_ahead_mask, dec_padding_mask):
@@ -205,15 +198,16 @@ class Bertified_transformer(tf.keras.Model):
 
     def predict(self,
                input_ids,
-               dec_padding_mask, 
                draft_decoder_sampling_type=config.decoder_type,
                refine_decoder_type='topk',
-               beam_size=config.beam_size, 
+               beam_size=config.beam_size,
+               length_penalty=config.length_penalty, 
                temperature=config.softmax_temperature, 
                top_p=config.topp, 
                top_k=config.topk):
 
         # (batch_size, seq_len, d_bert)
+        batch_size = tf.shape(input_ids)[0]
         enc_output = self.encoder(input_ids)[0]
         # (batch_size, seq_len, vocab_len), 
         # ()
@@ -222,31 +216,30 @@ class Bertified_transformer(tf.keras.Model):
                                                 input_ids,
                                                 enc_output=enc_output,
                                                 beam_size=beam_size,
+                                                length_penalty=length_penalty,
                                                 decoder_type=draft_decoder_sampling_type,
                                                 temperature=temperature,
                                                 top_p=top_p, 
                                                 top_k=top_k,
+                                                batch_size=batch_size
                                                 )
-        
-        
         # (batch_size, seq_len, vocab_len), 
         # ()
         (predicted_refined_output_sequence, 
           refined_attention_dist) = self.refined_output_sequence_sampling(
                                             input_ids,
                                             enc_output=enc_output,
-                                            padding_mask=dec_padding_mask,
                                             draft_output_sequence=predicted_draft_output_sequence,
-                                            decoder_type=refine_decoder_type, 
+                                            decoder_type=refine_decoder_type,
+                                            batch_size=batch_size, 
                                             temperature=temperature, 
-                                            p=p, 
-                                            k=k
+                                            p=top_p, 
+                                            k=top_k
                                             )
         
         return (predicted_draft_output_sequence, draft_attention_dist, 
                predicted_refined_output_sequence, refined_attention_dist)
 
-    #@tf.function(input_signature=call_signature)
     def call(self, input_ids, target_ids, dec_padding_mask, 
              enc_padding_mask, look_ahead_mask, training):
 
@@ -254,48 +247,26 @@ class Bertified_transformer(tf.keras.Model):
             return self.fit(input_ids, target_ids, training, enc_padding_mask, 
                             look_ahead_mask, dec_padding_mask)
         else:
-            return self.predict(input_ids, dec_padding_mask)
+            return self.predict(input_ids)
+
+if config.model_architecture == 'transformer':
+    Model = Transformer(
+                       num_layers=config.num_layers, 
+                       d_model=config.d_model, 
+                       num_heads=config.num_heads, 
+                       dff=config.dff, 
+                       input_vocab_size=config.input_vocab_size, 
+                       target_vocab_size=config.target_vocab_size,
+                       add_pointer_generator=config.add_pointer_generator
+                       )
         
-
-def finalize_tokenizer_and_architecture():
-
-    if config.model_architecture == 'transformer':
-        source_tokenizer = create_vocab(config.input_seq_vocab_path, 'source', log)
-        target_tokenizer = create_vocab(config.output_seq_vocab_path, 'target', log)
-        Model = Transformer(
-                           num_layers=config.num_layers, 
-                           d_model=config.d_model, 
-                           num_heads=config.num_heads, 
-                           dff=config.dff, 
-                           input_vocab_size=config.input_vocab_size, 
-                           target_vocab_size=config.target_vocab_size,
-                           add_pointer_generator=config.add_pointer_generator
-                           )
-        
-    elif config.model_architecture == 'bertified_transformer':
-        source_tokenizer = BertTokenizer.from_pretrained(config.input_pretrained_bert_model)
-        target_tokenizer = BertTokenizer.from_pretrained(config.target_pretrained_bert_model)
-        Model = Bertified_transformer(
-                                      num_layers=config.num_layers, 
-                                      d_model=config.d_model, 
-                                      num_heads=config.num_heads, 
-                                      dff=config.dff, 
-                                      input_vocab_size=config.input_vocab_size,
-                                      target_vocab_size=config.target_vocab_size,
-                                      add_pointer_generator=config.add_pointer_generator
-                                      )
-    if config.task == 'summarize':
-        del target_tokenizer
-        target_tokenizer = source_tokenizer
-
-    return (source_tokenizer, target_tokenizer, Model)
-
-# import sys
-# source_tokenizer = create_vocab(config.input_seq_vocab_path, 'source', log)
-# print(source_tokenizer.vocab_size)
-# source_tokenizer = BertTokenizer.from_pretrained(config.input_pretrained_bert_model)
-# target_tokenizer = BertTokenizer.from_pretrained(config.target_pretrained_bert_model)
-
-# print(source_tokenizer.vocab_size)
-# print(target_tokenizer.vocab_size)
-# sys.exit()
+elif config.model_architecture == 'bertified_transformer':
+    Model = Bertified_transformer(
+                                  num_layers=config.num_layers, 
+                                  d_model=config.d_model, 
+                                  num_heads=config.num_heads, 
+                                  dff=config.dff, 
+                                  input_vocab_size=config.input_vocab_size,
+                                  target_vocab_size=config.target_vocab_size,
+                                  add_pointer_generator=config.add_pointer_generator
+                                  )

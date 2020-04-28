@@ -11,14 +11,13 @@ import GPUtil
 from io import StringIO
 from tqdm import tqdm
 from preprocess import create_dataset
-from configuration import config
+from configuration import config, source_tokenizer, target_tokenizer
 from calculate_metrics import mask_and_calculate_loss, monitor_run
-from creates import log, detokenize
-from create_model import finalize_tokenizer_and_architecture
+from utilities import log, detokenize
+from create_model import Model
 from local_tf_ops import (check_ckpt, eval_step, train_step, batch_run_check, 
                           train_sanity_check, evaluate_validation_set)
 
-(source_tokenizer, target_tokenizer, Model) = finalize_tokenizer_and_architecture()
 unit_test_dataset = create_dataset(
                               split='train', 
                               source_tokenizer=source_tokenizer, 

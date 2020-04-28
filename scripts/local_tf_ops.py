@@ -4,9 +4,9 @@ import os
 import shutil
 from tensorflow.keras.mixed_precision import experimental as mixed_precision
 from preprocess import create_dataset
-from configuration import config
-from creates import log, create_tensorboard_parms, detokenize
-from create_model import finalize_tokenizer_and_architecture
+from configuration import config, source_tokenizer, target_tokenizer
+from utilities import log, create_tensorboard_parms, detokenize
+from create_model import Model
 from model_utils import create_padding_mask, create_masks
 from calculate_metrics import (get_loss_and_accuracy, loss_function, 
                                get_optimizer, tf_write_output_sequence)
@@ -18,12 +18,12 @@ avg_rouge = tf.keras.metrics.Mean(name='rouge_f1_mean')
 avg_bleu = tf.keras.metrics.Mean(name='bleu_mean')
 avg_bert_score = tf.keras.metrics.Mean(name='bert_f1_mean')
 calculate_combined_metric = tf.keras.metrics.Mean(name='combined_metric_mean', dtype=None)
-(source_tokenizer, target_tokenizer, Model) = finalize_tokenizer_and_architecture()
-
 tf.config.optimizer.set_jit(config.enable_jit)
-policy = mixed_precision.Policy('mixed_float16')
-mixed_precision.set_policy(policy)
 optimizer = get_optimizer()
+# mixed precision doesn't work for transormers models
+if not config.model_architecture == 'bertified_transformer':
+    policy = mixed_precision.Policy('mixed_float16')
+    mixed_precision.set_policy(policy)
 optimizer = mixed_precision.LossScaleOptimizer(optimizer, loss_scale='dynamic')
 
 train_step_signature = [
@@ -71,11 +71,11 @@ def train_step(input_ids,
                                                                )
         train_variables = Model.trainable_variables
         loss, target = loss_function(target_ids, 
-                             draft_predictions,
-                             refine_predictions, 
-                             Model
-                             )
-        predictions = refine_predictions if refine_predictions else draft_predictions
+                                     draft_predictions,
+                                     refine_predictions, 
+                                     Model
+                                     )
+        predictions = refine_predictions if refine_predictions is not None else draft_predictions
         scaled_loss = optimizer.get_scaled_loss(loss)
     scaled_gradients  = tape.gradient(scaled_loss, train_variables)
     gradients = optimizer.get_unscaled_gradients(scaled_gradients)
@@ -108,18 +108,18 @@ def val_step(
              step,
              write_output_seq):
 
-    dec_padding_mask = create_padding_mask(input_ids)
+    enc_padding_mask = create_padding_mask(input_ids)
     (draft_predictions, _,  
      refine_predictions, _) = Model( 
                                     input_ids,
-                                    dec_padding_mask=dec_padding_mask,
+                                    enc_padding_mask=enc_padding_mask,
                                     target_ids=None,
-                                    enc_padding_mask=None, 
+                                    dec_padding_mask=None, 
                                     look_ahead_mask=None, 
                                     training=None
                                     )
     
-    if refine_predictions:
+    if refine_predictions is not None:
       predictions = refine_predictions
     else:
       predictions = draft_predictions
@@ -184,7 +184,7 @@ def eval_step(input_ids,
                          refine_predictions, 
                          Model
                          )
-    predictions = refine_predictions if refine_predictions else draft_predictions
+    predictions = refine_predictions if refine_predictions is not None else draft_predictions
     train_accuracy(target, predictions)
     train_loss(loss)
     log.info(Model.summary())
@@ -206,7 +206,7 @@ def check_ckpt(checkpoint_path):
         ckpt.restore(ckpt_manager.latest_checkpoint)
         log.info(ckpt_manager.latest_checkpoint +' restored')
     else:
-        log.info('Training from scratch')
+        log.info('No checkpoint found.')
     return (ckpt_manager)
 
 def monitor_run(ckpt_save_path, 

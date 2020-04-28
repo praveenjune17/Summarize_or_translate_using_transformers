@@ -5,7 +5,7 @@ import tensorflow_datasets as tfds
 from functools import partial
 from collections import defaultdict
 from configuration import config
-from creates import log
+from utilities import log
 
 AUTOTUNE = tf.data.experimental.AUTOTUNE
 
@@ -20,8 +20,8 @@ def pad(l, n, pad=config.PAD_ID):
 def encode(sent_1, sent_2, source_tokenizer, target_tokenizer, input_seq_len, output_seq_len):
     
     if config.model_architecture == 'bertified_transformer':
-        input_ids = source_tokenizer.encode(sent_1.numpy().decode('utf-8'), add_special_tokens=False) 
-        target_ids = target_tokenizer.encode(sent_2.numpy().decode('utf-8'), add_special_tokens=False) 
+        input_ids = source_tokenizer.encode(sent_1.numpy().decode('utf-8'), add_special_tokens=True) 
+        target_ids = target_tokenizer.encode(sent_2.numpy().decode('utf-8'), add_special_tokens=True) 
         # Account for [CLS] and [SEP] with "- 2"
         if len(input_ids) > input_seq_len - 2:
             input_ids = input_ids[0:(input_seq_len - 2)]

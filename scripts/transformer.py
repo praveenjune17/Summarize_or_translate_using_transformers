@@ -26,7 +26,7 @@ def scaled_dot_product_attention(q, k, v, mask):
     # softmax is normalized on the last axis (seq_len_k) so that the scores
     # add up to 1.
     # (..., seq_len_q, seq_len_k)
-    attention_weights = tf.nn.softmax(scaled_attention_logits, axis=-1)
+    attention_weights = tf.math.softmax(scaled_attention_logits, axis=-1)
     # (..., seq_len_q, depth_v)
     v = tf.cast(v, tf.float32)
     output = tf.matmul(attention_weights, v)  
@@ -34,6 +34,7 @@ def scaled_dot_product_attention(q, k, v, mask):
     return output, attention_weights
 
 class MultiHeadAttention(tf.keras.layers.Layer):
+
     def __init__(self, d_model, num_heads):
         super(MultiHeadAttention, self).__init__()
         self.num_heads = num_heads
@@ -203,10 +204,8 @@ class Pointer_Generator(tf.keras.layers.Layer):
         # weighted_vocab_dist (batch_size, tar_seq_len, target_vocab_size)
         weighted_vocab_dist = pointer_generator * vocab_dist
         # attention_weights is 4D so taking mean of the second dimension(i.e num_heads)
-        final_attention_weights = tf.reduce_mean(attention_weights, axis=1)
+        attention_dist = tf.reduce_mean(attention_weights, axis=1)
         # attention_dist (batch_size, tar_seq_len, inp_seq_len)
-        attention_dist = tf.math.softmax(final_attention_weights, axis=-1)
-        # weighted_attention_dist (batch_size, tar_seq_len, inp_seq_len)
         weighted_attention_dist = (1 - pointer_generator) * attention_dist
         attention_dist_shape = tf.shape(final_output)
         # represent the tokens indices in 3D using meshgrid and tile
@@ -355,7 +354,7 @@ class Transformer(tf.keras.Model):
 
     def predict(self,
                input_ids,
-               dec_padding_mask,
+               enc_padding_mask,
                decoder_sampling_type=config.decoder_type,
                beam_size=config.beam_size,
                length_penalty=config.length_penalty,
@@ -366,14 +365,13 @@ class Transformer(tf.keras.Model):
         # (batch_size, inp_seq_len, d_model)
         # Both dec_padding_mask and enc_padding_mask are same
         batch_size = tf.shape(input_ids)[0]
-        enc_output = self.encoder(input_ids, False, dec_padding_mask)
+        enc_output = self.encoder(input_ids, False, enc_padding_mask)
         # (batch_size, seq_len, vocab_len), 
         # ()
         (predicted_draft_output_sequence, 
           draft_attention_dist) = draft_decoder(self,
                                                 input_ids,
                                                 enc_output=enc_output,
-                                                dec_padding_mask=dec_padding_mask,
                                                 beam_size=beam_size,
                                                 length_penalty=length_penalty,
                                                 decoder_type=decoder_sampling_type,
@@ -385,12 +383,11 @@ class Transformer(tf.keras.Model):
 
         return (predicted_draft_output_sequence, draft_attention_dist, None, None)
 
-    #@tf.function(input_signature=call_signature)
     def call(self, input_ids, target_ids, dec_padding_mask, 
-                enc_padding_mask, look_ahead_mask, training):
+             enc_padding_mask, look_ahead_mask, training):
 
         if training is not None:
             return self.fit(input_ids, target_ids, training, enc_padding_mask, 
                             look_ahead_mask, dec_padding_mask)
         else:
-            return self.predict(input_ids, dec_padding_mask)
+            return self.predict(input_ids, enc_padding_mask)

@@ -69,8 +69,8 @@ special_tokens = {
     }
 
 inference_decoder_parms = {
-    'beam_size': 2,              
-    'decoder_type' : 'topktopp',     # 'nucleus', 'topk', 'topktopp', 'random_sampling', 'greedy', 'beam_search' 
+    'beam_size': 1,              
+    'decoder_type' : 'beam_search',     # 'nucleus', 'topk', 'topktopp', 'random_sampling', 'greedy', 'beam_search' 
     'length_penalty' : 1,
     'softmax_temperature'  : 0.9,
     'topp' : 0.9, 
@@ -94,8 +94,7 @@ core_path = os.getcwd()
 path_seperator = '\\' if platform.system() == 'Windows' else '/'
 file_path = {
         'best_ckpt_path' : os.path.join(core_path, f"best_checkpoints{path_seperator}{dataset_name}{path_seperator}"),  
-        #'checkpoint_path' : os.path.join(core_path, f"checkpoints{path_seperator}{dataset_name}{path_seperator}"),
-        'checkpoint_path' : 'D:\\Local_run\\checkpoints\\temp_ckpt',
+        'checkpoint_path' : os.path.join(core_path, f"checkpoints{path_seperator}{dataset_name}{path_seperator}"),
         'initial_weights' : os.path.join(core_path, f"initial_weights{path_seperator}{dataset_name}{path_seperator}"),
         'infer_csv_path' : None,
         'infer_ckpt_path' : 'D:\\Local_run\\best_checkpoints\\en_tam_parallel_text\\ckpt-213',

@@ -9,14 +9,12 @@ tf.random.set_seed(100)
 import time
 from tqdm import tqdm
 from preprocess import create_dataset
-from configuration import config
+from configuration import config, source_tokenizer, target_tokenizer
 from calculate_metrics import mask_and_calculate_loss
-from creates import log
-from create_model import finalize_tokenizer_and_architecture
+from utilities import log
 from local_tf_ops import (check_ckpt, eval_step, train_step, batch_run_check, 
                           save_evaluate_monitor)
 
-(source_tokenizer, target_tokenizer, _) = finalize_tokenizer_and_architecture()
 train_dataset = create_dataset(
                               split='train', 
                               source_tokenizer=source_tokenizer, 
@@ -32,10 +30,19 @@ ck_pt_mgr = check_ckpt(config.checkpoint_path)
 total_steps = int(config.epochs * (config.gradient_accumulation_steps))
 train_dataset = train_dataset.repeat(total_steps)
 
-for (step, (input_ids, target_ids)) in tqdm(enumerate(train_dataset.take(1000), 1), initial=1):
+for (step, (input_ids, target_ids)) in tqdm(enumerate(train_dataset, 1), initial=1):
 
     start_time = time.time()
     grad_accum_flag = (True if (step%config.gradient_accumulation_steps) == 0 else False) if config.accumulate_gradients else None
+    # print('input_ids')
+    # print(input_ids)
+    # print()
+    # print('target_ids')
+    # print(target_ids)
+    # print()
+    # print('grad_accum_flag')
+    # print(grad_accum_flag)
+    # print()
     predictions = train_step(
                             input_ids,  
                             target_ids,

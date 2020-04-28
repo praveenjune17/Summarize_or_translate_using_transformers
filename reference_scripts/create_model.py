@@ -5,7 +5,7 @@ from tensorflow.keras.initializers import Constant
 from beam_search import beam_search
 from transformers import TFBertModel, BertTokenizer
 from transformer import create_masks, Decoder, Encoder
-from creates import log
+from utilities import log
 from configuration import config
 from decode_utils import (tile_and_mask_diagonal, sampling_decoder, 
                           with_column, mask_timestamp)

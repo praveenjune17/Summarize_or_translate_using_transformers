@@ -5,7 +5,7 @@ import pandas as pd
 import tensorflow_datasets as tfds
 from functools import partial
 from configuration import config
-from creates import log
+from utilities import log
 
 AUTOTUNE = tf.data.experimental.AUTOTUNE
 

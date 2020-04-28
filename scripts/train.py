@@ -9,14 +9,12 @@ tf.random.set_seed(100)
 import time
 from tqdm import tqdm
 from preprocess import create_dataset
-from configuration import config
+from configuration import config, source_tokenizer, target_tokenizer
 from calculate_metrics import mask_and_calculate_loss
-from creates import log
-from create_model import finalize_tokenizer_and_architecture
+from utilities import log
 from local_tf_ops import (check_ckpt, eval_step, train_step, batch_run_check, 
                           save_evaluate_monitor)
 
-(source_tokenizer, target_tokenizer, _) = finalize_tokenizer_and_architecture()
 train_dataset = create_dataset(
                               split='train', 
                               source_tokenizer=source_tokenizer, 

@@ -104,7 +104,9 @@ def check_recorded_metric_val():
 def validate_config_parameters():
     allowed_decoder_types = ['nucleus', 'topk', 'topktopp', 'random_sampling', 'greedy', 'beam_search']
     allowed_model_architectures = ['transformer', 'bertified_transformer']
-    
+    if config.add_bias:
+        if not config.target_language == 'ta':
+            assert config.target_pretrained_bert_model == 'bert-base-multilingual-cased', 'Bias is available only for en-ta translation and bert-multilingual model'
     assert config.d_model % config.num_heads == 0, 'd_model should be a multiple of num_heads'
     assert config.eval_after_steps%config.steps_to_print_training_info == 0, 'steps_to_print_training_info must be a factor of eval_after_steps'
     assert config.decoder_type  in allowed_decoder_types, f'available decoding types are {allowed_decoder_types}'

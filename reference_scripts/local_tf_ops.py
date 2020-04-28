@@ -3,7 +3,7 @@ import time
 from tensorflow.keras.mixed_precision import experimental as mixed_precision
 from preprocess import create_dataset
 from configuration import config
-from creates import (log, train_output_sequence_writer, 
+from utilities import (log, train_output_sequence_writer, 
                     valid_output_sequence_writer, detokenize)
 from create_model import source_tokenizer, target_tokenizer, Model
 from decode_utils import create_padding_mask
@@ -192,7 +192,7 @@ def check_ckpt(checkpoint_path):
         ckpt.restore(ckpt_manager.latest_checkpoint)
         log.info(ckpt_manager.latest_checkpoint +' restored')
     else:
-        log.info('Training from scratch')
+        log.info('No checkpoint found')
     return (ckpt_manager)
 
 # run every batch

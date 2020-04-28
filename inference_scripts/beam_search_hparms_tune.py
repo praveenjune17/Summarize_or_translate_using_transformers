@@ -4,7 +4,7 @@ import tensorflow_datasets as tfds
 import numpy as np
 import os
 from configuration import config
-from creates import log
+from utilities import log
 from preprocess import create_dataset
 from local_tf_ops import evaluate_validation_set
 from create_model import source_tokenizer, target_tokenizer, Model
