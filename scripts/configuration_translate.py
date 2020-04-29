@@ -31,13 +31,13 @@ model_parms = {
      'd_model': 256,                  # the projected word vector dimension
      'dff': 1024,                      # feed forward network hidden parameters
      'input_pretrained_bert_model': 'bert-base-uncased',
-     'input_seq_length': 512,
+     'input_seq_length': 30,
      'model_architecture' : 'transformer',   #bertified_transformer or transformer
      'num_heads': 4,                  # the number of heads in the multi-headed attention unit
      'num_layers': 4,                 # number of transformer blocks
      'target_language' : 'ta',
      'target_pretrained_bert_model' : 'bert-base-uncased',#'bert-base-multilingual-cased',
-     'target_seq_length': 70,
+     'target_seq_length': 30,
      'task':'summarize'            # must be translate or summarize
      }
 
@@ -54,7 +54,7 @@ training_parms = {
      'monitor_metric' : 'combined_metric',
      'run_tensorboard': True,
      'steps_to_print_training_info': 100,      # print training progress per number of batches specified
-     'tfds_name' : 'cnn_dailymail',     # tfds dataset to be used
+     'tfds_name' : 'en_tam_parallel_text',     # tfds dataset to be used
      'tolerance' : 0,
      'tolerance_threshold': 3,          # Stop training after the threshold is reached
      'tokens_per_batch' : 4050,
@@ -97,8 +97,8 @@ core_path = os.getcwd()
 path_seperator = '\\' if platform.system() == 'Windows' else '/'
 file_path = {
         'best_ckpt_path' : os.path.join(core_path, f"best_checkpoints{path_seperator}{dataset_name}{path_seperator}"),  
-        'checkpoint_path' : os.path.join(core_path, f"temp\\checkpoints{path_seperator}{dataset_name}{path_seperator}"),
-        #'checkpoint_path' : 'D:\\Local_run\\checkpoints\\temp_ckpt',
+        #'checkpoint_path' : os.path.join(core_path, f"temp\\checkpoints{path_seperator}{dataset_name}{path_seperator}"),
+        'checkpoint_path' : 'D:\\Local_run\\checkpoints\\temp_ckpt',
         'initial_weights' : os.path.join(core_path, f"initial_weights{path_seperator}{dataset_name}{path_seperator}"),
         'infer_csv_path' : None,
         'infer_ckpt_path' : 'D:\\Local_run\\best_checkpoints\\en_tam_parallel_text\\ckpt-213',
@@ -169,19 +169,17 @@ def create_vocab(tokenizer_path, tok_type, log=None):
 
 if model_parms['model_architecture'] == 'transformer':
     source_tokenizer = create_vocab(file_path['input_seq_vocab_path'], 'source')
+    target_tokenizer = create_vocab(file_path['output_seq_vocab_path'], 'target')
     # total vocab size + start and end token
     model_parms['input_vocab_size'] = source_tokenizer.vocab_size + 2
+    model_parms['target_vocab_size'] = target_tokenizer.vocab_size + 2
     model_parms['num_of_decoders'] = 1
     if model_parms['task'] == 'translate':
-        target_tokenizer = create_vocab(file_path['output_seq_vocab_path'], 'target')
-        model_parms['target_vocab_size'] = target_tokenizer.vocab_size + 2
         special_tokens['input_CLS_ID'] = source_tokenizer.vocab_size
         special_tokens['input_SEP_ID'] = source_tokenizer.vocab_size+1
         special_tokens['target_CLS_ID'] = target_tokenizer.vocab_size
         special_tokens['target_SEP_ID'] = target_tokenizer.vocab_size+1
     elif model_parms['task'] == 'summarize':
-        target_tokenizer = source_tokenizer
-        model_parms['target_vocab_size'] = target_tokenizer.vocab_size + 2
         special_tokens['input_CLS_ID'] = source_tokenizer.vocab_size
         special_tokens['input_SEP_ID'] = source_tokenizer.vocab_size+1
         special_tokens['target_CLS_ID'] = special_tokens['input_CLS_ID']
@@ -189,10 +187,7 @@ if model_parms['model_architecture'] == 'transformer':
 
 elif model_parms['model_architecture'] == 'bertified_transformer':
     source_tokenizer = BertTokenizer.from_pretrained(model_parms['input_pretrained_bert_model'])
-    if model_parms['task'] == 'translate':
-        target_tokenizer = BertTokenizer.from_pretrained(model_parms['target_pretrained_bert_model'])
-    elif model_parms['task'] == 'summarize':
-        target_tokenizer = source_tokenizer
+    target_tokenizer = BertTokenizer.from_pretrained(model_parms['target_pretrained_bert_model'])
     model_parms['input_vocab_size'] = source_tokenizer.vocab_size 
     model_parms['target_vocab_size'] = target_tokenizer.vocab_size
     special_tokens['input_CLS_ID'] = special_tokens['CLS_ID']
@@ -200,6 +195,10 @@ elif model_parms['model_architecture'] == 'bertified_transformer':
     special_tokens['target_CLS_ID'] = special_tokens['input_CLS_ID'] 
     special_tokens['target_SEP_ID']=  special_tokens['input_SEP_ID']
     model_parms['num_of_decoders'] = 2
+
+if model_parms['task'] == 'summarize':
+    del target_tokenizer
+    target_tokenizer = source_tokenizer
 
 if not training_parms['use_tfds']:
     training_parms['num_examples_to_train'] = None     # If None then all the examples in the dataset will be used to train

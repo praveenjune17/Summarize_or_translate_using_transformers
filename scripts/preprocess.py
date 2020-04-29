@@ -107,7 +107,7 @@ def create_dataset(split,
                                                           with_info=True, 
                                                           as_supervised=True,
                                                           data_dir=config.tfds_data_dir,
-                                                          builder_kwargs=config.tfds_data_version,
+                                                          builder_kwargs={'version': config.tfds_data_version},#config.tfds_data_version,
                                                         )
         for i,j  in en_tam_ds.keys():
             record_count+=(sum([i.num_examples for i in  list(en_tam_ds[(i, j)][1].splits.values())]))
@@ -130,7 +130,7 @@ def create_dataset(split,
                              with_info=True,
                              as_supervised=True, 
                              data_dir=config.tfds_data_dir,
-                             builder_kwargs=config.tfds_data_version,
+                             builder_kwargs={'version': config.tfds_data_version},
                              split=tfds.core.ReadInstruction(split, from_=from_, to=to, unit='%')
                             )
         record_count = (sum([i.num_examples for i in  list(ds_info.splits.values())]))

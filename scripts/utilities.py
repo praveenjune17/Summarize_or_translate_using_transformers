@@ -112,6 +112,8 @@ def validate_config_parameters():
         and config.task == 'translation'):
         assert config.target_language in config.serialized_tensor_path, (
             'serialized Bias file not found, please create it using helper scripts/create_bias script')
+    assert config.bert_score_model == config.target_pretrained_bert_model,(
+        'target pretrained model and the bert score model must be same')
     assert config.d_model % config.num_heads == 0, 'd_model should be a multiple of num_heads'
     assert config.eval_after_steps%config.steps_to_print_training_info == 0, (
         'steps_to_print_training_info must be a factor of eval_after_steps')

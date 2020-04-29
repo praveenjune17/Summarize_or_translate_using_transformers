@@ -12,8 +12,8 @@ from preprocess import create_dataset
 from configuration import config, source_tokenizer, target_tokenizer
 from calculate_metrics import mask_and_calculate_loss
 from utilities import log
-from local_tf_ops import (check_ckpt, eval_step, train_step, batch_run_check, 
-                          save_evaluate_monitor)
+from local_tf_ops import (check_ckpt, eval_step, train_step, batch_run_check,
+                          train_sanity_check)
 
 train_dataset = create_dataset(
                               split='train', 
@@ -53,8 +53,11 @@ for (step, (input_ids, target_ids)) in tqdm(enumerate(train_dataset, 1), initial
                                   step,  
                                   start_time
                                   )
+        train_sanity_check(target_tokenizer, predictions, target_ids)
     if (step % config.eval_after_steps) == 0:
         early_stop = True
         if early_stop:
             break
+
+train_sanity_check(target_tokenizer, predictions, target_ids)
 log.info(f'Training completed at step {step}')

@@ -8,7 +8,12 @@ packages
 ###################################################### 
 En_tam Machine translation paper:-  http://www.iitp.ac.in/~sukanta.pcs15/pubs/WAT_2018_paper_12.pdf 
 ######################################
-*) speed test with write and without write
+*) clean_translate and 
+*) summarize:-
+		turn off bleu 
+		input_seq>target_seq
+*) translate:-
+		turn off ROUGE
 *) code walk through :- reduce size of validate_config_parameters, monitor, 
 						remove extra comments, name tensors, 
 						remove duplicate operations

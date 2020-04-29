@@ -21,7 +21,7 @@ val_dataset = create_dataset(
                              target_tokenizer=target_tokenizer, 
                              from_=0, 
                              to=100, 
-                             batch_size=2,
+                             batch_size=32,
                              drop_remainder=True
                              )
 count=0
@@ -34,7 +34,7 @@ ck_pt_mgr = check_ckpt(config.checkpoint_path)
 step = 1
 start_time = time.time()
 (rouge_score, bert_score, bleu) = evaluate_validation_set(       
-                                                      val_dataset.take(2),
+                                                      val_dataset.take(3),
                                                       step
                                                       )  
 training_results(
