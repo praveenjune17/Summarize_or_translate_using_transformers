@@ -104,14 +104,14 @@ file_path = {
         'log_path' : os.path.join(core_path, f"created_files{path_seperator}{dataset_name}{path_seperator}tensorflow.log"),
         'output_seq_vocab_path' : os.path.join(core_path, f"TFDS_vocab_files{path_seperator}{dataset_name}{path_seperator}vocab_ta"),
         'output_sequence_write_path' : os.path.join(core_path, f"created_files{path_seperator}{dataset_name}{path_seperator}summaries{path_seperator}"),
-        'serialized_tensor_path' : os.path.join("/content/drive/My Drive/", 'saved_serialized_tensor_3'),
+        'serialized_tensor_path' : os.path.join("/content/drive/My Drive/", 'saved_serialized_tensor_'+ model_parms['target_language']),
         'tensorboard_log' : os.path.join(core_path, f"created_files{path_seperator}{dataset_name}{path_seperator}tensorboard_logs{path_seperator}"),
         'tfds_data_dir' : os.path.join(core_path, f'Tensorflow_datasets{path_seperator}{dataset_name}_dataset'),
         'tfds_data_version' : None,
         'train_csv_path' : None
             }
 
-def set_testing_rules():
+def set_testing_rules(config):
 
     if config.unit_test_dataset_batch_size < config.gradient_accumulation_steps:
         config.gradient_accumulation_steps =  config.unit_test_dataset_batch_size
@@ -124,7 +124,9 @@ def set_testing_rules():
     config.dropout_rate = config.epsilon_ls = config.l2_norm = 0
     config.batches_to_train = config.batches_to_test
 
-def set_training_rules():
+    return config
+
+def set_training_rules(config):
 
     config.save_initial_weights = False
     config.run_init_eval = False
@@ -134,6 +136,8 @@ def set_training_rules():
     config.random_results_check = False
     config.print_config = True
     config.clear_log = False
+
+    return config
 
 def create_vocab(tokenizer_path, tok_type, log=None):
 
@@ -220,6 +224,6 @@ config.update(h_parms)
 config.update(file_path)
 
 if config.test_script:
-    set_testing_rules()
+    config = set_testing_rules(config)
 else:
-    set_training_rules()
+    config = set_training_rules(config)
