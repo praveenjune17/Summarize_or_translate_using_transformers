@@ -10,14 +10,11 @@ En_tam Machine translation paper:-  http://www.iitp.ac.in/~sukanta.pcs15/pubs/WA
 ######################################
 *) code walk through :- reduce size of monitor, remove extra comments, name tensors, remove duplicate operations
 *) test summarize
+*) Client script
 
 Post-training improvements:-
     #) Hyper parameter tuning on beam size, length penalty, dropout, label smoothing
 	#) Multiple occurences of stop values in beam search and stop repeated occurences of words
-
-Work on:-
-	
-	#) Client script
 
 Things to watchout for when coding
 ########################################################
@@ -38,6 +35,7 @@ Expected improvements:-
 	*) Data augumentation https://colab.research.google.com/drive/1RGWrQv3e0CRDPDROQ3ZmUWTmlRljasGi?authuser=0#scrollTo=E9RYnn9VDE4N
 	*) Tensorflow graph optimizations
     *) Tensorflow implementation of BERT score
+    *) remove tamil blacklist from the preprocess code
 ##################
 Additional enhancements
 	a) Scheduled sampling :- toss a coin and perform teacher forcing if it is a heads else perform autoregressive training 
