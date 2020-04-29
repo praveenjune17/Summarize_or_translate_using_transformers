@@ -8,15 +8,13 @@ packages
 ###################################################### 
 En_tam Machine translation paper:-  http://www.iitp.ac.in/~sukanta.pcs15/pubs/WAT_2018_paper_12.pdf 
 ######################################
-*) code walk through :- reduce size of monitor, remove extra comments, name tensors, remove duplicate operations
 *) speed test with write and without write
+*) code walk through :- reduce size of validate_config_parameters, monitor, 
+						remove extra comments, name tensors, 
+						remove duplicate operations
 *) test summarize
 *) Client script
-*) Collect all indian languages from that link
 
-
-big functions:-
-	validate_config_parameters,
 Post-training improvements:-
     #) Hyper parameter tuning on beam size, length penalty, dropout, label smoothing
 
@@ -40,6 +38,7 @@ Expected improvements:-
 	*) Tensorflow graph optimizations
     *) Tensorflow implementation of BERT score
     *) remove tamil blacklist from the preprocess code
+    *) Collect all indian languages from that link
 ##################
 Additional enhancements
 	a) Scheduled sampling :- toss a coin and perform teacher forcing if it is a heads else perform autoregressive training 
