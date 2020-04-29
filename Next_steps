@@ -9,12 +9,16 @@ packages
 En_tam Machine translation paper:-  http://www.iitp.ac.in/~sukanta.pcs15/pubs/WAT_2018_paper_12.pdf 
 ######################################
 *) code walk through :- reduce size of monitor, remove extra comments, name tensors, remove duplicate operations
+*) speed test with write and without write
 *) test summarize
 *) Client script
+*) Collect all indian languages from that link
 
+
+big functions:-
+	validate_config_parameters,
 Post-training improvements:-
     #) Hyper parameter tuning on beam size, length penalty, dropout, label smoothing
-	#) Multiple occurences of stop values in beam search and stop repeated occurences of words
 
 Things to watchout for when coding
 ########################################################

@@ -1,5 +1,9 @@
 #######################
-Beam_search doesn't output attention weights, if required then need to modify the core t2t algorithm
+Not implemented features:-
+  Beam_search doesn't output attention weights, if required then need to modify the core t2t algorithm
+  Multiple occurences of stop values in beam search and repeated occurences of n-grams
+  Mixed precision is disabled with bertified_transformer architecture
+  
 #########################
 Positional encoding:-
 	'''Positional encoding is added to give the model some information about the 
