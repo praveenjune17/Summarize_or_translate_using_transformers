@@ -28,16 +28,16 @@ model_parms = {
      'activation' : 'relu',
      'add_pointer_generator': True,
      'bert_score_model' : 'bert-base-multilingual-cased',
-     'd_model': 256,                  # the projected word vector dimension
-     'dff': 1024,                      # feed forward network hidden parameters
+     'd_model': 768,                  # the projected word vector dimension
+     'dff': 2048,                      # feed forward network hidden parameters
      'input_pretrained_bert_model': 'bert-base-uncased',
-     'input_seq_length': 30,
-     'model_architecture' : 'transformer',   #bertified_transformer or transformer
-     'num_heads': 4,                  # the number of heads in the multi-headed attention unit
-     'num_layers': 4,                 # number of transformer blocks
+     'input_seq_length': 15,
+     'model_architecture' : 'bertified_transformer',   #bertified_transformer or transformer
+     'num_heads': 8,                  # the number of heads in the multi-headed attention unit
+     'num_layers': 8,                 # number of transformer blocks
      'target_language' : 'ta',
      'target_pretrained_bert_model' : 'bert-base-multilingual-cased',
-     'target_seq_length': 30,
+     'target_seq_length': 15,
      'task':'translate'            # must be translate or summarize
      }
 
@@ -70,11 +70,12 @@ special_tokens = {
 
 inference_decoder_parms = {
     'beam_size': 2,              
-    'decoder_type' : 'topktopp',     # 'nucleus', 'topk', 'topktopp', 'random_sampling', 'greedy', 'beam_search' 
+    'draft_decoder_type' : 'only_beam_search',     # 'greedy', 'only_beam_search', 'topktopp' --> also does beam search
     'length_penalty' : 1,
-    'softmax_temperature'  : 0.9,
-    'topp' : 0.9, 
-    'topk' : 5                          # increase this for summarization
+    'refine_decoder_type' : 'greedy',
+    'softmax_temperature' : 1,
+    'topp' : 1, 
+    'topk' : 0                         
     }
 
 h_parms = {
@@ -94,8 +95,8 @@ core_path = os.getcwd()
 path_seperator = '\\' if platform.system() == 'Windows' else '/'
 file_path = {
         'best_ckpt_path' : os.path.join(core_path, f"best_checkpoints{path_seperator}{dataset_name}{path_seperator}"),  
-        #'checkpoint_path' : os.path.join(core_path, f"checkpoints{path_seperator}{dataset_name}{path_seperator}"),
-        'checkpoint_path' : 'D:\\Local_run\\checkpoints\\temp_ckpt',
+        'checkpoint_path' : os.path.join(core_path, f"temp\\checkpoints{path_seperator}{dataset_name}{path_seperator}"),
+        #'checkpoint_path' : 'D:\\Local_run\\checkpoints\\temp_ckpt',
         'initial_weights' : os.path.join(core_path, f"initial_weights{path_seperator}{dataset_name}{path_seperator}"),
         'infer_csv_path' : None,
         'infer_ckpt_path' : 'D:\\Local_run\\best_checkpoints\\en_tam_parallel_text\\ckpt-213',
@@ -111,6 +112,7 @@ file_path = {
             }
 
 def create_vocab(tokenizer_path, tok_type, log=None):
+
     try:
         tokenizer = tfds.features.text.SubwordTextEncoder.load_from_file(tokenizer_path)
     except FileNotFoundError:
@@ -132,6 +134,7 @@ def create_vocab(tokenizer_path, tok_type, log=None):
         print(f'{tok_type} vocab file created and saved to {tokenizer_path}')
     else:
         log.info(f'{tok_type} vocab file created and saved to {tokenizer_path}')
+
     return tokenizer
 
 if model_parms['model_architecture'] == 'transformer':
@@ -160,15 +163,25 @@ elif model_parms['model_architecture'] == 'bertified_transformer':
 if model_parms['task'] == 'summarize':
     del target_tokenizer
     target_tokenizer = source_tokenizer
+
 if not training_parms['use_tfds']:
     training_parms['num_examples_to_train'] = None     # If None then all the examples in the dataset will be used to train
     training_parms['num_examples_to_infer'] = None
     training_parms['test_size'] = 0.05                 # test set split size
+
 if training_parms['accumulate_gradients']==False:
     training_parms['gradient_accumulation_steps'] = 1
-if inference_decoder_parms['decoder_type'] == 'greedy':
-    inference_decoder_parms['decoder_type'] = 'beam_search'
+
+if inference_decoder_parms['draft_decoder_type'] == 'greedy':
+    inference_decoder_parms['draft_decoder_type'] = 'only_beam_search'
     inference_decoder_parms['beam_size'] = 1
+    inference_decoder_parms['topp'] = 1 
+    inference_decoder_parms['topk'] = 0
+
+if inference_decoder_parms['draft_decoder_type'] == 'only_beam_search':
+    inference_decoder_parms['topp'] = 1 
+    inference_decoder_parms['topk'] = 0 
+
 if model_parms['add_bias']:
     read_tensor = tf.io.read_file(file_path.serialized_tensor_path, name=None)
     output_bias_tensor = tf.io.parse_tensor(read_tensor, tf.float32, name=None)
@@ -182,8 +195,8 @@ config.update(inference_decoder_parms)
 config.update(h_parms)
 config.update(file_path)
 
-
 def set_testing_rules():
+
     if config.test_script:
         if config.unit_test_dataset_batch_size < config.gradient_accumulation_steps:
             config.gradient_accumulation_steps =  config.unit_test_dataset_batch_size

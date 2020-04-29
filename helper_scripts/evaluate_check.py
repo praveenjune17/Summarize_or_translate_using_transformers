@@ -34,7 +34,7 @@ ck_pt_mgr = check_ckpt(config.checkpoint_path)
 step = 1
 start_time = time.time()
 (rouge_score, bert_score, bleu) = evaluate_validation_set(       
-                                                      val_dataset.take(1),
+                                                      val_dataset.take(2),
                                                       step
                                                       )  
 training_results(

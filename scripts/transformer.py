@@ -355,7 +355,7 @@ class Transformer(tf.keras.Model):
     def predict(self,
                input_ids,
                enc_padding_mask,
-               decoder_sampling_type=config.decoder_type,
+               decoder_sampling_type=config.draft_decoder_type,
                beam_size=config.beam_size,
                length_penalty=config.length_penalty,
                temperature=config.softmax_temperature, 
@@ -378,8 +378,7 @@ class Transformer(tf.keras.Model):
                                                 temperature=temperature,
                                                 top_p=top_p, 
                                                 top_k=top_k,
-                                                batch_size=batch_size
-                                                )
+                                                batch_size=batch_size)
 
         return (predicted_draft_output_sequence, draft_attention_dist, None, None)
 

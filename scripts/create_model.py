@@ -5,7 +5,7 @@ from transformers import TFBertModel, BertTokenizer
 from transformer import Decoder, Encoder, Transformer
 from utilities import log
 from configuration import config, create_vocab
-from model_utils import (tile_and_mask_diagonal, sampling_decoder, create_masks, 
+from model_utils import (tile_and_mask_diagonal, create_masks, topp_topk,
                          with_column, mask_timestamp, draft_decoder)
 
 def _embedding_from_bert():
@@ -166,7 +166,15 @@ class Bertified_transformer(tf.keras.Model):
                                                       )
             # (batch_size, 1, vocab_len)
             dec_output_i = dec_output[:, i:i+1 ,:]
-            predictions = sampling_decoder(decoder_type, dec_output_i, batch_size, temperature, p, k)
+            logits = topp_topk(logits=dec_output_i, 
+                                batch_size=batch_size,
+                                temperature=temperature, 
+                                top_k=k, 
+                                top_p=p)
+            if decoder_type == 'greedy':
+                predictions = tf.expand_dims(tf.math.argmax(logits, axis=-1, output_type=tf.int32), 1)
+            else:
+                predictions = tf.random.categorical(logits, num_samples=1, dtype=tf.int32, seed=1)
             dec_input = with_column(dec_input, i, predictions)
         # (batch_size, seq_len, vocab_len), (_)        
         return dec_input, attention_dist
@@ -198,8 +206,8 @@ class Bertified_transformer(tf.keras.Model):
 
     def predict(self,
                input_ids,
-               draft_decoder_sampling_type=config.decoder_type,
-               refine_decoder_type='topk',
+               draft_decoder_sampling_type=config.draft_decoder_type,
+               refine_decoder_type=config.refine_decoder_type,
                beam_size=config.beam_size,
                length_penalty=config.length_penalty, 
                temperature=config.softmax_temperature, 

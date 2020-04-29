@@ -14,7 +14,6 @@ En_tam Machine translation paper:-  http://www.iitp.ac.in/~sukanta.pcs15/pubs/WA
 Post-training improvements:-
     #) Hyper parameter tuning on beam size, length penalty, dropout, label smoothing
 	#) Multiple occurences of stop values in beam search and stop repeated occurences of words
-	#) bug in topktopp
 
 Work on:-
 	

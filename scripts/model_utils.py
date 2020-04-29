@@ -114,92 +114,75 @@ def create_masks(input_ids, target_ids):
 
     return enc_padding_mask, combined_mask, dec_padding_mask
 
-def sampling(logits):
+def set_tensor_by_indices_to_value(tensor, indices, value):
+    # create value_tensor since tensor value assignment is not possible in TF
+    value_tensor = tf.zeros_like(tensor) + value
 
-    sample = tf.random.categorical(logits, num_samples=1, dtype=tf.int32, seed=1)
+    return tf.where(indices, value_tensor, tensor)
 
-    return sample
+def scatter_values_on_batch_indices(values, batch_indices):
+    shape = tf.shape(batch_indices)
+    # broadcast batch dim to shape
+    broad_casted_batch_dims = tf.reshape(tf.broadcast_to(tf.expand_dims(tf.range(shape[0]), axis=-1), shape), [1, -1])
+    # transform batch_indices to pair_indices
+    pair_indices = tf.transpose(tf.concat([broad_casted_batch_dims, tf.reshape(batch_indices, [1, -1])], 0))
+    # scatter values to pair indices
+    return tf.scatter_nd(pair_indices, tf.reshape(values, [-1]), shape)
 
-def top_k_sampling(logits, batch_size, k=25):
-    'k must be greater than 0'
-    values, _ = tf.nn.top_k(logits, k=k)
-    min_value = tf.reduce_min(values)
-    logits = tf.where(
-        logits < min_value,
-        tf.ones_like(logits, dtype=logits.dtype) * -1e10,
-        logits)
-    logits = tf.reshape(logits, (batch_size, -1))
-    sample = tf.random.categorical(logits, num_samples=1, dtype=tf.int32, seed=1)
+def topp_topk(logits, batch_size, temperature, top_k=0, top_p=1.0, filter_value=-float("Inf"), min_tokens_to_keep=1):
+    """ Filter a distribution of logits using top-k and/or nucleus (top-p) filtering
+        Args:
+            logits: logits distribution shape (batch size, vocabulary size)
+            if top_k > 0: keep only top k tokens with highest probability (top-k filtering).
+            if top_p < 1.0: keep the top tokens with cumulative probability >= top_p (nucleus filtering).
+                Nucleus filtering is described in Holtzman et al. (http://arxiv.org/abs/1904.09751)
+            Make sure we keep at least min_tokens_to_keep per batch example in the output
+        From: https://gist.github.com/thomwolf/1a5a29f6962089e871b94cbd09daf317
+    """
+    logits = tf.squeeze(logits, 1)
+    logits = tf.divide(logits, temperature)
+    logits_shape = tf.shape(logits)
+    if top_k > 0:
+        #top_k = min(max(top_k, min_tokens_to_keep), logits_shape[-1])  # Safety check
+        # Remove all tokens with a probability less than the last token of the top-k
+        indices_to_remove = logits < tf.math.top_k(logits, k=top_k)[0][..., -1, None]
+        logits = set_tensor_by_indices_to_value(logits, indices_to_remove, filter_value)
 
-    return sample
-  
-def nucleus_sampling(logits, batch_size, p=0.9):
+    if top_p < 1.0:
+        sorted_indices = tf.argsort(logits, direction="DESCENDING")
+        sorted_logits = tf.gather(
+            logits, sorted_indices, axis=-1, batch_dims=1
+        )  # expects logits to be of dim (batch_size, vocab_size)
 
-    sorted_logits = tf.sort(logits, direction='DESCENDING')
-    sorted_indices = tf.argsort(logits, direction='DESCENDING')
-    cumulative_probs = tf.cumsum(tf.nn.softmax(sorted_logits))
-    t_sorted_indices_to_remove = cumulative_probs > p
-    ''' Shift the indices to the right to keep also the first token above the threshold '''
-    indices = tf.range(1, tf.shape(logits)[0], 1)
-    sorted_indices_to_remove = tf.scatter_nd(
-                                             tf.expand_dims(indices, 1), 
-                                             t_sorted_indices_to_remove[:-1], 
-                                             logits.shape
-                                             )
-    logits = tf.where(
-        sorted_indices_to_remove,
-        tf.ones_like(logits, dtype=logits.dtype) * -1e10,
-        logits
-    )
-    logits = tf.reshape(logits, (batch_size, -1))
-    sample = tf.random.categorical(logits, num_samples=1, dtype=tf.int32, seed=1)
+        cumulative_probs = tf.math.cumsum(tf.nn.softmax(sorted_logits, axis=-1), axis=-1)
 
-    return sample
+        # Remove tokens with cumulative probability above the threshold (token with 0 are kept)
+        sorted_indices_to_remove = cumulative_probs > top_p
 
-def topp_topk(logits, batch_size, p, k):
-    sorted_logits = tf.sort(logits, direction='DESCENDING')
-    sorted_indices = tf.argsort(logits, direction='DESCENDING')
-    cumulative_probs = tf.cumsum(tf.nn.softmax(sorted_logits))
-    t_sorted_indices_to_remove = cumulative_probs > p
-    ''' Shift the indices to the right to keep also the first token above the threshold '''
-    indices = tf.range(1, tf.shape(logits)[0], 1)
-    sorted_indices_to_remove = tf.scatter_nd(
-                                             tf.expand_dims(indices, 1), 
-                                             t_sorted_indices_to_remove[:-1], 
-                                             logits.shape
-                                             )
-    logits = tf.where(
-        sorted_indices_to_remove,
-        tf.ones_like(logits, dtype=logits.dtype) * -1e10,
-        logits
-    )
-    values, _ = tf.nn.top_k(logits, k=k)
-    min_value = tf.reduce_min(values)
-    logits = tf.where(
-        logits < min_value,
-        tf.ones_like(logits, dtype=logits.dtype) * -1e10,
-        logits)
-    logits = tf.reshape(logits, (batch_size, -1))
-    sample = tf.random.categorical(logits, num_samples=1, dtype=tf.int32, seed=1)
+        if min_tokens_to_keep > 1:
+            # Keep at least min_tokens_to_keep (set to min_tokens_to_keep-1 because we add the first one below)
+            sorted_indices_to_remove = tf.concat(
+                [
+                    tf.zeros_like(sorted_indices_to_remove[:, :min_tokens_to_keep]),
+                    sorted_indices_to_remove[:, min_tokens_to_keep:],
+                ],
+                -1,
+            )
 
-    return sample
+        # Shift the indices to the right to keep also the first token above the threshold
+        sorted_indices_to_remove = tf.roll(sorted_indices_to_remove, 1, axis=-1)
+        sorted_indices_to_remove = tf.concat(
+            [tf.zeros_like(sorted_indices_to_remove[:, :1]), sorted_indices_to_remove[:, 1:]], -1,
+        )
+        # scatter sorted tensors to original indexing
+        indices_to_remove = scatter_values_on_batch_indices(sorted_indices_to_remove, sorted_indices)
+        logits = set_tensor_by_indices_to_value(logits, indices_to_remove, filter_value)
 
-def sampling_decoder(decoder_type, decoder_op, batch_size, temperature, p, k):
+    return logits
 
-    if decoder_type == 'nucleus':
-        predictions = tf.cast(nucleus_sampling((decoder_op/ temperature), batch_size, p=p), tf.int32)
-    elif decoder_type == 'topk':
-        predictions = tf.cast(top_k_sampling(((decoder_op)/ temperature), batch_size, k=k), tf.int32)
-    elif decoder_type == 'topktopp':
-        predictions = tf.cast(topp_topk(((decoder_op)/ temperature), batch_size, p=p, k=k), tf.int32)
-    elif decoder_type == 'random_sampling':
-        predictions = tf.cast(sampling(decoder_op/ temperature), tf.int32)
-    else:
-        raise RuntimeError('Incorrect decoder_type')
-
-    return predictions
-
-def query_decoder(self, enc_output, input_ids, dec_input, decoder_type, beam_size, training=False):
+def query_decoder(self, enc_output, input_ids, 
+      dec_input, batch_size, temperature, 
+      top_p, top_k, training=False):
 
     _, combined_mask, dec_padding_mask = create_masks(input_ids, dec_input)
     embeddings = self.decoder_embedding(dec_input) if config.model_architecture == 'bertified_transformer' else dec_input
@@ -211,12 +194,14 @@ def query_decoder(self, enc_output, input_ids, dec_input, decoder_type, beam_siz
                                                combined_mask, 
                                                dec_padding_mask
                                                )        
-
+    logits = tf.divide(dec_output[:, -1: ,:], temperature)
+    predictions = topp_topk(logits=logits,
+                            batch_size=batch_size,
+                            temperature=temperature,
+                            top_k=top_k, 
+                            top_p=top_p)
     # (batch_size, 1, vocab)
-    if decoder_type == 'beam_search':
-        return dec_output[:, -1: ,:]
-    else:
-        return (dec_output[:, -1: ,:], attention_dist)
+    return predictions
 
 def draft_decoder(self,
                  input_ids, 
@@ -227,7 +212,7 @@ def draft_decoder(self,
                  temperature, 
                  top_p, 
                  top_k,
-                 batch_size, 
+                 batch_size,
                  training=False
                  ):
 
@@ -236,43 +221,25 @@ def draft_decoder(self,
         """
         log.info(f"Building: '{decoder_type} decoder'")
         start_ids = tf.repeat(config.target_CLS_ID, repeats=batch_size)
-        if decoder_type == 'beam_search':
-            input_ids = tfa.seq2seq.tile_batch(input_ids, multiplier=beam_size)
-            enc_output = tfa.seq2seq.tile_batch(enc_output, multiplier=beam_size)
-            
-            def perform_beam_search(dec_input):
+        input_ids = tfa.seq2seq.tile_batch(input_ids, multiplier=beam_size)
+        enc_output = tfa.seq2seq.tile_batch(enc_output, multiplier=beam_size)
+        def perform_beam_search(dec_input):
 
-                return query_decoder(self, enc_output, input_ids, dec_input, 
-                  decoder_type, beam_size, training=False)
+            return query_decoder(self, enc_output, input_ids, dec_input, 
+                                batch_size, temperature, top_p, 
+                                top_k, training=training)
 
-            predicted_beam_search_op = beam_search(
-                                                  perform_beam_search, 
-                                                  initial_ids=start_ids, 
-                                                  beam_size=beam_size, 
-                                                  decode_length=config.target_seq_length, 
-                                                  vocab_size=config.target_vocab_size, 
-                                                  alpha=length_penalty,
-                                                  stop_early=False,
-                                                  eos_id=config.target_SEP_ID
-                                                  )
-            predicted_output_sequence = predicted_beam_search_op[0][:,0,:]
-            attention_dist = None
-        else:
-            predicted_output_sequence = tf.expand_dims(start_ids, 1)
-            for i in (range(0, config.target_seq_length)):
-                # (batch_size, i+1, d_bert)
-                dec_output,attention_dist = query_decoder(self,
-                                                            enc_output, 
-                                                            input_ids,
-                                                            predicted_output_sequence,
-                                                            decoder_type,
-                                                            beam_size=None, 
-                                                            training=False
-                                                            )
-                predictions = sampling_decoder(decoder_type, dec_output, batch_size, temperature, 
-                                              top_p, top_k)
-                predicted_output_sequence = tf.concat([predicted_output_sequence, predictions], 
-                                                      axis=-1
-                                                      )
-        #(batch_size, seq_len, vocab_len), (_)
+        predicted_beam_search_op = beam_search(
+                                              perform_beam_search, 
+                                              initial_ids=start_ids, 
+                                              beam_size=beam_size, 
+                                              decode_length=config.target_seq_length, 
+                                              vocab_size=config.target_vocab_size, 
+                                              alpha=length_penalty,
+                                              stop_early=False,
+                                              eos_id=config.target_SEP_ID
+                                              )
+        predicted_output_sequence = predicted_beam_search_op[0][:,0,:]
+        attention_dist = None
+
         return predicted_output_sequence, attention_dist
