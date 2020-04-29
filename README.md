@@ -4,7 +4,7 @@ Deep learning Framework :- Tensorflow 2
 
 Features
 
-*)Beam-search and topk_topp filtering
+*)Beam-search and topk_topp filtering\n
 *)Implemented three transformer architectures to perform Machine translation and Text summarization
 	*)Transformer
 	*)Transformer with pointer generator
