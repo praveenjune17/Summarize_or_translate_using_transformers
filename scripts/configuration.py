@@ -111,6 +111,30 @@ file_path = {
         'train_csv_path' : None
             }
 
+def set_testing_rules():
+
+    if config.unit_test_dataset_batch_size < config.gradient_accumulation_steps:
+        config.gradient_accumulation_steps =  config.unit_test_dataset_batch_size
+    if config.unit_test_dataset_batch_size > config.samples_to_test:
+        config.unit_test_dataset_batch_size = config.samples_to_test
+    if config.steps_to_print_training_info > config.unit_test_dataset_batch_size:
+        config.steps_to_print_training_info = config.unit_test_dataset_batch_size
+    config.grad_clipnorm = None
+    config.run_tensorboard = False
+    config.dropout_rate = config.epsilon_ls = config.l2_norm = 0
+    config.batches_to_train = config.batches_to_test
+
+def set_training_rules():
+
+    config.save_initial_weights = False
+    config.run_init_eval = False
+    config.init_loss_check = False
+    config.input_independent_baseline_check = False
+    config.check_model_capacity = False
+    config.random_results_check = False
+    config.print_config = True
+    config.clear_log = False
+
 def create_vocab(tokenizer_path, tok_type, log=None):
 
     try:
@@ -178,7 +202,7 @@ if inference_decoder_parms['draft_decoder_type'] == 'greedy':
     inference_decoder_parms['topp'] = 1 
     inference_decoder_parms['topk'] = 0
 
-if inference_decoder_parms['draft_decoder_type'] == 'only_beam_search':
+elif inference_decoder_parms['draft_decoder_type'] == 'only_beam_search':
     inference_decoder_parms['topp'] = 1 
     inference_decoder_parms['topk'] = 0 
 
@@ -195,28 +219,7 @@ config.update(inference_decoder_parms)
 config.update(h_parms)
 config.update(file_path)
 
-def set_testing_rules():
-
-    if config.test_script:
-        if config.unit_test_dataset_batch_size < config.gradient_accumulation_steps:
-            config.gradient_accumulation_steps =  config.unit_test_dataset_batch_size
-        if config.unit_test_dataset_batch_size > config.samples_to_test:
-            config.unit_test_dataset_batch_size = config.samples_to_test
-        if config.steps_to_print_training_info > config.unit_test_dataset_batch_size:
-            config.steps_to_print_training_info = config.unit_test_dataset_batch_size
-        config.grad_clipnorm = None
-        config.run_tensorboard = False
-        config.dropout_rate = config.epsilon_ls = config.l2_norm = 0
-        config.batches_to_train = config.batches_to_test
-
 if config.test_script:
     set_testing_rules()
 else:
-    config.save_initial_weights = False
-    config.run_init_eval = False
-    config.init_loss_check = False
-    config.input_independent_baseline_check = False
-    config.check_model_capacity = False
-    config.random_results_check = False
-    config.print_config = True
-    config.clear_log = False
+    set_training_rules()
