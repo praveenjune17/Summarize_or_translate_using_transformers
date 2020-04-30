@@ -219,7 +219,7 @@ def draft_decoder(self,
         """
         Inference call, builds a draft output_sequence auto-regressively
         """
-        log.info(f"Building: '{decoder_type} decoder'")
+        #log.info(f"Building: '{decoder_type} decoder'")
         start_ids = tf.repeat(config.target_CLS_ID, repeats=batch_size)
         input_ids = tfa.seq2seq.tile_batch(input_ids, multiplier=beam_size)
         enc_output = tfa.seq2seq.tile_batch(enc_output, multiplier=beam_size)

@@ -102,52 +102,13 @@ def check_recorded_metric_val():
     except FileNotFoundError:
         log.info('setting default value to the last_recorded_value since file was not found')
         config['last_recorded_value'] = 0 if config.monitor_metric != 'validation_loss' else float('inf')
-# create metrics dict
-def validate_config_parameters():
 
-    allowed_decoder_types = ['topktopp','greedy', 'only_beam_search']
-    allowed_model_architectures = ['transformer', 'bertified_transformer']
-    if (config.add_bias 
-        and config.target_pretrained_bert_model == 'bert-base-multilingual-cased'
-        and config.task == 'translation'):
-        assert config.target_language in config.serialized_tensor_path, (
-            'serialized Bias file not found, please create it using helper scripts/create_bias script')
-    assert config.bert_score_model == config.target_pretrained_bert_model,(
-        'target pretrained model and the bert score model must be same')
-    assert config.d_model % config.num_heads == 0, 'd_model should be a multiple of num_heads'
-    assert config.eval_after_steps%config.steps_to_print_training_info == 0, (
-        'steps_to_print_training_info must be a factor of eval_after_steps')
-    assert config.draft_decoder_type  in allowed_decoder_types, (
-        f'available decoding types are {allowed_decoder_types}')
-    assert config.model_architecture  in allowed_model_architectures, (
-        f'available model_architectures are {allowed_model_architectures}')
-    if config.task.lower() == 'summarize':
-        assert config.input_pretrained_bert_model == config.target_pretrained_bert_model, (
-        f'For {config.task} the input and target models must be same')
-        assert config.input_CLS_ID ==  config.target_CLS_ID, 'Start Ids must be same'
-        assert config.input_SEP_ID ==  config.target_SEP_ID, 'End Ids must be same'
-    elif config.task.lower() == 'translate':
-        if config.model_architecture == 'bertified_transformer':
-            assert config.input_pretrained_bert_model != config.target_pretrained_bert_model, (
-                f'For {config.task} the input and target models must not be same')
-        if (config.input_CLS_ID ==  config.target_CLS_ID) or (config.input_SEP_ID ==  config.target_SEP_ID):
-            if not config.model_architecture == 'bertified_transformer':
-                assert config.target_vocab_size == config.input_vocab_size, (
-                    'Vocab size not same so ids should not be same too')
-    else:
-        raise ValueError('Incorrect task.. please change it to summarize or translate only')  
-    # create folder in input_path if they don't exist
-    if not config.use_tfds:
-        assert os.path.exists(config.train_csv_path), 'Training dataset not available'
-    if config.print_config:
-        log.info(f'Configuration used \n {config}')
-    if config.test_script:
-        log.info(f'Setting Low Configuration to the model parameters since test_script is enabled')
 
 
 check_and_create_dir()
 log = create_logger()
 set_memory_growth(log)
-validate_config_parameters()
 if config.last_recorded_value is None:
     check_recorded_metric_val()
+if config.print_config:
+    log.info(f'Configuration used \n {config}')

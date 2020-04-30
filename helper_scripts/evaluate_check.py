@@ -21,27 +21,26 @@ val_dataset = create_dataset(
                              target_tokenizer=target_tokenizer, 
                              from_=0, 
                              to=100, 
-                             batch_size=32,
+                             batch_size=2,
                              drop_remainder=True
                              )
 count=0
 for _ in val_dataset:
   count+=1
 print(f'Total records count is {count}')
-# if a checkpoint exists, restore the latest checkpoint.
+#restore checkpoint
 ck_pt_mgr = check_ckpt(config.checkpoint_path)
 
 step = 1
 start_time = time.time()
-(rouge_score, bert_score, bleu) = evaluate_validation_set(       
-                                                      val_dataset.take(3),
+(task_score, bert_score) = evaluate_validation_set(       
+                                                      val_dataset.take(2),
                                                       step
                                                       )  
 training_results(
                   step, 
-                  rouge_score, 
+                  task_score, 
                   bert_score,
-                  bleu,
                   (time.time() - start_time),
                   'none'
                   )

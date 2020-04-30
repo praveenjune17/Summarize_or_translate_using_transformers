@@ -14,10 +14,9 @@ from calculate_metrics import (get_loss_and_accuracy, loss_function,
 
 (train_output_sequence_writer, 
   valid_output_sequence_writer, _) = create_tensorboard_parms()
-avg_rouge = tf.keras.metrics.Mean(name='rouge_f1_mean')
-avg_bleu = tf.keras.metrics.Mean(name='bleu_mean')
+avg_task_score = tf.keras.metrics.Mean(name='avg_task_score')
 avg_bert_score = tf.keras.metrics.Mean(name='bert_f1_mean')
-calculate_combined_metric = tf.keras.metrics.Mean(name='combined_metric_mean', dtype=None)
+calculate_weighted_and_unified_metric = tf.keras.metrics.Mean(name='weighted_and_unified_metric_mean', dtype=None)
 tf.config.optimizer.set_jit(config.enable_jit)
 optimizer = get_optimizer()
 # mixed precision doesn't work for transormers models
@@ -42,8 +41,7 @@ val_step_signature = [
 model_metrics = 'Step {},\n\
                  Train Loss {:.4f},\n\
                  Train_Accuracy {:.4f},\n\
-                 ROUGE_f1 {:4f},\n\
-                 Bleu {:4f},\n\
+                 {} {:4f},\n\
                  BERT_f1 {:4f}\n'
 evaluation_step  = 'Time taken for {} step : {} secs' 
 checkpoint_details = 'Saving checkpoint at step {} on {}'
@@ -123,45 +121,42 @@ def val_step(
       predictions = refine_predictions
     else:
       predictions = draft_predictions
-    rouge_f1, bert_f1, bleu = tf_write_output_sequence(
-                                           input_ids,
-                                           target_ids[:, 1:], 
-                                           predictions[:, 1:], 
-                                           step, 
-                                           write_output_seq)  
-    return (rouge_f1, bert_f1, bleu)
+    task_score, bert_f1 = tf_write_output_sequence(
+                                     input_ids,
+                                     target_ids[:, 1:], 
+                                     predictions[:, 1:], 
+                                     step, 
+                                     write_output_seq
+                                      )  
+    return (task_score, bert_f1)
 
 def evaluate_validation_set(
                            validation_dataset, 
                            step
                            ):
-    avg_rouge.reset_states()
+    avg_task_score.reset_states()
     avg_bert_score.reset_states()
-    avg_bleu.reset_states()
     for (batch, (input_ids, target_ids)) in enumerate(validation_dataset, 1):
         # calculate rouge and bert score for only the first batch
         if batch == 1:
-          rouge_f1, bert_f1, bleu = val_step(input_ids,
-                                             target_ids,  
-                                             step, 
-                                             config.write_summary_op
-                                             )
+          task_score, bert_f1 = val_step(input_ids,
+                                         target_ids,  
+                                         step, 
+                                         config.write_summary_op
+                                         )
         else:
-          rouge_f1, bert_f1, bleu  =  val_step(input_ids,
-                                               target_ids, 
-                                               step, 
-                                               False
-                                               )
-        if rouge_f1:
-            avg_rouge.update_state(rouge_f1)
+          task_score, bert_f1 =  val_step(input_ids,
+                                       target_ids, 
+                                       step, 
+                                       False
+                                       )
+        # bleu ranges from 0-100
+        if task_score:
+            avg_task_score.update_state(task_score if config.task=='summarize' else task_score/100)
         if bert_f1:
             avg_bert_score.update_state(bert_f1)
-        # bleu ranges from 0-100
-        if bleu:
-            avg_bleu.update_state(bleu/100)
-    return (avg_rouge.result().numpy(), 
-            avg_bert_score.result().numpy(), 
-            avg_bleu.result().numpy()
+    return (avg_task_score.result().numpy(), 
+            avg_bert_score.result().numpy()
             )
 
 def eval_step(input_ids, 
@@ -211,33 +206,30 @@ def check_ckpt(checkpoint_path):
 
 def monitor_run(ckpt_save_path, 
                 bert_score, 
-                rouge_score, 
-                bleu,
+                task_score, 
                 train_loss,
                 step,
                 copy_best_ckpt=True,
                 to_monitor=config.monitor_metric):
   
-    
-    if config.run_tensorboard:
-        with valid_output_sequence_writer.as_default():
-            tf.summary.scalar('ROUGE_f1', rouge_score, step=step)
-            tf.summary.scalar('BERT_f1', bert_score, step=step)
-            tf.summary.scalar('BLEU', bleu, step=step)
     monitor_metrics = dict()
     monitor_metrics['BERT_f1'] = bert_score
-    monitor_metrics['ROUGE_f1'] = rouge_score
-    monitor_metrics['bleu'] = bleu
-    monitor_metrics['combined_metric'] = [
+    monitor_metrics['Task_score'] = task_score
+    monitor_metrics['weighted_and_unified_metric'] = [
                                           monitor_metrics['BERT_f1'], 
-                                          monitor_metrics['ROUGE_f1'],
-                                          monitor_metrics['bleu']
+                                          monitor_metrics['Task_score']
                                           ]
+    assert len(monitor_metrics.keys()) == config.weighted_and_unified_metric_weights, 'Only two metrics are allowed'
     assert config.monitor_metric in monitor_metrics.keys(), f'Available metrics to monitor are {monitor_metrics.keys()}'
-    assert sum(config.combined_metric_weights) == 1, 'weights should sum to 1'
-    monitor_metrics['combined_metric'] = calculate_combined_metric(monitor_metrics['combined_metric'], 
-                                                                   sample_weight=config.combined_metric_weights)
-    log.info(f"combined_metric {monitor_metrics['combined_metric'].numpy()}")
+    assert sum(config.weighted_and_unified_metric_weights) == 1, 'weights should sum to 1'
+    monitor_metrics['weighted_and_unified_metric'] = calculate_weighted_and_unified_metric(monitor_metrics['weighted_and_unified_metric'], 
+                                                                   sample_weight=config.weighted_and_unified_metric_weights)
+    log.info(f"weighted_and_unified_metric {monitor_metrics['weighted_and_unified_metric'].numpy()}")
+    if config.run_tensorboard:
+        with valid_output_sequence_writer.as_default():
+            tf.summary.scalar(f'ROUGE_f1' if config.task == 'summarize' else 'BLEU', task_score, step=step)
+            tf.summary.scalar('BERT_f1', bert_score, step=step)
+            tf.summary.scalar('weighted_and_unified_metric', monitor_metrics['weighted_and_unified_metric'].numpy(), step=step)
     if config.last_recorded_value <= monitor_metrics[to_monitor]:
         if copy_best_ckpt:
             # reset tolerance to zero if the monitor_metric decreases before the tolerance threshold
@@ -303,12 +295,12 @@ def train_sanity_check(tokenizer, predictions, target_id):
     log.info(f'the predicted output_seq with teacher forcing is\
               {predicted if predicted else "empty hence evaluation will be skipped"}')
     return predicted
+                 
 
 def training_results(
                     step, 
-                    rouge_score, 
+                    task_score, 
                     bert_score,
-                    bleu,
                     timing_info,
                     ckpt_save_path
                     ):
@@ -317,9 +309,9 @@ def training_results(
                 model_metrics.format(
                                     step, 
                                     train_loss.result(), 
-                                    train_accuracy.result(), 
-                                    rouge_score*100,
-                                    bleu*100, 
+                                    train_accuracy.result(),
+                                    'ROUGE_f1' if config.task == 'summarize' else 'BLEU',
+                                    task_score*100,
                                     bert_score*100
                                     )
               )
@@ -334,23 +326,21 @@ def save_evaluate_monitor(ck_pt_mgr, val_dataset, target_tokenizer, predictions,
     # print the detokenized training output of a single sample
     predicted = train_sanity_check(target_tokenizer, predictions, target_ids)
     # Run evaluation only if the predictions made by the teacher forced output is not empty
-    (rouge_score, bert_score, bleu) = evaluate_validation_set(       
+    (task_score, bert_score) = evaluate_validation_set(       
                                                       val_dataset,
                                                       step
                                                       )  if predicted else 0
     training_results(
                       step, 
-                      rouge_score, 
+                      task_score, 
                       bert_score,
-                      bleu,
                       (time.time() - start_time),
                       ckpt_save_path
                       )
     early_stop = monitor_run(
                               ckpt_save_path, 
                               bert_score, 
-                              rouge_score,
-                              bleu,
+                              task_score,
                               train_loss, 
                               step
                               )

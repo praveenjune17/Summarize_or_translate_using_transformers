@@ -10,10 +10,11 @@ from utilities import log, detokenize
 
 class evaluation_metrics:
 
-    def __init__(self, true_output_sequences, predicted_output_sequences):
+    def __init__(self, true_output_sequences, predicted_output_sequences, task=config.task):
         self.ref_sents = true_output_sequences
         self.hyp_sents = predicted_output_sequences
         self.calculate_rouge = Rouge()
+        self.task = task
 
     def evaluate_rouge(self):
         
@@ -59,6 +60,10 @@ class evaluation_metrics:
             bleu_score = 0
 
         return bleu_score
+
+    def evaluate_task_score(self):
+
+        return self.evaluate_bleu_score() if self.task=='translate' else self.evaluate_rouge()
 
 class CustomSchedule(tf.keras.optimizers.schedules.LearningRateSchedule):
 
@@ -169,22 +174,21 @@ def write_output_sequence(input_ids, true_target_ids, predictions, step, write_o
         hyp_sents.append(detokenized_hyp_sents)
         inp_sents.append(detokenized_input_sequence)
     evaluate = evaluation_metrics(ref_sents, hyp_sents)
-    rouge_f1 = evaluate.evaluate_rouge()
+    task_score = evaluate.evaluate_task_score()
     bert_f1  = evaluate.evaluate_bert_score()
-    bleu     = evaluate.evaluate_bleu_score()
     if write_output_seq:
         with tf.io.gfile.GFile(config.output_sequence_write_path+str(step.numpy()), 'w') as f:
             for source, ref, hyp in zip(inp_sents, ref_sents, hyp_sents):
                 f.write(source+'\t'+ref+'\t'+hyp+'\n')
 
-    return (rouge_f1, bert_f1, bleu)
+    return (task_score, bert_f1)
   
   
 def tf_write_output_sequence(input_ids, tar_real, predictions, step, write_output_seq):
 
     return tf.py_function(write_output_sequence, 
                           [input_ids, tar_real, predictions, step, write_output_seq], 
-                          Tout=[tf.float32, tf.float32, tf.float32]
+                          Tout=[tf.float32, tf.float32]
                           )
     
 def get_optimizer():

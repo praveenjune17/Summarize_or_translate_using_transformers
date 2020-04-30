@@ -1,4 +1,7 @@
 #######################
+Based on the experiments in MT and summarization, BERT-F1-score of even 53 doesn't mean that the predicted sentences are related to the context of the input sentences so the minimum value bar for BERT-score should be 60. Test few samples with bert-score 
+to get an idea of how it works.
+  
 Not implemented features:-
   Beam_search doesn't output attention weights, if required then need to modify the core t2t algorithm
   Multiple occurences of stop values in beam search and repeated occurences of n-grams
