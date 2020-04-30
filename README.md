@@ -1,5 +1,3 @@
-## Summarize_or_translate using Transformers  
-
 Deep learning Framework :- Tensorflow 2  
 
 ### Project features   
