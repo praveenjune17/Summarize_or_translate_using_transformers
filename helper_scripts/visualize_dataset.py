@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import sys
-sys.path.insert(0, 'D:\\Local_run\\Summarize_and_translate\\scripts')
+sys.path.insert(0, 'D:\\Local_run\\Summarize_or_translate_using_transformers\\scripts')
 import tensorflow as tf
 import matplotlib
 import tensorflow_datasets as tfds

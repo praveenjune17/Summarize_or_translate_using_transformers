@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, division, print_function, unicode_literals
 import sys
-sys.path.insert(0, 'D:\\Local_run\\Summarize_and_translate\\scripts')
+sys.path.insert(0, 'D:\\Local_run\\Summarize_or_translate_using_transformers\\scripts')
 sys.path.insert(0, 'D:\\Local_run\\models')
 import tensorflow as tf
 tf.keras.backend.clear_session()

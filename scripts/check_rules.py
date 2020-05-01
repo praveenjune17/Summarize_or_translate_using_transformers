@@ -175,7 +175,7 @@ def assert_config_values(config):
     allowed_decoder_types = ['topktopp','greedy', 'only_beam_search']
     allowed_model_architectures = ['transformer', 'bertified_transformer']
     summarization_datasets = ['cnn_dailymail']
-    translation_datasets = ['en_tam_parallel_text']
+    translation_datasets = ['en_tam_parallel_text', 'wmt14_translate/hi-en']
     implemented_tasks = ['summarize', 'translate']
     assert config.task in implemented_tasks, 'summarize and translate are implemented currently'
     assert config.d_model % config.num_heads == 0, 'd_model should be a multiple of num_heads'

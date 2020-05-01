@@ -26,17 +26,17 @@ model_parms = {
      'add_bias' : None,               # set values as True|None Increases the inital bias of Tamil vocabs 
      'activation' : 'relu',
      'add_pointer_generator': True,
-     'd_model': 768,                  # the projected word vector dimension
-     'dff': 1024*2,                      # feed forward network hidden parameters
+     'd_model': 256,                  # the projected word vector dimension
+     'dff': 1024,                      # feed forward network hidden parameters
      'input_pretrained_bert_model': 'bert-base-uncased',
      'input_seq_length': 300,
-     'model_architecture' : 'bertified_transformer',#bertified_transformer or transformer
-     'num_heads': 4*2,                  # the number of heads in the multi-headed attention unit
-     'num_layers': 4*2,                 # number of transformer blocks
+     'model_architecture' : 'transformer',#bertified_transformer or transformer
+     'num_heads': 4,                  # the number of heads in the multi-headed attention unit
+     'num_layers': 4,                 # number of transformer blocks
      'target_language' : 'ta',
      'target_pretrained_bert_model' : 'bert-base-uncased',#'bert-base-uncased',#'bert-base-multilingual-cased',
      'target_seq_length': 50,
-     'task':'summarize'            # must be translate or summarize
+     'task':'translate'            # must be translate or summarize
      }
 
 training_parms = {

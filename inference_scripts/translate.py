@@ -68,7 +68,7 @@ if __name__ == '__main__':
     ckpt = tf.train.Checkpoint(
                                Model=Model
                               )
-    ckpt.restore(config.infer_ckpt_path).expect_partial()
+    ckpt.restore('/root/ckpt_dir/temp_ckpt/ckpt-223').expect_partial()
     translate()
 
 # import pickle

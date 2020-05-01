@@ -3,8 +3,8 @@ import difflib
 from scripts.creates import log
 from scripts.configuration import *
 
-to_be_flaked_directory_path = input("Enter the path of the modified scripts directory :")#'C:/Users/Vinodhkumar/Summarize_and_translate/scripts/'
-existing_cloned_directory_path = input("Enter the path of the unchanged scripts directory :")#'C:/Users/Vinodhkumar/Summarize_and_translate - Copy/scripts'
+to_be_flaked_directory_path = input("Enter the path of the modified scripts directory :")#'C:/Users/Vinodhkumar/Summarize_or_translate_using_transformers/scripts/'
+existing_cloned_directory_path = input("Enter the path of the unchanged scripts directory :")#'C:/Users/Vinodhkumar/Summarize_or_translate_using_transformers - Copy/scripts'
 os.chdir(to_be_flaked_directory_path)
 
 for file in os.listdir(to_be_flaked_directory_path):

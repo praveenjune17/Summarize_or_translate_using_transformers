@@ -42,8 +42,8 @@ def embedding_projector_files(pretrained_model_to_use, paragraph, agg='sum', fil
         '''+str(cols)+''',
         '''+str(rows)+'''
       ],
-      "tensorPath": "https://raw.githubusercontent.com/praveenjune17/Summarize_and_translate/master/Visualize/embedding_projector_files/vecs_'''+str(filename)+'''.tsv",
-      "metadataPath": "https://raw.githubusercontent.com/praveenjune17/Summarize_and_translate/master/Visualize/embedding_projector_files/meta_'''+str(filename)+'''.tsv"
+      "tensorPath": "https://raw.githubusercontent.com/praveenjune17/Summarize_or_translate_using_transformers/master/Visualize/embedding_projector_files/vecs_'''+str(filename)+'''.tsv",
+      "metadataPath": "https://raw.githubusercontent.com/praveenjune17/Summarize_or_translate_using_transformers/master/Visualize/embedding_projector_files/meta_'''+str(filename)+'''.tsv"
     }
   ]
 }''')
