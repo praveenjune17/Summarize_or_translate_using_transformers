@@ -29,7 +29,7 @@ model_parms = {
      'd_model': 768,                  # the projected word vector dimension
      'dff': 1024*2,                      # feed forward network hidden parameters
      'input_pretrained_bert_model': 'bert-base-uncased',
-     'input_seq_length': 150,
+     'input_seq_length': 300,
      'model_architecture' : 'bertified_transformer',#bertified_transformer or transformer
      'num_heads': 4*2,                  # the number of heads in the multi-headed attention unit
      'num_layers': 4*2,                 # number of transformer blocks
@@ -79,7 +79,7 @@ inference_decoder_parms = {
     }
 
 h_parms = {
-   'metric_weights': {'bert_f1_score':0.8, 'task_score':0.2}, #(bert_score, rouge if summarize else bleu)
+   'metric_weights': {'bert_f1_score':0.8, 'task_score':0.2}, #(task_score <- rouge if summarize else bleu)
    'dropout_rate': 0.1,
    'epochs': 4,
    'epsilon_ls': 0.1,                  # label_smoothing hyper parameter

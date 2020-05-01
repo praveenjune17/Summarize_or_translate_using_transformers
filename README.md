@@ -7,7 +7,7 @@ a)Implemented three transformer architectures that can perform Machine translati
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)[Text generation using BERT](https://arxiv.org/pdf/1902.09243v2.pdf)   
 b)Beam-search and topk_topp filtering to generate text ,[Refer](https://huggingface.co/blog/how-to-generate)  
 c)Used Huggingface's Transformers library for tokenization and to extract BERT embeddings  
-d)Mixed precision policy enabled training  
+d)Gradient accumulation and Mixed precision policy enabled training  
 e)BERT score, BLEU and ROUGE for evaluation    
 f)sanity_check.py script to test the components of the architecture  
 h)Use the trained model to visualize the embeddings of the source and target sentences in the valdiation dataset using helper_scripts/visualize_sentence_embeddings.py  

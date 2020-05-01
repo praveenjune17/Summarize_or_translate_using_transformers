@@ -7,13 +7,17 @@ packages
     *) tensor2tensor
 ###################################################### 
 En_tam Machine translation paper:-  http://www.iitp.ac.in/~sukanta.pcs15/pubs/WAT_2018_paper_12.pdf 
+Why all these ? :- http://www.unesco.org/new/fileadmin/MULTIMEDIA/HQ/CLT/pdf/FlyerEndangeredLanguages-WebVersion.pdf
 ######################################
 *) code walk through :- remove extra comments, name tensors, 
 						remove duplicate operations
+*) Note on how to use the script
 *) Client script
+*) english-hindi
 
 Post-training improvements:-
     #) Hyper parameter tuning on beam size, length penalty, dropout, label smoothing
+    #) avg checkpoints
 
 Things to watchout for when coding
 ########################################################
