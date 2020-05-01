@@ -179,16 +179,104 @@ class DecoderLayer(tf.keras.layers.Layer):
         decoder_output = self.layernorm3(ffn_output + layer_norm_out2)  
         return (decoder_output, attn_weights_block1, attn_weights_block2)
 
+class Encoder(tf.keras.layers.Layer):
+    def __init__(self, num_layers, d_model, num_heads, dff, input_vocab_size, 
+                 rate=config.dropout_rate):
+        super(Encoder, self).__init__()
+
+        self.d_model = d_model
+        self.num_layers = num_layers
+        self.encoder_embedding = tf.keras.layers.Embedding(input_vocab_size, 
+                                                            d_model)
+        self.pos_encoding = positional_encoding(input_vocab_size, 
+                                                    self.d_model)
+        self.enc_layers = [EncoderLayer(d_model, num_heads, dff, rate) 
+                           for _ in range(num_layers)]
+        self.dropout = tf.keras.layers.Dropout(rate, dtype='float32')
+          
+    def call(self, input_ids, training, mask):
+        seq_len = tf.shape(input_ids)[1]
+        # (batch_size, input_seq_len, d_model)
+        input_ids = self.encoder_embedding(input_ids)  
+        input_ids *= tf.math.sqrt(tf.cast(self.d_model, tf.float32))  
+        input_ids += self.pos_encoding[:, :seq_len, :]
+        input_ids = self.dropout(input_ids, training=training)
+        #input_ids (batch_size, input_seq_len, d_model)
+        for i in range(self.num_layers):
+          input_ids = self.enc_layers[i](tf.cast(input_ids, tf.float32), 
+                                                    training, mask)
+        input_ids = tf.cast(input_ids, tf.float32)
+        return input_ids
+
+class Decoder(tf.keras.layers.Layer):
+
+    def __init__(self, num_layers, d_model, num_heads, dff, 
+                target_vocab_size, rate=config.dropout_rate,  
+                add_pointer_generator=None):
+        super(Decoder, self).__init__()
+
+        self.d_model = d_model
+        self.num_layers = num_layers
+        self.decoder_embedding = tf.keras.layers.Embedding(target_vocab_size, d_model)
+        self.pos_encoding = positional_encoding(target_vocab_size, self.d_model)
+        self.dec_layers = [DecoderLayer(d_model, num_heads, dff, rate) 
+                           for _ in range(num_layers)]
+        self.dropout = tf.keras.layers.Dropout(rate)
+        self.pointer_generator = Pointer_Generator() if add_pointer_generator else None
+        self.final_layer = tf.keras.layers.Dense(
+                             target_vocab_size,
+                             dtype='float32',
+                             kernel_regularizer=tf.keras.regularizers.l2(config.l2_norm),
+                             name='final_dense_layer',
+                             bias_initializer=config.add_bias
+                             )
+
+    def call(self, input_ids, target_ids, enc_output, training, 
+             look_ahead_mask, padding_mask):
+
+        seq_len = tf.shape(target_ids)[1]
+        attention_weights = {}
+        if not config.model_architecture=='bertified_transformer':
+            target_ids = self.decoder_embedding(target_ids)
+        # (batch_size, target_seq_len, d_model) 
+        target_ids *= tf.math.sqrt(tf.cast(self.d_model, tf.float32))
+        target_ids += self.pos_encoding[:, :seq_len, :]
+        target_ids = self.dropout(target_ids, training=training)
+        # target_ids  <- (batch_size, tar_seq_len, d_model)
+        for i in range(self.num_layers):
+            target_ids, block1, block2 = self.dec_layers[i](target_ids,
+                                                 enc_output,
+                                                 training,
+                                                 look_ahead_mask,
+                                                 padding_mask)
+            attention_weights['decoder_layer{}_block1'.format(i+1)] = block1
+            attention_weights['decoder_layer{}_block2'.format(i+1)] = block2
+        
+        # take the attention weights of the final layer 
+        block2_attention_weights = attention_weights[f'decoder_layer{self.num_layers}_block2']
+        # predictions <- (batch_size, tar_seq_len, target_vocab_size)
+        predictions = self.final_layer(target_ids) 
+        predictions = self.pointer_generator(
+                                            target_ids, 
+                                            predictions, 
+                                            block2_attention_weights, 
+                                            input_ids, 
+                                            tf.shape(input_ids)[1], 
+                                            seq_len, 
+                                            training
+                                            )      if self.pointer_generator  else predictions
+        return predictions, block2_attention_weights
 
 class Pointer_Generator(tf.keras.layers.Layer):
     
     def __init__(self):
         super(Pointer_Generator, self).__init__()
         self.pointer_generator_layer = tf.keras.layers.Dense(
-                                             1, 
-                                             kernel_regularizer = tf.keras.regularizers.l2(
-                                                                            config.l2_norm)
-                                             )
+                                         1, 
+                                         kernel_regularizer = tf.keras.regularizers.l2(
+                                                                        config.l2_norm
+                                                                        )
+                                         )
         self.pointer_generator_vector = tf.keras.layers.Activation('sigmoid', dtype='float32')
       
     def call(self, dec_output, final_output, 
@@ -241,90 +329,8 @@ class Pointer_Generator(tf.keras.layers.Layer):
         logits = tf.math.log(total_distribution)
         return logits
 
-class Encoder(tf.keras.layers.Layer):
-    def __init__(self, num_layers, d_model, num_heads, dff, input_vocab_size, 
-                 rate=config.dropout_rate):
-        super(Encoder, self).__init__()
-
-        self.d_model = d_model
-        self.num_layers = num_layers
-        self.encoder_embedding = tf.keras.layers.Embedding(input_vocab_size, d_model)
-        self.pos_encoding = positional_encoding(input_vocab_size, self.d_model)
-        self.enc_layers = [EncoderLayer(d_model, num_heads, dff, rate) 
-                           for _ in range(num_layers)]
-        self.dropout = tf.keras.layers.Dropout(rate, dtype='float32')
-          
-    def call(self, input_ids, training, mask):
-        seq_len = tf.shape(input_ids)[1]
-        # (batch_size, input_seq_len, d_model)
-        input_ids = self.encoder_embedding(input_ids)  
-        input_ids *= tf.math.sqrt(tf.cast(self.d_model, tf.float32))  
-        input_ids += self.pos_encoding[:, :seq_len, :]
-        input_ids = self.dropout(input_ids, training=training)
-        #input_ids (batch_size, input_seq_len, d_model)
-        for i in range(self.num_layers):
-          input_ids = self.enc_layers[i](tf.cast(input_ids, tf.float32), training, mask)
-        input_ids = tf.cast(input_ids, tf.float32)
-        return input_ids
-
-class Decoder(tf.keras.layers.Layer):
-    def __init__(self, num_layers, d_model, num_heads, dff, target_vocab_size, 
-                 rate=config.dropout_rate,  add_pointer_generator=None):
-        super(Decoder, self).__init__()
-
-        self.d_model = d_model
-        self.num_layers = num_layers
-        self.decoder_embedding = tf.keras.layers.Embedding(target_vocab_size, d_model)
-        self.pos_encoding = positional_encoding(target_vocab_size, self.d_model)
-        self.dec_layers = [DecoderLayer(d_model, num_heads, dff, rate) 
-                           for _ in range(num_layers)]
-        self.dropout = tf.keras.layers.Dropout(rate)
-        self.pointer_generator = Pointer_Generator() if add_pointer_generator else None
-        self.final_layer = tf.keras.layers.Dense(
-                             target_vocab_size,
-                             dtype='float32',
-                             kernel_regularizer=tf.keras.regularizers.l2(config.l2_norm),
-                             name='final_dense_layer',
-                             bias_initializer=config.add_bias
-                             )
-
-    def call(self, input_ids, target_ids, enc_output, training, 
-             look_ahead_mask, padding_mask):
-        seq_len = tf.shape(target_ids)[1]
-        attention_weights = {}
-        if not config.model_architecture=='bertified_transformer':
-            target_ids = self.decoder_embedding(target_ids)
-        # (batch_size, target_seq_len, d_model) 
-        target_ids *= tf.math.sqrt(tf.cast(self.d_model, tf.float32))
-        target_ids += self.pos_encoding[:, :seq_len, :]
-        target_ids = self.dropout(target_ids, training=training)
-        # target_ids  <- (batch_size, tar_seq_len, d_model)
-        for i in range(self.num_layers):
-            target_ids, block1, block2 = self.dec_layers[i](target_ids,
-                                                 enc_output,
-                                                 training,
-                                                 look_ahead_mask,
-                                                 padding_mask)
-            attention_weights['decoder_layer{}_block1'.format(i+1)] = block1
-            attention_weights['decoder_layer{}_block2'.format(i+1)] = block2
-        
-        # take the attention weights of the final layer 
-        block2_attention_weights = attention_weights[f'decoder_layer{self.num_layers}_block2']
-        # predictions <- (batch_size, tar_seq_len, target_vocab_size)
-        predictions = self.final_layer(target_ids) 
-        predictions = self.pointer_generator(
-                                            target_ids, 
-                                            predictions, 
-                                            block2_attention_weights, 
-                                            input_ids, 
-                                            tf.shape(input_ids)[1], 
-                                            seq_len, 
-                                            training
-                                            )      if self.pointer_generator  else predictions
-        return predictions, block2_attention_weights
-
-
 class Transformer(tf.keras.Model):
+
     def __init__(self, num_layers, d_model, num_heads, dff, input_vocab_size, 
                target_vocab_size, rate=config.dropout_rate, add_pointer_generator=None):
         super(Transformer, self).__init__()

@@ -12,7 +12,7 @@ from preprocess import create_dataset
 from configuration import config, source_tokenizer, target_tokenizer
 from calculate_metrics import mask_and_calculate_loss
 from utilities import log
-from local_tf_ops import (check_ckpt, eval_step, train_step, batch_run_check,
+from model_training_helper import (check_ckpt, eval_step, train_step, batch_run_check,
                           train_sanity_check)
 
 train_dataset = create_dataset(
@@ -34,15 +34,6 @@ for (step, (input_ids, target_ids)) in tqdm(enumerate(train_dataset, 1), initial
 
     start_time = time.time()
     grad_accum_flag = (True if (step%config.gradient_accumulation_steps) == 0 else False) if config.accumulate_gradients else None
-    # print('input_ids')
-    # print(input_ids)
-    # print()
-    # print('target_ids')
-    # print(target_ids)
-    # print()
-    # print('grad_accum_flag')
-    # print(grad_accum_flag)
-    # print()
     predictions = train_step(
                             input_ids,  
                             target_ids,
@@ -53,11 +44,10 @@ for (step, (input_ids, target_ids)) in tqdm(enumerate(train_dataset, 1), initial
                                   step,  
                                   start_time
                                   )
-        train_sanity_check(target_tokenizer, predictions, target_ids)
+        train_sanity_check(target_tokenizer, predictions, target_ids, log)
     if (step % config.eval_after_steps) == 0:
         early_stop = True
         if early_stop:
             break
-
-train_sanity_check(target_tokenizer, predictions, target_ids)
+train_sanity_check(target_tokenizer, predictions, target_ids, log)
 log.info(f'Training completed at step {step}')

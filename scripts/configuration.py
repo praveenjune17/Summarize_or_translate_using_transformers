@@ -49,7 +49,7 @@ training_parms = {
      'gradient_accumulation_steps': 2,   
      'last_recorded_value': 0.6259,
      'min_train_loss' : 1.0,
-     'monitor_metric' : 'weighted_and_unified_metric',
+     'monitor_metric' : 'unified_metric',
      'run_tensorboard': True,
      'steps_to_print_training_info': 100,      # print training progress per number of batches specified
      'tfds_name' : 'en_tam_parallel_text',            #cnn_dailymail,en_tam_parallel_text     # tfds dataset to be used
@@ -57,7 +57,7 @@ training_parms = {
      'tolerance_threshold': 3,          # Stop training after the threshold is reached
      'tokens_per_batch' : 4050,
      'use_tfds' : True,                 # use tfds datasets as to train the model else use the given csv file
-     'write_summary_op': True           # write the first batch of validation set summary to a file
+     'write_batch1_predictions': True           # write the first batch of validation set summary to a file
      }                                    
 
 # Special Tokens
@@ -79,7 +79,7 @@ inference_decoder_parms = {
     }
 
 h_parms = {
-   'weighted_and_unified_metric_weights': [0.8, 0.2], #(bert_score, rouge if summarize else bleu)
+   'metric_weights': {'bert_f1_score':0.8, 'task_score':0.2}, #(bert_score, rouge if summarize else bleu)
    'dropout_rate': 0.1,
    'epochs': 4,
    'epsilon_ls': 0.1,                  # label_smoothing hyper parameter

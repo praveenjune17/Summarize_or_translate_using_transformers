@@ -135,7 +135,7 @@ def evaluate_validation_set(
           rouge_score, bert_score = val_step(input_ids,
                                              target_ids_,  
                                              step, 
-                                             config.write_summary_op
+                                             config.write_batch1_predictions
                                              )
         else:
           rouge_score, bert_score  =  val_step(input_ids,

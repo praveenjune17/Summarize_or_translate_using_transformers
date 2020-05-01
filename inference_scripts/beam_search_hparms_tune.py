@@ -6,7 +6,7 @@ import os
 from configuration import config
 from utilities import log
 from preprocess import create_dataset
-from local_tf_ops import evaluate_validation_set
+from model_training_helper import evaluate_validation_set
 from create_model import source_tokenizer, target_tokenizer, Model
 
 

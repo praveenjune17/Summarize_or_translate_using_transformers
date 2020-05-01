@@ -17,7 +17,7 @@ from configuration import config
 from calculate_metrics import mask_and_calculate_loss, monitor_run
 from utilities import log, detokenize
 from create_model import source_tokenizer, target_tokenizer, Transformer, Bertified_transformer
-from local_tf_ops import (check_ckpt, eval_step, train_step, batch_run_check, 
+from model_training_helper import (check_ckpt, eval_step, train_step, batch_run_check, 
                           train_sanity_check, evaluate_validation_set)
 
 temp_input = tf.random.uniform((64, 100), dtype=tf.int64, minval=0, maxval=200)

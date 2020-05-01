@@ -12,7 +12,7 @@ from preprocess import create_dataset
 from configuration import config, source_tokenizer, target_tokenizer
 from calculate_metrics import mask_and_calculate_loss
 from utilities import log
-from local_tf_ops import (check_ckpt, eval_step, train_step, batch_run_check, 
+from model_training_helper import (check_ckpt, eval_step, train_step, batch_run_check, 
                           evaluate_validation_set, training_results)
 
 val_dataset = create_dataset(
@@ -25,23 +25,26 @@ val_dataset = create_dataset(
                              drop_remainder=True
                              )
 count=0
+step = 1
 for _ in val_dataset:
   count+=1
 print(f'Total records count is {count}')
 #restore checkpoint
 ck_pt_mgr = check_ckpt(config.checkpoint_path)
-
-step = 1
 start_time = time.time()
 (task_score, bert_score) = evaluate_validation_set(       
-                                                      val_dataset.take(2),
-                                                      step
-                                                      )  
+                                                    val_dataset.take(2),
+                                                    step
+                                                    )  
 training_results(
-                  step, 
+                  step,
+                  0,
+                  0,
                   task_score, 
                   bert_score,
                   (time.time() - start_time),
-                  'none'
+                  'none',
+                  log,
+                  config
                   )
 sys.exit()

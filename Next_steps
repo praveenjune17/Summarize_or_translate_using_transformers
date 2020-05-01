@@ -8,10 +8,8 @@ packages
 ###################################################### 
 En_tam Machine translation paper:-  http://www.iitp.ac.in/~sukanta.pcs15/pubs/WAT_2018_paper_12.pdf 
 ######################################
-*) code walk through :- reduce size of validate_config_parameters, monitor, 
-						remove extra comments, name tensors, 
+*) code walk through :- remove extra comments, name tensors, 
 						remove duplicate operations
-*) test summarize
 *) Client script
 
 Post-training improvements:-

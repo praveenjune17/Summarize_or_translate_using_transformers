@@ -14,7 +14,7 @@ import time
 from tensorboard.plugins import projector
 from configuration import config
 from create_model import source_tokenizer, target_tokenizer, Model
-from local_tf_ops import check_ckpt
+from model_training_helper import check_ckpt
 from utilities import embedding_projector_dir
 
 #table = str.maketrans(dict.fromkeys(string.punctuation))  

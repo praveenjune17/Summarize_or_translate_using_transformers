@@ -5,21 +5,29 @@ from transformers import BertTokenizer
 def create_vocab(tokenizer_path, tok_type, log=None):
 
     try:
-        tokenizer = tfds.features.text.SubwordTextEncoder.load_from_file(tokenizer_path)
+        tokenizer = tfds.features.text.SubwordTextEncoder.load_from_file(
+                                                            tokenizer_path
+                                                            )
     except FileNotFoundError:
         if log is None:
-            print(f'Vocab files not available in {tokenizer_path} so building it from the training set')
+            print(f'Vocab files not available in {tokenizer_path} so\
+                            building it from the training set')
         else:
-            log.warning(f'Vocab files not available in {tokenizer_path} so building it from the training set')
+            log.warning(f'Vocab files not available in {tokenizer_path} so \
+                             building it from the training set')
         if config['use_tfds']:
-            examples, metadata = tfds.load(config['tfds_name'], with_info=True, as_supervised=True)
+            examples, metadata = tfds.load(config['tfds_name'], 
+                                            with_info=True, 
+                                            as_supervised=True)
             train_examples = examples['train']
             if tok_type=='source':
               tokenizer = tfds.features.text.SubwordTextEncoder.build_from_corpus(
-                      (ip_seq.numpy() for ip_seq, _ in train_examples), target_vocab_size=2**13)
+                      (ip_seq.numpy() for ip_seq, _ in train_examples), 
+                      target_vocab_size=2**13)
             else:
               tokenizer = tfds.features.text.SubwordTextEncoder.build_from_corpus(
-                      (op_seq.numpy() for _, op_seq in train_examples), target_vocab_size=2**13)
+                      (op_seq.numpy() for _, op_seq in train_examples), 
+                      target_vocab_size=2**13)
         tokenizer.save_to_file(tokenizer_path)
 
     if log is None:
@@ -43,7 +51,9 @@ def task_check(source_tokenizer, config):
             config['target_CLS_ID'] = target_tokenizer.vocab_size
             config['target_SEP_ID'] = target_tokenizer.vocab_size+1
         elif config['model_architecture'] == 'bertified_transformer':
-            target_tokenizer = BertTokenizer.from_pretrained(config['target_pretrained_bert_model'])
+            target_tokenizer = BertTokenizer.from_pretrained(
+                                            config['target_pretrained_bert_model']
+                                                            )
             config['target_CLS_ID'] = config['input_CLS_ID']
             config['target_SEP_ID'] = config['input_SEP_ID']
 
@@ -125,9 +135,11 @@ def set_training_rules(config):
 def adhere_task_rules(config):
 
     if config['model_architecture'] == 'transformer':
-        (config, source_tokenizer, target_tokenizer) = set_transformer_rules(config)
+        (config, source_tokenizer, 
+            target_tokenizer) = set_transformer_rules(config)
     elif config['model_architecture'] == 'bertified_transformer':
-        (config, source_tokenizer, target_tokenizer) = set_bertified_transformer_rules(config)
+        (config, source_tokenizer, 
+            target_tokenizer) = set_bertified_transformer_rules(config)
         config['d_model'] = 768
         config['dff']: 2048
         config['num_heads'] = 8
@@ -140,10 +152,13 @@ def adhere_task_rules(config):
         if (config.target_pretrained_bert_model == 'bert-base-multilingual-cased'
         and config.task == 'translation'):
             assert config.target_language in config.serialized_tensor_path, (
-                        'serialized Bias file not found, please create it using helper scripts/create_bias script')
+            'serialized Bias file not found,\
+            please create it using helper scripts/create_bias script')
             config['add_bias'] = load_and_set_bias(config['serialized_tensor_path'])
         else:
-            assert False, 'add_bias is only available for bert-base-multilingual-cased and translation combo'
+            assert False,(
+            'add_bias is only available for bert-base-multilingual-cased\
+             and translation combo')
 
     if config['test_script']:
         config = set_testing_rules(config)
@@ -165,12 +180,14 @@ def assert_config_values(config):
     assert config.task in implemented_tasks, 'summarize and translate are implemented currently'
     assert config.d_model % config.num_heads == 0, 'd_model should be a multiple of num_heads'
     assert config.eval_after_steps % config.steps_to_print_training_info == 0, (
-    'For printing the training results "steps_to_print_training_info" must be a factor of eval_after_steps')
+    'For printing the training results "steps_to_print_training_info"\
+     must be a factor of eval_after_steps')
     assert config.draft_decoder_type  in allowed_decoder_types, (
             f'available decoding types are {allowed_decoder_types}')
     assert config.model_architecture  in allowed_model_architectures, (
             f'available model_architectures are {allowed_model_architectures}')
-    
+    assert len(config.metric_weights) == 2,'Only two metrics are allowed'
+    assert sum(config.metric_weights.values()) == 1, 'weights should sum to 1'
     if config.task == 'summarize':
         assert config.tfds_name in summarization_datasets, (
                 f'{config.tfds_name} is not a summarization dataset')

@@ -15,7 +15,7 @@ from configuration import config, source_tokenizer, target_tokenizer
 from calculate_metrics import mask_and_calculate_loss, monitor_run
 from utilities import log, detokenize
 from create_model import Model
-from local_tf_ops import (check_ckpt, eval_step, train_step, batch_run_check, 
+from model_training_helper import (check_ckpt, eval_step, train_step, batch_run_check, 
                           train_sanity_check, evaluate_validation_set)
 
 unit_test_dataset = create_dataset(
