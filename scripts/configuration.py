@@ -26,17 +26,17 @@ model_parms = {
      'add_bias' : None,               # set values as True|None Increases the inital bias of Tamil vocabs 
      'activation' : 'relu',
      'add_pointer_generator': True,
-     'd_model': 256,                  # the projected word vector dimension
-     'dff': 1024,                      # feed forward network hidden parameters
+     'd_model': 768,                  # the projected word vector dimension
+     'dff': 1024*2,                      # feed forward network hidden parameters
      'input_pretrained_bert_model': 'bert-base-uncased',
-     'input_seq_length': 30,
-     'model_architecture' : 'transformer',#bertified_transformer or transformer
-     'num_heads': 4,                  # the number of heads in the multi-headed attention unit
-     'num_layers': 4,                 # number of transformer blocks
+     'input_seq_length': 150,
+     'model_architecture' : 'bertified_transformer',#bertified_transformer or transformer
+     'num_heads': 4*2,                  # the number of heads in the multi-headed attention unit
+     'num_layers': 4*2,                 # number of transformer blocks
      'target_language' : 'ta',
      'target_pretrained_bert_model' : 'bert-base-uncased',#'bert-base-uncased',#'bert-base-multilingual-cased',
-     'target_seq_length': 30,
-     'task':'translate'            # must be translate or summarize
+     'target_seq_length': 50,
+     'task':'summarize'            # must be translate or summarize
      }
 
 training_parms = {
@@ -52,7 +52,7 @@ training_parms = {
      'monitor_metric' : 'unified_metric',
      'run_tensorboard': True,
      'steps_to_print_training_info': 100,      # print training progress per number of batches specified
-     'tfds_name' : 'en_tam_parallel_text',            #cnn_dailymail,en_tam_parallel_text     # tfds dataset to be used
+     'tfds_name' : 'cnn_dailymail',            #cnn_dailymail,en_tam_parallel_text     # tfds dataset to be used
      'tolerance' : 0,
      'tolerance_threshold': 3,          # Stop training after the threshold is reached
      'tokens_per_batch' : 4050,
@@ -70,7 +70,7 @@ special_tokens = {
 
 inference_decoder_parms = {
     'beam_size': 2,              
-    'draft_decoder_type' : 'only_beam_search',     # 'greedy', 'only_beam_search', 'topktopp' --> topktopp filtering + beam search
+    'draft_decoder_type' : 'greedy',     # 'greedy', 'only_beam_search', 'topktopp' --> topktopp filtering + beam search
     'length_penalty' : 1,
     'refine_decoder_type' : 'greedy',
     'softmax_temperature' : 1,
@@ -95,8 +95,8 @@ core_path = os.getcwd()
 path_seperator = '\\' if platform.system() == 'Windows' else '/'
 file_path = {
         'best_ckpt_path' : os.path.join(core_path, f"best_checkpoints{path_seperator}{dataset_name}{path_seperator}"),  
-        #'checkpoint_path' : os.path.join(core_path, f"temp{path_seperator}checkpoints{path_seperator}{dataset_name}{path_seperator}"),
-        'checkpoint_path' : 'D:\\Local_run\\checkpoints\\temp_ckpt',
+        'checkpoint_path' : os.path.join(core_path, f"temp{path_seperator}checkpoints{path_seperator}{dataset_name}{path_seperator}"),
+        #'checkpoint_path' : 'D:\\Local_run\\checkpoints\\temp_ckpt',
         'initial_weights' : os.path.join(core_path, f"initial_weights{path_seperator}{dataset_name}{path_seperator}"),
         'infer_csv_path' : None,
         'infer_ckpt_path' : 'D:\\Local_run\\best_checkpoints\\en_tam_parallel_text\\ckpt-213',

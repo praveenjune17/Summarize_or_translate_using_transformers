@@ -180,8 +180,8 @@ def assert_config_values(config):
     assert config.task in implemented_tasks, 'summarize and translate are implemented currently'
     assert config.d_model % config.num_heads == 0, 'd_model should be a multiple of num_heads'
     assert config.eval_after_steps % config.steps_to_print_training_info == 0, (
-    'For printing the training results "steps_to_print_training_info"\
-     must be a factor of eval_after_steps')
+    'For printing the training results "eval_after_steps"\
+     must be a multiple of steps_to_print_training_info')
     assert config.draft_decoder_type  in allowed_decoder_types, (
             f'available decoding types are {allowed_decoder_types}')
     assert config.model_architecture  in allowed_model_architectures, (

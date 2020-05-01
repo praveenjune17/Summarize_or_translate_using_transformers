@@ -11,11 +11,9 @@ from training_house_keeping import monitor_eval_metrics, training_results, train
 from calculate_metrics import (get_loss_and_accuracy, loss_function, 
                                get_optimizer, tf_write_output_sequence)
 
+policy = mixed_precision.Policy('mixed_float16')
+mixed_precision.set_policy(policy)
 tf.config.optimizer.set_jit(config.enable_jit)
-# mixed precision doesn't work for transormers models
-if not config.model_architecture == 'bertified_transformer':
-    policy = mixed_precision.Policy('mixed_float16')
-    mixed_precision.set_policy(policy)
 
 (train_output_sequence_writer, 
   _, _) = create_tensorboard_parms()
@@ -199,7 +197,7 @@ def check_ckpt(checkpoint_path):
         ckpt.restore(ckpt_manager.latest_checkpoint)
         log.info(ckpt_manager.latest_checkpoint +' restored')
     else:
-        log.info('No checkpoint found so using the initialized_weights')
+        log.warning('No checkpoint found so using the initialized_weights')
 
     return (ckpt_manager)
 # run every batch

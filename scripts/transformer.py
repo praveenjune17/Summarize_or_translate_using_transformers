@@ -43,19 +43,23 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         self.depth = d_model // self.num_heads
         self.wq = tf.keras.layers.Dense(
                             d_model, 
-                            kernel_regularizer = tf.keras.regularizers.l2(config.l2_norm),
+                            kernel_regularizer = tf.keras.regularizers.l2(
+                                                            config.l2_norm),
                             )
         self.wk = tf.keras.layers.Dense(
                             d_model, 
-                            kernel_regularizer = tf.keras.regularizers.l2(config.l2_norm),
+                            kernel_regularizer = tf.keras.regularizers.l2(
+                                                            config.l2_norm),
                             )
         self.wv = tf.keras.layers.Dense(
                             d_model, 
-                            kernel_regularizer = tf.keras.regularizers.l2(config.l2_norm),
+                            kernel_regularizer = tf.keras.regularizers.l2(
+                                                            config.l2_norm),
                             )
         self.dense = tf.keras.layers.Dense(
                            d_model, 
-                           kernel_regularizer = tf.keras.regularizers.l2(config.l2_norm),
+                           kernel_regularizer = tf.keras.regularizers.l2(
+                                                            config.l2_norm),
                            )
 
     def split_heads(self, x, batch_size):
@@ -84,9 +88,11 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         # scaled_attention (batch_size, num_heads, seq_len_q, depth)
         # attention_weights (batch_size, num_heads, seq_len_q, seq_len_k)
         scaled_attention, attention_weights = scaled_dot_product_attention(
-            q, k, v, mask)
+                                                            q, k, v, mask)
         # (batch_size, seq_len_q, num_heads, depth)
-        scaled_attention = tf.transpose(scaled_attention, perm=[0, 2, 1, 3])  
+        scaled_attention = tf.transpose(scaled_attention,
+                                             perm=[0, 2, 1, 3]
+                                        )  
         # (batch_size, seq_len_q, d_model)
         concat_attention = tf.reshape(scaled_attention, 
                                       (batch_size, -1, self.d_model)
@@ -103,10 +109,12 @@ def point_wise_feed_forward_network(d_model, dff):
     return tf.keras.Sequential([
         tf.keras.layers.Dense(dff, 
                               activation=config.activation, 
-                              kernel_regularizer = tf.keras.regularizers.l2(config.l2_norm),
+                              kernel_regularizer = tf.keras.regularizers.l2(
+                                                            config.l2_norm),
                               ),
         tf.keras.layers.Dense(d_model, 
-                              kernel_regularizer = tf.keras.regularizers.l2(config.l2_norm),
+                              kernel_regularizer = tf.keras.regularizers.l2(
+                                                            config.l2_norm),
                               )
     ])
 
@@ -116,8 +124,10 @@ class EncoderLayer(tf.keras.layers.Layer):
 
         self.mha = MultiHeadAttention(d_model, num_heads)
         self.ffn = point_wise_feed_forward_network(d_model, dff)
-        self.layernorm1 = tf.keras.layers.LayerNormalization(epsilon=1e-6, dtype='float32')
-        self.layernorm2 = tf.keras.layers.LayerNormalization(epsilon=1e-6, dtype='float32')
+        self.layernorm1 = tf.keras.layers.LayerNormalization(epsilon=1e-6, 
+                                                            dtype='float32')
+        self.layernorm2 = tf.keras.layers.LayerNormalization(epsilon=1e-6,
+                                                             dtype='float32')
         self.dropout1 = tf.keras.layers.Dropout(rate, dtype='float32')
         self.dropout2 = tf.keras.layers.Dropout(rate, dtype='float32')
       
@@ -144,9 +154,12 @@ class DecoderLayer(tf.keras.layers.Layer):
         self.mha1 = MultiHeadAttention(d_model, num_heads)
         self.mha2 = MultiHeadAttention(d_model, num_heads)
         self.ffn = point_wise_feed_forward_network(d_model, dff)
-        self.layernorm1 = tf.keras.layers.LayerNormalization(epsilon=1e-6, dtype='float32')
-        self.layernorm2 = tf.keras.layers.LayerNormalization(epsilon=1e-6, dtype='float32')
-        self.layernorm3 = tf.keras.layers.LayerNormalization(epsilon=1e-6, dtype='float32')
+        self.layernorm1 = tf.keras.layers.LayerNormalization(epsilon=1e-6, 
+                                                            dtype='float32')
+        self.layernorm2 = tf.keras.layers.LayerNormalization(epsilon=1e-6, 
+                                                            dtype='float32')
+        self.layernorm3 = tf.keras.layers.LayerNormalization(epsilon=1e-6, 
+                                                            dtype='float32')
         self.dropout1 = tf.keras.layers.Dropout(rate, dtype='float32')
         self.dropout2 = tf.keras.layers.Dropout(rate, dtype='float32')
         self.dropout3 = tf.keras.layers.Dropout(rate, dtype='float32')
@@ -277,7 +290,8 @@ class Pointer_Generator(tf.keras.layers.Layer):
                                                                         config.l2_norm
                                                                         )
                                          )
-        self.pointer_generator_vector = tf.keras.layers.Activation('sigmoid', dtype='float32')
+        self.pointer_generator_vector = tf.keras.layers.Activation('sigmoid', 
+                                                            dtype='float32')
       
     def call(self, dec_output, final_output, 
             attention_weights, encoder_input, 
@@ -332,7 +346,8 @@ class Pointer_Generator(tf.keras.layers.Layer):
 class Transformer(tf.keras.Model):
 
     def __init__(self, num_layers, d_model, num_heads, dff, input_vocab_size, 
-               target_vocab_size, rate=config.dropout_rate, add_pointer_generator=None):
+               target_vocab_size, rate=config.dropout_rate, 
+               add_pointer_generator=None):
         super(Transformer, self).__init__()
 
         self.encoder = Encoder(num_layers, d_model, num_heads, dff, 
