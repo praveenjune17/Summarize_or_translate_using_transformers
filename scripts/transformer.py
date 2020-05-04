@@ -4,15 +4,6 @@ import tensorflow_addons as tfa
 from configuration import config
 from model_utils import positional_encoding, draft_decoder
 
-call_signature = [
-                tf.TensorSpec(shape=(None, None), dtype=tf.int32),
-                tf.TensorSpec(shape=(None, None), dtype=tf.int32),
-                tf.TensorSpec(shape=(None, None), dtype=tf.bool),
-                tf.TensorSpec(shape=(None, None), dtype=tf.bool),
-                tf.TensorSpec(shape=(None, None), dtype=tf.bool),
-                tf.TensorSpec(shape=(None), dtype=tf.bool)
-                ]
-
 def scaled_dot_product_attention(q, k, v, mask):
     # (..., seq_len_q, seq_len_k)
     matmul_qk = tf.matmul(q, k, transpose_b=True)  
@@ -376,12 +367,12 @@ class Transformer(tf.keras.Model):
     def predict(self,
                input_ids,
                enc_padding_mask,
-               decoder_sampling_type=config.draft_decoder_type,
+               decoder_type=config.draft_decoder_type,
                beam_size=config.beam_size,
                length_penalty=config.length_penalty,
                temperature=config.softmax_temperature, 
-               top_p=config.topp,
-               top_k=config.topk):
+               top_p=config.top_p,
+               top_k=config.top_k):
 
         # (batch_size, inp_seq_len, d_model)
         # Both dec_padding_mask and enc_padding_mask are same
@@ -395,7 +386,7 @@ class Transformer(tf.keras.Model):
                                                 enc_output=enc_output,
                                                 beam_size=beam_size,
                                                 length_penalty=length_penalty,
-                                                decoder_type=decoder_sampling_type,
+                                                decoder_type=decoder_type,
                                                 temperature=temperature,
                                                 top_p=top_p, 
                                                 top_k=top_k,
@@ -404,10 +395,18 @@ class Transformer(tf.keras.Model):
         return (predicted_draft_output_sequence, draft_attention_dist, None, None)
 
     def call(self, input_ids, target_ids, dec_padding_mask, 
-             enc_padding_mask, look_ahead_mask, training):
+             enc_padding_mask, look_ahead_mask, training,
+             decoder_type, beam_size, length_penalty, 
+             temperature, top_p, top_k):
 
         if training is not None:
             return self.fit(input_ids, target_ids, training, enc_padding_mask, 
                             look_ahead_mask, dec_padding_mask)
         else:
-            return self.predict(input_ids, enc_padding_mask)
+            return self.predict(input_ids, enc_padding_mask,
+                               decoder_type=decoder_type,
+                               beam_size=beam_size,
+                               length_penalty=length_penalty,
+                               temperature=temperature, 
+                               top_p=top_p,
+                               top_k=top_k)

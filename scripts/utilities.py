@@ -6,16 +6,6 @@ import shutil
 import logging
 from configuration import config
 
-def set_memory_growth(log):
-    # Set GPU memory growth
-    gpu_devices = tf.config.experimental.list_physical_devices('GPU')
-    if not gpu_devices:
-        log.warning("GPU not available so Running in CPU")
-    else:
-        for device in gpu_devices:
-         tf.config.experimental.set_memory_growth(device, True)
-         log.info('GPU memory growth set')
-
 def detokenize(target_tokenizer, id_1, id_2, source_tokenizer=None):
 
     if source_tokenizer is None:
@@ -107,8 +97,5 @@ def check_recorded_metric_val():
 
 check_and_create_dir()
 log = create_logger()
-set_memory_growth(log)
 if config.last_recorded_value is None:
     check_recorded_metric_val()
-if config.print_config:
-    log.info(f'Configuration used \n {config}')

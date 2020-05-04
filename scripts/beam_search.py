@@ -31,7 +31,7 @@ from tensorflow.python.util import nest
 # Assuming EOS_ID is 1
 EOS_ID = 1
 # Default value for INF
-INF = 1e7
+INF = 1. * 1e7
 
 
 def _merge_beam_dim(tensor):
@@ -422,9 +422,12 @@ def beam_search(symbols_to_logits_fn,
      decoding probabilities [batch_size, beam_size])
   """
   batch_size = common_layers.shape_list(initial_ids)[0]
-
+  
   # Assume initial_ids are prob 1.0
-  initial_log_probs = tf.constant([[0] + [-INF] * (tf.cast(beam_size, tf.float32) - 1)])
+  initial_log_probs = tf.constant([[0.] + [-INF] * (beam_size - 1)])
+  #casted_beam_size = tf.dtypes.cast(beam_size, tf.float32)
+  #initial_log_probs = tf.constant([[0.] + [-INF] * (casted_beam_size - 1)])
+  
   # Expand to beam_size (batch_size, beam_size)
   alive_log_probs = tf.tile(initial_log_probs, [batch_size, 1])
 

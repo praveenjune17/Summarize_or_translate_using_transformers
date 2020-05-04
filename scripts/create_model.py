@@ -204,13 +204,13 @@ class Bertified_transformer(tf.keras.Model):
 
     def predict(self,
                input_ids,
-               draft_decoder_sampling_type=config.draft_decoder_type,
-               refine_decoder_type=config.refine_decoder_type,
-               beam_size=config.beam_size,
-               length_penalty=config.length_penalty, 
-               temperature=config.softmax_temperature, 
-               top_p=config.topp, 
-               top_k=config.topk):
+               draft_decoder_type,
+               beam_size,
+               length_penalty, 
+               temperature, 
+               top_p, 
+               top_k,
+               refine_decoder_type=config.refine_decoder_type):
 
         # (batch_size, seq_len, d_bert)
         batch_size = tf.shape(input_ids)[0]
@@ -223,7 +223,7 @@ class Bertified_transformer(tf.keras.Model):
                                                 enc_output=enc_output,
                                                 beam_size=beam_size,
                                                 length_penalty=length_penalty,
-                                                decoder_type=draft_decoder_sampling_type,
+                                                decoder_type=draft_decoder_type,
                                                 temperature=temperature,
                                                 top_p=top_p, 
                                                 top_k=top_k,
@@ -246,14 +246,28 @@ class Bertified_transformer(tf.keras.Model):
         return (predicted_draft_output_sequence, draft_attention_dist, 
                predicted_refined_output_sequence, refined_attention_dist)
 
+    
+
     def call(self, input_ids, target_ids, dec_padding_mask, 
-             enc_padding_mask, look_ahead_mask, training):
+                 enc_padding_mask, look_ahead_mask, training,
+                 decoder_type=config.draft_decoder_type,
+                 beam_size=config.beam_size,
+                 length_penalty=config.length_penalty,
+                 temperature=config.softmax_temperature, 
+                 top_p=config.top_p,
+                 top_k=config.top_k):
 
         if training is not None:
             return self.fit(input_ids, target_ids, training, enc_padding_mask, 
                             look_ahead_mask, dec_padding_mask)
         else:
-            return self.predict(input_ids)
+            return self.predict(input_ids,
+                               draft_decoder_type=decoder_type,
+                               beam_size=beam_size,
+                               length_penalty=length_penalty,
+                               temperature=temperature, 
+                               top_p=top_p,
+                               top_k=top_k)
 
 if config.model_architecture == 'transformer':
     Model = Transformer(
@@ -276,3 +290,9 @@ elif config.model_architecture == 'bertified_transformer':
                                   target_vocab_size=config.target_vocab_size,
                                   add_pointer_generator=config.add_pointer_generator
                                   )
+
+if config.print_config:
+    if config['add_bias']:
+          config['add_bias'] = True
+    log.info(f'Configuration used \n {config}')
+    

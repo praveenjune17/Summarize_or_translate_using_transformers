@@ -58,7 +58,7 @@ def run_eval(ckpt_path='/content/drive/My Drive/Text_summarization/BERT_text_sum
     draft, refined_summary, att = predict_using_beam_search(
                                                             input_ids, 
                                                             beam_size=3, 
-                                                            refine_decoder_sampling_type='greedy'
+                                                            refine_decoder_type='greedy'
                                                             )
     for tar, ref_hyp in zip(target_ids, refined_summary):
       sum_ref = tokenizer.convert_ids_to_tokens([i for i in tf.squeeze(tar) if i not in [0, 101, 102]])

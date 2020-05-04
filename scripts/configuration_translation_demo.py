@@ -2,8 +2,7 @@
 import os
 import platform
 from bunch import Bunch
-from check_rules import (adhere_task_rules, 
-        assert_config_values, set_memory_growth)
+from check_rules import adhere_task_rules, assert_config_values
 
 unit_test = {
       'check_evaluation_pipeline' : False,
@@ -24,19 +23,19 @@ unit_test = {
           }
 
 model_parms = {
-     'add_bias' : True,               # set values as True|None Increases the inital bias of Tamil vocabs 
+     'add_bias' : None,               # set values as True|None Increases the inital bias of Tamil vocabs 
      'activation' : 'relu',
      'add_pointer_generator': True,
-     'd_model': 768,                  # the projected word vector dimension
+     'd_model': 256,                  # the projected word vector dimension
      'dff': 1024,                      # feed forward network hidden parameters
      'input_pretrained_bert_model': 'bert-base-uncased',
-     'input_seq_length': 30,
-     'model_architecture' : 'bertified_transformer',#bertified_transformer or transformer
+     'input_seq_length': 300,
+     'model_architecture' : 'transformer',#bertified_transformer or transformer
      'num_heads': 4,                  # the number of heads in the multi-headed attention unit
      'num_layers': 4,                 # number of transformer blocks
      'target_language' : 'ta',
-     'target_pretrained_bert_model' : 'bert-base-multilingual-cased',#'bert-base-uncased',#'bert-base-multilingual-cased',
-     'target_seq_length': 20,
+     'target_pretrained_bert_model' : 'bert-base-uncased',#'bert-base-uncased',#'bert-base-multilingual-cased',
+     'target_seq_length': 50,
      'task':'translate'            # must be translate or summarize
      }
 
@@ -46,9 +45,9 @@ training_parms = {
      'display_model_summary' : True,
      'early_stop' : True,
      'enable_jit' : True,
-     'eval_after_steps' : 500,              # Evaluate after these many training steps
+     'eval_after_steps' : 1000,              # Evaluate after these many training steps
      'gradient_accumulation_steps': 2,   
-     'last_recorded_value': None,
+     'last_recorded_value': 0.6259,
      'min_train_loss' : 1.0,
      'monitor_metric' : 'unified_metric',
      'run_tensorboard': True,
@@ -70,8 +69,8 @@ special_tokens = {
     }
 
 inference_decoder_parms = {
-    'beam_size': 1,              
-    'draft_decoder_type' : 'greedy',     # 'greedy', 'only_beam_search', 'topktopp' --> topktopp filtering + beam search
+    'beam_size': 7,              
+    'draft_decoder_type' : 'only_beam_search',     # 'greedy', 'only_beam_search', 'topktopp' --> topktopp filtering + beam search
     'length_penalty' : 1,
     'refine_decoder_type' : 'greedy',
     'softmax_temperature' : 1,
@@ -88,25 +87,28 @@ h_parms = {
    'l2_norm':0.0,
    'learning_rate': None,              # set None to create decayed learning rate schedule
    'train_batch_size': 64,
-   'validation_batch_size' : 16
+   'validation_batch_size' : 20
    }                                    
 
 dataset_name = training_parms['tfds_name']
-model_architecture = model_parms['model_architecture']
-core_path = os.getcwd()#"/content/drive/My Drive/"#os.getcwd()
+core_path = os.getcwd()
 path_seperator = '\\' if platform.system() == 'Windows' else '/'
 file_path = {
-        'best_ckpt_path' : os.path.join(core_path, f"best_checkpoints{path_seperator}{dataset_name+'_'+model_architecture}{path_seperator}"),  
-        'checkpoint_path' : os.path.join(core_path, f"checkpoints{path_seperator}{dataset_name+'_'+model_architecture}{path_seperator}"),
-        'initial_weights' : os.path.join(core_path, f"initial_weights{path_seperator}{dataset_name+'_'+model_architecture}{path_seperator}"),
+        'best_ckpt_path' : os.path.join(core_path, f"best_checkpoints{path_seperator}{dataset_name}{path_seperator}"),  
+        'checkpoint_path' : os.path.join(core_path, f"temp{path_seperator}checkpoints{path_seperator}{dataset_name}{path_seperator}"),
+        #'checkpoint_path' : 'D:\\Local_run\\checkpoints\\temp_ckpt',
+        'initial_weights' : os.path.join(core_path, f"initial_weights{path_seperator}{dataset_name}{path_seperator}"),
         'infer_csv_path' : None,
-        'infer_ckpt_path' : None,
-        'input_seq_vocab_path' : os.path.join(core_path, f"TFDS_vocab_files{path_seperator}{dataset_name}{path_seperator}vocab_en"),
-        'log_path' : os.path.join(core_path, f"created_files{path_seperator}{dataset_name+'_'+model_architecture}{path_seperator}tensorflow.log"),
-        'output_seq_vocab_path' : os.path.join(core_path, f"TFDS_vocab_files{path_seperator}{dataset_name}{path_seperator}vocab_ta"),
-        'output_sequence_write_path' : os.path.join(core_path, f"created_files{path_seperator}{dataset_name+'_'+model_architecture}{path_seperator}summaries{path_seperator}"),
-        'serialized_tensor_path' : os.path.join("C:\\Users\\Vinodhkumar\\Google Drive", 'saved_serialized_tensor_'+ model_parms['target_language']),
-        'tensorboard_log' : os.path.join(core_path, f"created_files{path_seperator}{dataset_name+'_'+model_architecture}{path_seperator}tensorboard_logs{path_seperator}"),
+        'infer_ckpt_path' : 'D:\\Local_run\\best_checkpoints\\en_tam_parallel_text\\ckpt-213',
+        #'input_seq_vocab_path' : os.path.join(core_path, f"TFDS_vocab_files{path_seperator}{dataset_name}{path_seperator}vocab_en"),
+        'input_seq_vocab_path' : '/root/ckpt_dir/vocab_en',
+        'log_path' : os.path.join(core_path, f"created_files{path_seperator}{dataset_name}{path_seperator}tensorflow.log"),
+        #'output_seq_vocab_path' : os.path.join(core_path, f"TFDS_vocab_files{path_seperator}{dataset_name}{path_seperator}vocab_ta"),
+        'output_seq_vocab_path' : '/root/ckpt_dir/vocab_ta',
+        'output_sequence_write_path' : os.path.join(core_path, f"created_files{path_seperator}{dataset_name}{path_seperator}summaries{path_seperator}"),
+        #'output_sequence_write_path' : '/root/ckpt_dir/vocab_ta',
+        'serialized_tensor_path' : os.path.join("/content/drive/My Drive/", 'saved_serialized_tensor_'+ model_parms['target_language']),
+        'tensorboard_log' : os.path.join(core_path, f"created_files{path_seperator}{dataset_name}{path_seperator}tensorboard_logs{path_seperator}"),
         'tfds_data_dir' : os.path.join(core_path, f'Tensorflow_datasets{path_seperator}{dataset_name}_dataset'),
         'tfds_data_version' : None,
         'train_csv_path' : None
@@ -120,7 +122,5 @@ config.update(inference_decoder_parms)
 config.update(h_parms)
 config.update(file_path)
 
-#set GPU memory growth
-_ = set_memory_growth()
 config, source_tokenizer, target_tokenizer = adhere_task_rules(config)
 config = assert_config_values(config)

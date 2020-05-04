@@ -12,8 +12,7 @@ from preprocess import create_dataset
 from configuration import config, source_tokenizer, target_tokenizer
 from calculate_metrics import mask_and_calculate_loss
 from utilities import log
-from model_training_helper import (check_ckpt, eval_step, train_step, batch_run_check, 
-                          evaluate_validation_set, training_results)
+from model_training_helper import (check_ckpt, evaluate_validation_set, training_results)
 
 val_dataset = create_dataset(
                              split='validation', 
@@ -21,7 +20,7 @@ val_dataset = create_dataset(
                              target_tokenizer=target_tokenizer, 
                              from_=0, 
                              to=100, 
-                             batch_size=2,
+                             batch_size=1,
                              drop_remainder=True
                              )
 count=0

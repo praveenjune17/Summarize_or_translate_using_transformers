@@ -2,6 +2,16 @@ import tensorflow as tf
 import tensorflow_datasets as tfds
 from transformers import BertTokenizer
 
+def set_memory_growth():
+    # Set GPU memory growth
+    gpu_devices = tf.config.experimental.list_physical_devices('GPU')
+    if not gpu_devices:
+        print("GPU not available so Running in CPU")
+    else:
+        for device in gpu_devices:
+         tf.config.experimental.set_memory_growth(device, True)
+         print('GPU memory growth set')
+
 def create_vocab(tokenizer_path, tok_type, log=None):
 
     try:
@@ -88,12 +98,12 @@ def set_inference_rules(config):
     if config['draft_decoder_type'] == 'greedy':
         config['draft_decoder_type'] = 'only_beam_search'
         config['beam_size'] = 1
-        config['topp'] = 1 
-        config['topk'] = 0
+        config['top_p'] = 1 
+        config['top_k'] = 0
 
     elif config['draft_decoder_type'] == 'only_beam_search':
-        config['topp'] = 1 
-        config['topk'] = 0 
+        config['top_p'] = 1 
+        config['top_k'] = 0 
 
     return config
 
@@ -150,15 +160,17 @@ def adhere_task_rules(config):
 
     if config.add_bias is not None:
         if (config.target_pretrained_bert_model == 'bert-base-multilingual-cased'
-        and config.task == 'translation'):
+        and config.task == 'translate'):
             assert config.target_language in config.serialized_tensor_path, (
             'serialized Bias file not found,\
             please create it using helper scripts/create_bias script')
             config['add_bias'] = load_and_set_bias(config['serialized_tensor_path'])
         else:
             assert False,(
-            'add_bias is only available for bert-base-multilingual-cased\
-             and translation combo')
+            f'add_bias is only available for\n\
+            config.target_pretrained_bert_model <- bert-base-multilingual-cased\n\
+            config.task                         <- translate'
+                        )
 
     if config['test_script']:
         config = set_testing_rules(config)
@@ -175,7 +187,7 @@ def assert_config_values(config):
     allowed_decoder_types = ['topktopp','greedy', 'only_beam_search']
     allowed_model_architectures = ['transformer', 'bertified_transformer']
     summarization_datasets = ['cnn_dailymail']
-    translation_datasets = ['en_tam_parallel_text', 'wmt14_translate/hi-en']
+    translate_datasets = ['en_tam_parallel_text', 'wmt14_translate/hi-en']
     implemented_tasks = ['summarize', 'translate']
     assert config.task in implemented_tasks, 'summarize and translate are implemented currently'
     assert config.d_model % config.num_heads == 0, 'd_model should be a multiple of num_heads'
@@ -196,8 +208,8 @@ def assert_config_values(config):
         assert config.input_pretrained_bert_model == config.target_pretrained_bert_model, (
                 f'For {config.task} the input and target models must be same  for {config.task}')
     elif config.task == 'translate':
-        assert config.tfds_name in translation_datasets , (
-                f'{config.tfds_name} is not a  translation dataset')
+        assert config.tfds_name in translate_datasets , (
+                f'{config.tfds_name} is not a  translate dataset')
         if config.model_architecture == 'bertified_transformer':
             assert config.input_pretrained_bert_model != config.target_pretrained_bert_model, (
                 f'For translate the input and target pre-trained BERT must not be same')

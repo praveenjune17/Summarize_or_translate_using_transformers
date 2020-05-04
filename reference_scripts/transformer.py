@@ -433,7 +433,7 @@ class Transformer(tf.keras.Model):
     def predict(self,
                input_ids,
                dec_padding_mask,
-               decoder_sampling_type='greedy',
+               decoder_type='greedy',
                temperature=0.9, 
                p=0.9, 
                k=25):
@@ -441,7 +441,7 @@ class Transformer(tf.keras.Model):
         # (batch_size, inp_seq_len, d_model)
         # Both dec_padding_mask and enc_padding_mask are same
         enc_output = self.encoder(input_ids, False, dec_padding_mask)
-        if decoder_sampling_type=='beam_search':
+        if decoder_type=='beam_search':
             predicted_beam_search_op = self.draft_output_sequence_beam_search(
                                                                         input_ids, 
                                                                         enc_output, 
@@ -458,7 +458,7 @@ class Transformer(tf.keras.Model):
                                                                   enc_output=enc_output,
                                                                   look_ahead_mask=None,
                                                                   padding_mask=dec_padding_mask,
-                                                                  decoder_type=draft_decoder_sampling_type,
+                                                                  decoder_type=draft_decoder_type,
                                                                   temperature=temperature,
                                                                   p=p, 
                                                                   k=k,

@@ -25,6 +25,7 @@ avg_bert_score = tf.keras.metrics.Mean(name='bert_f1_mean')
 batch_zero = 'Time taken to feed the input data to the model {} seconds'
 batch_run_details = 'Train_Loss {:.4f} Train_Accuracy {:.4f}'
 gradient_accumulators = []
+
 train_step_signature = [
                       tf.TensorSpec(shape=(None, None), dtype=tf.int32),
                       tf.TensorSpec(shape=(None, None), dtype=tf.int32),
@@ -34,7 +35,7 @@ train_step_signature = [
 val_step_signature = [
                       tf.TensorSpec(shape=(None, None), dtype=tf.int32),
                       tf.TensorSpec(shape=(None, None), dtype=tf.int32),
-                      tf.TensorSpec(shape=(None), dtype=tf.int32),
+                      tf.TensorSpec(shape=(None), dtype=tf.string),
                       tf.TensorSpec(shape=(None), dtype=tf.bool)
                      ]
 
@@ -91,23 +92,34 @@ def train_step(input_ids,
 
     return predictions
 
-@tf.function(input_signature=val_step_signature)
+@tf.function(input_signature=val_step_signature)#experimental_relax_shapes=True)
 def val_step(
              input_ids,
              target_ids,
              step,
              write_output_seq):
+             # decoder_type,
+             # beam_size,
+             # length_penalty,
+             # temperature, 
+             # top_p,
+             # top_k):
 
     enc_padding_mask = create_padding_mask(input_ids)
     (draft_predictions, _,  
      refine_predictions, _) = Model( 
-                                    input_ids,
-                                    enc_padding_mask=enc_padding_mask,
-                                    target_ids=None,
-                                    dec_padding_mask=None, 
-                                    look_ahead_mask=None, 
-                                    training=None
-                                    )
+                                   input_ids,
+                                   decoder_type=config.draft_decoder_type,
+                                   beam_size=config.beam_size,
+                                   length_penalty=config.length_penalty,
+                                   temperature=config.softmax_temperature, 
+                                   top_p=config.top_p,
+                                   top_k=config.top_k,
+                                   enc_padding_mask=enc_padding_mask,
+                                   target_ids=None,
+                                   dec_padding_mask=None, 
+                                   look_ahead_mask=None, 
+                                   training=None)
     
     if refine_predictions is not None:
       predictions = refine_predictions
@@ -125,24 +137,48 @@ def val_step(
 
 def evaluate_validation_set(
                            validation_dataset, 
-                           step
+                           step,
+                           decoder_type=config.draft_decoder_type,
+                           beam_size=config.beam_size,
+                           length_penalty=config.length_penalty,
+                           temperature=config.softmax_temperature, 
+                           top_p=config.top_p,
+                           top_k=config.top_k
                            ):
 
     avg_task_score.reset_states()
     avg_bert_score.reset_states()
+    step='_ '.join([str(i) for i in (decoder_type,
+                                     beam_size,
+                                     length_penalty,
+                                     temperature, 
+                                     top_p,
+                                     top_k)])
     for (batch, (input_ids, target_ids)) in enumerate(validation_dataset, 1):
         # calculate rouge and bert score for only the first batch
         if batch == 1:
           task_score, bert_f1 = val_step(input_ids,
                                          target_ids,  
                                          step, 
-                                         config.write_batch1_predictions
+                                         config.write_batch1_predictions,
+                                         # decoder_type,
+                                         # beam_size,
+                                         # length_penalty,
+                                         # temperature, 
+                                         # top_p,
+                                         # top_k
                                          )
         else:
           task_score, bert_f1 =  val_step(input_ids,
                                        target_ids, 
                                        step, 
-                                       False
+                                       False,
+                                       # decoder_type,
+                                       # beam_size,
+                                       # length_penalty,
+                                       # temperature, 
+                                       # top_p,
+                                       # top_k
                                        )
         # bleu ranges from 0-100
         if task_score:
@@ -199,7 +235,7 @@ def check_ckpt(checkpoint_path):
     else:
         log.warning('No checkpoint found so using the initialized_weights')
 
-    return (ckpt_manager)
+    return ckpt_manager
 # run every batch
 def batch_run_check(batch, start_time):
 
@@ -230,8 +266,13 @@ def save_evaluate_monitor(ck_pt_mgr, val_dataset,
     # Run evaluation only if the predictions made by the teacher forced output is not empty
     (task_score, bert_score) = evaluate_validation_set(       
                                                       val_dataset,
-                                                      step
-                                                      )  if predicted else 0
+                                                      step,
+                                                      decoder_type,
+                                                      beam_size,
+                                                      length_penalty,
+                                                      temperature, 
+                                                      top_p,
+                                                      top_k)  if predicted else 0
     training_results(
                       step,
                       train_loss.result(), 

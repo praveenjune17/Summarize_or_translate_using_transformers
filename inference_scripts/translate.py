@@ -40,6 +40,7 @@ def postprocess(input_sentence, translated_sequence, input_word_to_be_corrected,
             translated_sequence = translated_sequence.replace(correction_available[0], correction_available[1])
     with open('correction_dictonary.pickle', 'wb') as handle:
         pickle.dump(correction_dictonary, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        
     return translated_sequence
 def translate():
     

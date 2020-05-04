@@ -319,7 +319,7 @@ class AbstractiveSummarization(tf.keras.Model):
     def predict(self,
                inp, 
                dec_padding_mask,
-               draft_decoder_sampling_type='greedy',
+               draft_decoder_type='greedy',
                refine_decoder_type='topk', 
                temperature=0.9, 
                p=0.9, 
@@ -333,7 +333,7 @@ class AbstractiveSummarization(tf.keras.Model):
         # (batch_size, seq_len, vocab_len), 
         #  ()
 
-        if draft_decoder_sampling_type=='beam_search':
+        if draft_decoder_type=='beam_search':
             predicted_beam_search_op = self.draft_output_sequence_beam_search(inp, 
                                                                               enc_output, 
                                                                               dec_padding_mask, 
@@ -349,7 +349,7 @@ class AbstractiveSummarization(tf.keras.Model):
                                                                           enc_output=enc_output,
                                                                           look_ahead_mask=None,
                                                                           padding_mask=dec_padding_mask,
-                                                                          decoder_type=draft_decoder_sampling_type,
+                                                                          decoder_type=draft_decoder_type,
                                                                           temperature=temperature,
                                                                           p=p, 
                                                                           k=k,

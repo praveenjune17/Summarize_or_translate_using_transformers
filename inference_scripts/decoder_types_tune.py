@@ -57,7 +57,7 @@ def run_inference(dataset, print_output=False):
       if draft_type != 'beam_search':
           _, _, refined_output_sequence, _ = predict_using_sampling(input_ids, draft_type, refine_type, k=10)
       else:
-          _, refined_output_sequence, _ = predict_using_beam_search(input_ids, refine_decoder_sampling_type=refine_type)
+          _, refined_output_sequence, _ = predict_using_beam_search(input_ids, refine_decoder_type=refine_type)
       sum_ref = tokenizer.convert_ids_to_tokens([i for i in tf.squeeze(target_ids) if i not in [config.PAD_ID, 
                                                                                                 config.target_CLS_ID, 
                                                                                                 config.target_SEP_ID]])

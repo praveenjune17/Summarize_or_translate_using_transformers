@@ -4,7 +4,7 @@ tf.random.set_seed(100)
 import tensorflow_addons as tfa
 from configuration import config
 from utilities import log
-from tensor2tensor.utils.beam_search import beam_search
+from beam_search import beam_search
 
 def with_column(x, i, column):
     """
