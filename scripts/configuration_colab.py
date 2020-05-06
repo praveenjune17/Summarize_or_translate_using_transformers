@@ -46,9 +46,9 @@ training_parms = {
      'accumulate_gradients' : True,
      'display_model_summary' : True,
      'early_stop' : False,
-     'enable_jit' : True,
-     'eval_after_steps' : 5000,              # Evaluate after these many training steps
-     'gradient_accumulation_steps': 36,   
+     'enable_jit' : False,
+     'eval_after_steps' : 2000,              # Evaluate after these many training steps
+     'gradient_accumulation_steps': 9,   
      'last_recorded_value': None,
      'min_train_loss' : 1.0,
      'monitor_metric' : 'unified_metric',
@@ -91,13 +91,13 @@ h_parms = {
    'grad_clipnorm':None,
    'l2_norm':0.0,
    'learning_rate': None,              # set None to create decayed learning rate schedule
-   'train_batch_size': 1,
-   'validation_batch_size' : 1
+   'train_batch_size': 4,
+   'validation_batch_size' : 8
    }                                    
 
 dataset_name = training_parms['tfds_name']
 model = model_parms['model']
-core_path = os.getcwd()#"/content/drive/My Drive/"#os.getcwd()
+core_path = "/content/drive/My Drive/"#os.getcwd()
 path_seperator = '\\' if platform.system() == 'Windows' else '/'
 file_path = {
         'best_ckpt_path' : os.path.join(core_path, f"best_checkpoints{path_seperator}{dataset_name+'_'+model}{path_seperator}"),  
@@ -109,7 +109,7 @@ file_path = {
         'log_path' : os.path.join(core_path, f"created_files{path_seperator}{dataset_name+'_'+model}{path_seperator}tensorflow.log"),
         'output_seq_vocab_path' : os.path.join(core_path, f"TFDS_vocab_files{path_seperator}{dataset_name}{path_seperator}vocab_ta"),
         'output_sequence_write_path' : os.path.join(core_path, f"created_files{path_seperator}{dataset_name+'_'+model}{path_seperator}summaries{path_seperator}"),
-        'serialized_tensor_path' : os.path.join("C:\\Users\\Vinodhkumar\\Google Drive", 'saved_serialized_tensor_'+ model_parms['target_language']),
+        'serialized_tensor_path' : os.path.join("/content/drive/My Drive/saved_serialized_tensor_ta"),
         'tensorboard_log' : os.path.join(core_path, f"created_files{path_seperator}{dataset_name+'_'+model}{path_seperator}tensorboard_logs{path_seperator}"),
         'tfds_data_dir' : os.path.join(core_path, f'Tensorflow_datasets{path_seperator}{dataset_name}_dataset'),
         'tfds_data_version' : None,
