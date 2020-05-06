@@ -125,7 +125,7 @@ def set_testing_rules(config):
     config['grad_clipnorm'] = None
     config['run_tensorboard'] = False
     config['dropout_rate'] = config['epsilon_ls'] = config['l2_norm'] = 0
-    config['batches_to_train'] = config['batches_to_test']
+    config['samples_to_train'] = config['samples_to_test']
 
     return config
 

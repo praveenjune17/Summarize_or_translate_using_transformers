@@ -9,21 +9,26 @@ packages
 En_tam Machine translation paper:-  http://www.iitp.ac.in/~sukanta.pcs15/pubs/WAT_2018_paper_12.pdf 
 Why all these ? :- http://www.unesco.org/new/fileadmin/MULTIMEDIA/HQ/CLT/pdf/FlyerEndangeredLanguages-WebVersion.pdf
 ######################################
-#) Add electra pretrained models when they are out
-*) train the bertified_transformer using 	
+*) test batch_size for validation step
+*) increase batch_size and train on colab..train it in this GPU in the night
 *) code walk through :- remove extra comments, name tensors, 
 						remove duplicate operations
 *) Note on how to use the script
 
-
-
+#################################################33
+Investigate:-
+	*) does gradient accumulation gets skipped when intefered by validation steps?
+##################################################
+Learning:-
+	*) compression lecture
+###################################################
 Post-training improvements:-
     #) Hyper parameter tuning:- Randomsearch using keras-tuner https://keras-team.github.io/keras-tuner/tutorials/subclass-tuner/
     #) avg checkpoints
 
 Things to watchout for when coding
 ########################################################
-#) meaning full names
+#) Add electra multilingual pretrained model when they are out
 #) separate script for specific functions
 #) functions should be small
 #) one method that clearly say what it does

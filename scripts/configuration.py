@@ -17,7 +17,7 @@ unit_test = {
       'input_independent_baseline_check' : False, 
       'print_config' : True,
       'random_results_check' : False,
-      'batches_to_test' : 1,
+      'samples_to_test' : 1,
       'save_initial_weights' : False,
       'test_script' : False,
       'unit_test_dataset_batch_size' : 1
@@ -44,7 +44,6 @@ model_parms = {
 
 training_parms = {
      'accumulate_gradients' : True,
-     'batches_to_train' : -1,
      'display_model_summary' : True,
      'early_stop' : False,
      'enable_jit' : True,
@@ -54,6 +53,8 @@ training_parms = {
      'min_train_loss' : 1.0,
      'monitor_metric' : 'unified_metric',
      'run_tensorboard': True,
+     'samples_to_train' : -1,
+     'samples_to_validate' : 100,
      'start_evaluate_when' : 10.0,           # run evaluation when loss reaches 10
      'steps_to_print_training_info': 100,      # print training progress per number of batches specified
      'tfds_name' : 'en_tam_parallel_text',            #cnn_dailymail,en_tam_parallel_text     # tfds dataset to be used

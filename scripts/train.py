@@ -31,7 +31,9 @@ val_dataset = create_dataset(
                              from_=0, 
                              to=100, 
                              batch_size=config.validation_batch_size,
-                             drop_remainder=True
+                             shuffle=True,
+                             drop_remainder=True,
+                             num_examples_to_select=config.samples_to_validate
                              )
 
 # if a checkpoint exists, restore the latest checkpoint.

@@ -88,7 +88,7 @@ def create_dataset(split,
                    batch_size,
                    shuffle=None,
                    drop_remainder=False,
-                   num_examples_to_select=config.batches_to_train):
+                   num_examples_to_select=config.samples_to_train):
 
     if config.tfds_name == 'en_tam_parallel_text':
         en_tam_ds = defaultdict(list)
