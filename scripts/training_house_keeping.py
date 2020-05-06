@@ -23,7 +23,7 @@ def train_sanity_check(tokenizer, predictions, target_id, log):
                                    )
     log.info(f'target -> {target}')
     log.info(f'predicted by teacher forcing ->\
-              {predicted if predicted else "empty hence validation step will be skipped"}')
+              {predicted if predicted else "empty hence validation step will be skipped so setting the scores to 0"}')
 
     return predicted
 

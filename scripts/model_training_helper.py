@@ -248,10 +248,24 @@ def save_evaluate_monitor(ck_pt_mgr, val_dataset,
     evaluate = train_loss.result() < config.start_evaluate_when and True if predicted  else False
     # Run evaluation only if the predictions made by the teacher forced output is not empty
       # and the train_loss is lesser than start_evaluate_when
-    (task_score, bert_score) = evaluate_validation_set(       
+    if evaluate:
+        (task_score, bert_score) = evaluate_validation_set(       
                                                       val_dataset,
                                                       step
-                                                      )  if evaluate else (0,0)
+                                                      )
+        early_stop_training = monitor_eval_metrics(
+                              ckpt_save_path, 
+                              bert_score, 
+                              task_score,
+                              train_loss.result(), 
+                              step,
+                              log,
+                              config
+                              )
+    else:
+        (task_score, bert_score) = (0, 0)
+        early_stop_training = False
+
     training_results(
                       step,
                       train_loss.result(), 
@@ -265,14 +279,5 @@ def save_evaluate_monitor(ck_pt_mgr, val_dataset,
                       )
     train_loss.reset_states()
     train_accuracy.reset_states()
-    early_stop_training = monitor_eval_metrics(
-                              ckpt_save_path, 
-                              bert_score, 
-                              task_score,
-                              train_loss, 
-                              step,
-                              log,
-                              config
-                              )
-
+    
     return early_stop_training
