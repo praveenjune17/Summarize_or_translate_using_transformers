@@ -29,13 +29,15 @@ model_parms = {
      'add_pointer_generator': True,
      'd_model': 768,                  # the projected word vector dimension
      'dff': 1024,                      # feed forward network hidden parameters
-     'input_pretrained_bert_model': 'bert-base-uncased',
-     'input_seq_length': 30,
-     'model_architecture' : 'bertified_transformer',#bertified_transformer or transformer
-     'num_heads': 4,                  # the number of heads in the multi-headed attention unit
-     'num_layers': 4,                 # number of transformer blocks
+     'input_pretrained_bert_model': 'distilroberta-base',  #distilroberta-base, #bert-base-uncased , #google/electra-small-discriminator
+     'input_seq_length': 50,
+     'model' : 'bertified_transformer',#bertified_transformer or transformer
+     'num_heads': 12,                  # the number of heads in the multi-headed attention unit
+     'num_layers': 6,                 # number of transformer blocks
      'target_language' : 'ta',
-     'target_pretrained_bert_model' : 'bert-base-multilingual-cased',#'bert-base-uncased',#'bert-base-multilingual-cased',
+     'target_pretrained_bert_model' : 'distilbert-base-multilingual-cased',#'bert-base-uncased',
+                                                                     #'bert-base-multilingual-cased',
+                                                                    #'distilbert-base-multilingual-cased'
      'target_seq_length': 20,
      'task':'translate'            # must be translate or summarize
      }
@@ -44,18 +46,19 @@ training_parms = {
      'accumulate_gradients' : True,
      'batches_to_train' : -1,
      'display_model_summary' : True,
-     'early_stop' : True,
+     'early_stop' : False,
      'enable_jit' : True,
-     'eval_after_steps' : 500,              # Evaluate after these many training steps
-     'gradient_accumulation_steps': 2,   
+     'eval_after_steps' : 2000,              # Evaluate after these many training steps
+     'gradient_accumulation_steps': 36,   
      'last_recorded_value': None,
      'min_train_loss' : 1.0,
      'monitor_metric' : 'unified_metric',
      'run_tensorboard': True,
+     'start_evaluate_when' : 10.0,           # run evaluation when loss reaches 10
      'steps_to_print_training_info': 100,      # print training progress per number of batches specified
      'tfds_name' : 'en_tam_parallel_text',            #cnn_dailymail,en_tam_parallel_text     # tfds dataset to be used
      'tolerance' : 0,
-     'tolerance_threshold': 3,          # Stop training after the threshold is reached
+     'tolerance_threshold': 7,          # Stop training after the threshold is reached
      'tokens_per_batch' : 4050,
      'use_tfds' : True,                 # use tfds datasets as to train the model else use the given csv file
      'write_batch1_predictions': True           # write the first batch of validation set summary to a file
@@ -87,26 +90,26 @@ h_parms = {
    'grad_clipnorm':None,
    'l2_norm':0.0,
    'learning_rate': None,              # set None to create decayed learning rate schedule
-   'train_batch_size': 64,
-   'validation_batch_size' : 16
+   'train_batch_size': 1,
+   'validation_batch_size' : 1
    }                                    
 
 dataset_name = training_parms['tfds_name']
-model_architecture = model_parms['model_architecture']
+model = model_parms['model']
 core_path = os.getcwd()#"/content/drive/My Drive/"#os.getcwd()
 path_seperator = '\\' if platform.system() == 'Windows' else '/'
 file_path = {
-        'best_ckpt_path' : os.path.join(core_path, f"best_checkpoints{path_seperator}{dataset_name+'_'+model_architecture}{path_seperator}"),  
-        'checkpoint_path' : os.path.join(core_path, f"checkpoints{path_seperator}{dataset_name+'_'+model_architecture}{path_seperator}"),
-        'initial_weights' : os.path.join(core_path, f"initial_weights{path_seperator}{dataset_name+'_'+model_architecture}{path_seperator}"),
+        'best_ckpt_path' : os.path.join(core_path, f"best_checkpoints{path_seperator}{dataset_name+'_'+model}{path_seperator}"),  
+        'checkpoint_path' : os.path.join(core_path, f"checkpoints{path_seperator}{dataset_name+'_'+model}{path_seperator}"),
+        'initial_weights' : os.path.join(core_path, f"initial_weights{path_seperator}{dataset_name+'_'+model}{path_seperator}"),
         'infer_csv_path' : None,
         'infer_ckpt_path' : None,
         'input_seq_vocab_path' : os.path.join(core_path, f"TFDS_vocab_files{path_seperator}{dataset_name}{path_seperator}vocab_en"),
-        'log_path' : os.path.join(core_path, f"created_files{path_seperator}{dataset_name+'_'+model_architecture}{path_seperator}tensorflow.log"),
+        'log_path' : os.path.join(core_path, f"created_files{path_seperator}{dataset_name+'_'+model}{path_seperator}tensorflow.log"),
         'output_seq_vocab_path' : os.path.join(core_path, f"TFDS_vocab_files{path_seperator}{dataset_name}{path_seperator}vocab_ta"),
-        'output_sequence_write_path' : os.path.join(core_path, f"created_files{path_seperator}{dataset_name+'_'+model_architecture}{path_seperator}summaries{path_seperator}"),
+        'output_sequence_write_path' : os.path.join(core_path, f"created_files{path_seperator}{dataset_name+'_'+model}{path_seperator}summaries{path_seperator}"),
         'serialized_tensor_path' : os.path.join("C:\\Users\\Vinodhkumar\\Google Drive", 'saved_serialized_tensor_'+ model_parms['target_language']),
-        'tensorboard_log' : os.path.join(core_path, f"created_files{path_seperator}{dataset_name+'_'+model_architecture}{path_seperator}tensorboard_logs{path_seperator}"),
+        'tensorboard_log' : os.path.join(core_path, f"created_files{path_seperator}{dataset_name+'_'+model}{path_seperator}tensorboard_logs{path_seperator}"),
         'tfds_data_dir' : os.path.join(core_path, f'Tensorflow_datasets{path_seperator}{dataset_name}_dataset'),
         'tfds_data_version' : None,
         'train_csv_path' : None

@@ -9,7 +9,7 @@ packages
 En_tam Machine translation paper:-  http://www.iitp.ac.in/~sukanta.pcs15/pubs/WAT_2018_paper_12.pdf 
 Why all these ? :- http://www.unesco.org/new/fileadmin/MULTIMEDIA/HQ/CLT/pdf/FlyerEndangeredLanguages-WebVersion.pdf
 ######################################
-*) finalize the model, find the best model on the test set:- 213 or 232, finetune on beam_search, topk-topp
+#) Add electra pretrained models when they are out
 *) train the bertified_transformer using 	
 *) code walk through :- remove extra comments, name tensors, 
 						remove duplicate operations

@@ -3,7 +3,7 @@ import numpy as np
 import string
 import time
 from google.colab import files
-from transformers import BertTokenizer, TFBertModel
+from transformers import AutoTokenizer, TFAutoModel
 
 table = str.maketrans(dict.fromkeys(string.punctuation))  # OR {key: None for key in string.punctuation}
 
@@ -14,8 +14,8 @@ def embedding_projector_files(pretrained_model_to_use, paragraph, agg='sum', fil
   out_v = io.open(f'vecs_{filename}.tsv', 'w', encoding='utf-8')
   out_m = io.open(f'meta_{filename}.tsv', 'w', encoding='utf-8')
   config_json = io.open('config.json', 'w', encoding='utf-8')
-  tokenizer = BertTokenizer.from_pretrained(pretrained_model_to_use)
-  model = TFBertModel.from_pretrained(pretrained_model_to_use)
+  tokenizer = AutoTokenizer.from_pretrained(pretrained_model_to_use)
+  model = TFAutoModel.from_pretrained(pretrained_model_to_use)
   embedding_layer = model.get_weights()[0]
   # Remove tabs, newlines and spaces from the paragraph
   for word in (' '.join(paragraph.split())).split():

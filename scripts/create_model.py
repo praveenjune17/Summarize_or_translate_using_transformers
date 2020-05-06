@@ -1,6 +1,6 @@
 import tensorflow as tf
 from tensorflow.keras.initializers import Constant
-from transformers import TFBertModel
+from transformers import TFAutoModel
 from transformer import Decoder, Transformer
 from utilities import log
 from configuration import config
@@ -10,10 +10,10 @@ from model_utils import (tile_and_mask_diagonal, create_masks, topp_topk,
 def _embedding_from_bert():
 
     with tf.device("CPU:0"):  
-        input_pretrained_bert = TFBertModel.from_pretrained(config.input_pretrained_bert_model, 
+        input_pretrained_bert = TFAutoModel.from_pretrained(config.input_pretrained_bert_model, 
                                               trainable=False, 
                                               name=config.input_pretrained_bert_model)
-        target_pretrained_bert = TFBertModel.from_pretrained(config.target_pretrained_bert_model, 
+        target_pretrained_bert = TFAutoModel.from_pretrained(config.target_pretrained_bert_model, 
                                               trainable=False, 
                                               name=config.target_pretrained_bert_model)
     decoder_embedding = target_pretrained_bert.get_weights()[0]
@@ -78,19 +78,23 @@ class Bertified_transformer(tf.keras.Model):
                        padding_mask, 
                        training):
 
-        N = tf.shape(enc_output)[0]
-        T = config.target_seq_length
+        batch_size = tf.shape(enc_output)[0]
+        # exclued CLS_ID from tiling and masking
+        max_time_steps = config.target_seq_length - 1
         # (batch_size x (seq_len - 1), seq_len) 
-        dec_inp_ids = tile_and_mask_diagonal(target, mask_with=config.MASK_ID)
+        dec_inp_ids = tile_and_mask_diagonal(target, batch_size, 
+                                max_time_steps, mask_with=config.MASK_ID)
         # (batch_size x (seq_len - 1), seq_len, d_bert)
         context_vectors = self.decoder_bert_model(dec_inp_ids)[0]
+        # (batch_size x (seq_len - 1), seq_len)
+        input_ids = tf.tile(input_ids, [max_time_steps, 1])
         # (batch_size x (seq_len - 1), seq_len, d_bert) 
-        enc_output = tf.tile(enc_output, [T-1, 1, 1])
+        enc_output = tf.tile(enc_output, [max_time_steps, 1, 1])
         # (batch_size x (seq_len - 1), 1, 1, seq_len) 
-        padding_mask = tf.tile(padding_mask, [T-1, 1, 1, 1])
+        padding_mask = tf.tile(padding_mask, [max_time_steps, 1, 1, 1])
         # (batch_size x (seq_len - 1), seq_len, vocab_len), (_)
         refined_logits, refine_attention_dist = self.decoder(
-                                                           tf.tile(input_ids, [T-1, 1]),
+                                                           input_ids,
                                                            context_vectors,
                                                            enc_output,
                                                            training,
@@ -99,34 +103,21 @@ class Bertified_transformer(tf.keras.Model):
                                                          )
         # (batch_size x (seq_len - 1), seq_len - 1, vocab_len)
         refined_logits = refined_logits[:, 1:, :]
-        # (batch_size x (seq_len - 1), (seq_len - 1))
-        diag = tf.linalg.set_diag(tf.zeros([T-1, T-1]), tf.ones([T-1]))
-        diag = tf.tile(diag, [N, 1])
-        where = tf.not_equal(diag, 0)
-        indices = tf.where(where)
+        # tile an identity matrix (batch_size*(seq_len - 1), (seq_len - 1))
+        mark_masked_indices = tf.tile(tf.eye(max_time_steps, dtype=tf.bool), [batch_size, 1])
         # (batch_size x (seq_len - 1), vocab_len)
-        refined_logits = tf.gather_nd(refined_logits, indices)
+        refined_logits = tf.gather_nd(refined_logits, indices=tf.where(mark_masked_indices))
         # (batch_size, seq_len - 1, vocab_len)
-        refined_logits = tf.reshape(refined_logits, [N, T-1, -1])
+        refined_logits = tf.reshape(refined_logits, [batch_size, max_time_steps, -1])
+        # (batch_size, 1, vocab_len)
+        cls_logits = tf.tile(tf.one_hot([config.target_CLS_ID], 
+                                    self.target_vocab_size)[tf.newaxis,:,:], 
+                            [batch_size, 1, 1]
+                            )
         # (batch_size, seq_len, vocab_len)
-        refine_logits = tf.concat(
-                           [tf.tile(
-                                    tf.expand_dims(
-                                                  tf.one_hot(
-                                                    [config.target_CLS_ID], 
-                                                    self.target_vocab_size
-                                                            ), 
-                                                  axis=0
-                                                  ), 
-                                                  [N, 1, 1]
-                                    ), 
-                                    refined_logits],
-                                    axis=1
-                                  )
-
-
+        total_refine_logits = tf.concat([cls_logits, refined_logits], axis=1)
         # (batch_size, seq_len, vocab_len)
-        return refine_logits, refine_attention_dist
+        return total_refine_logits, refine_attention_dist
 
     def refined_output_sequence_sampling(self,
                                          input_ids, 
@@ -269,7 +260,7 @@ class Bertified_transformer(tf.keras.Model):
                                top_p=top_p,
                                top_k=top_k)
 
-if config.model_architecture == 'transformer':
+if config.model == 'transformer':
     Model = Transformer(
                        num_layers=config.num_layers, 
                        d_model=config.d_model, 
@@ -280,7 +271,7 @@ if config.model_architecture == 'transformer':
                        add_pointer_generator=config.add_pointer_generator
                        )
         
-elif config.model_architecture == 'bertified_transformer':
+elif config.model == 'bertified_transformer':
     Model = Bertified_transformer(
                                   num_layers=config.num_layers, 
                                   d_model=config.d_model, 

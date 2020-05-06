@@ -49,13 +49,13 @@ for (step, (input_ids, target_ids)) in tqdm(enumerate(train_dataset, 1), initial
                             grad_accum_flag
                             )
     if (step % config.steps_to_print_training_info) == 0:
-        train_loss = batch_run_check(
-                                  step,  
-                                  start_time
-                                  )
+        batch_run_check(
+                        step,  
+                        start_time
+                        )
     if (step % config.eval_after_steps) == 0:
         early_stop = save_evaluate_monitor(ck_pt_mgr, val_dataset, 
-                      target_tokenizer, predictions, train_loss, target_ids, step, start_time)
+                      target_tokenizer, predictions, target_ids, step, start_time)
         if early_stop:
             break
 

@@ -240,7 +240,7 @@ class Decoder(tf.keras.layers.Layer):
 
         seq_len = tf.shape(target_ids)[1]
         attention_weights = {}
-        if not config.model_architecture=='bertified_transformer':
+        if not config.model=='bertified_transformer':
             target_ids = self.decoder_embedding(target_ids)
         # (batch_size, target_seq_len, d_model) 
         target_ids *= tf.math.sqrt(tf.cast(self.d_model, tf.float32))

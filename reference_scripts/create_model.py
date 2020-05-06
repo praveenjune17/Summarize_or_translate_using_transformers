@@ -3,7 +3,7 @@ import tensorflow_datasets as tfds
 import tensorflow_addons as tfa
 from tensorflow.keras.initializers import Constant
 from beam_search import beam_search
-from transformers import TFBertModel, BertTokenizer
+from transformers import TFBertModel, AutoTokenizer
 from transformer import create_masks, Decoder, Encoder
 from utilities import log
 from configuration import config
@@ -396,8 +396,8 @@ Model = AbstractiveSummarization(
                                 )
 
 if config.use_BERT:
-    source_tokenizer = BertTokenizer.from_pretrained(config.input_pretrained_bert_model)
-    target_tokenizer = BertTokenizer.from_pretrained(config.target_pretrained_bert_model)
+    source_tokenizer = AutoTokenizer.from_pretrained(config.input_pretrained_bert_model)
+    target_tokenizer = AutoTokenizer.from_pretrained(config.target_pretrained_bert_model)
 else:
     source_tokenizer = tfds.features.text.SubwordTextEncoder.load_from_file(config.input_seq_vocab_path)
     target_tokenizer = tfds.features.text.SubwordTextEncoder.load_from_file(config.output_seq_vocab_path)

@@ -1,6 +1,6 @@
 import tensorflow as tf
 import tensorflow_datasets as tfds
-from transformers import BertTokenizer
+from transformers import AutoTokenizer
 
 def set_memory_growth():
     # Set GPU memory growth
@@ -56,12 +56,12 @@ def task_check(source_tokenizer, config):
         target_tokenizer = source_tokenizer
     else:
         config['bert_score_model'] = 'bert-base-multilingual-cased'
-        if config['model_architecture'] == 'transformer':
+        if config['model'] == 'transformer':
             target_tokenizer = create_vocab(config['output_seq_vocab_path'], 'target')
             config['target_CLS_ID'] = target_tokenizer.vocab_size
             config['target_SEP_ID'] = target_tokenizer.vocab_size+1
-        elif config['model_architecture'] == 'bertified_transformer':
-            target_tokenizer = BertTokenizer.from_pretrained(
+        elif config['model'] == 'bertified_transformer':
+            target_tokenizer = AutoTokenizer.from_pretrained(
                                             config['target_pretrained_bert_model']
                                                             )
             config['target_CLS_ID'] = config['input_CLS_ID']
@@ -71,7 +71,7 @@ def task_check(source_tokenizer, config):
 
 def set_bertified_transformer_rules(config):
     
-    source_tokenizer = BertTokenizer.from_pretrained(config['input_pretrained_bert_model'])
+    source_tokenizer = AutoTokenizer.from_pretrained(config['input_pretrained_bert_model'])
     config['input_vocab_size'] = source_tokenizer.vocab_size 
     config['input_CLS_ID'] = config['CLS_ID']
     config['input_SEP_ID'] = config['SEP_ID']
@@ -109,8 +109,8 @@ def set_inference_rules(config):
 
 def load_and_set_bias(path):
 
-    read_tensor = tf.io.read_file(path, name=None)
-    output_bias_tensor = tf.io.parse_tensor(read_tensor, tf.float32, name=None)
+    read_tensor = tf.io.read_file(path)
+    output_bias_tensor = tf.io.parse_tensor(read_tensor, tf.float32)
 
     return tf.keras.initializers.Constant(output_bias_tensor.numpy())
 
@@ -144,10 +144,10 @@ def set_training_rules(config):
 
 def adhere_task_rules(config):
 
-    if config['model_architecture'] == 'transformer':
+    if config['model'] == 'transformer':
         (config, source_tokenizer, 
             target_tokenizer) = set_transformer_rules(config)
-    elif config['model_architecture'] == 'bertified_transformer':
+    elif config['model'] == 'bertified_transformer':
         (config, source_tokenizer, 
             target_tokenizer) = set_bertified_transformer_rules(config)
         config['d_model'] = 768
@@ -159,7 +159,7 @@ def adhere_task_rules(config):
         config['gradient_accumulation_steps'] = 1
 
     if config.add_bias is not None:
-        if (config.target_pretrained_bert_model == 'bert-base-multilingual-cased'
+        if (config.model == 'bertified_transformer'
         and config.task == 'translate'):
             assert config.target_language in config.serialized_tensor_path, (
             'serialized Bias file not found,\
@@ -168,8 +168,8 @@ def adhere_task_rules(config):
         else:
             assert False,(
             f'add_bias is only available for\n\
-            config.target_pretrained_bert_model <- bert-base-multilingual-cased\n\
-            config.task                         <- translate'
+            config.model <- bertified_transformer\n\
+            config.task  <- translate'
                         )
 
     if config['test_script']:
@@ -196,7 +196,7 @@ def assert_config_values(config):
      must be a multiple of steps_to_print_training_info')
     assert config.draft_decoder_type  in allowed_decoder_types, (
             f'available decoding types are {allowed_decoder_types}')
-    assert config.model_architecture  in allowed_model_architectures, (
+    assert config.model  in allowed_model_architectures, (
             f'available model_architectures are {allowed_model_architectures}')
     assert len(config.metric_weights) == 2,'Only two metrics are allowed'
     assert sum(config.metric_weights.values()) == 1, 'weights should sum to 1'
@@ -210,7 +210,7 @@ def assert_config_values(config):
     elif config.task == 'translate':
         assert config.tfds_name in translate_datasets , (
                 f'{config.tfds_name} is not a  translate dataset')
-        if config.model_architecture == 'bertified_transformer':
+        if config.model == 'bertified_transformer':
             assert config.input_pretrained_bert_model != config.target_pretrained_bert_model, (
                 f'For translate the input and target pre-trained BERT must not be same')
 

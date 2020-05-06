@@ -23,7 +23,7 @@ def train_sanity_check(tokenizer, predictions, target_id, log):
                                    )
     log.info(f'target -> {target}')
     log.info(f'predicted by teacher forcing ->\
-              {predicted if predicted else "empty hence evaluation will be skipped"}')
+              {predicted if predicted else "empty hence validation step will be skipped"}')
 
     return predicted
 
@@ -133,4 +133,4 @@ def monitor_eval_metrics(ckpt_save_path,
     else:
         config.tolerance+=1
 
-    return early_stop(train_loss, log)
+    return early_stop(train_loss, log, config)

@@ -36,30 +36,29 @@ def mask_timestamp(x, i, mask_with):
     masked = tf.concat([left, mask, right], axis=1)
     return masked
   
-def tile_and_mask_diagonal(x, mask_with):
+def tile_and_mask_diagonal(target_ids, batch_size, sequence_len, mask_with):
     """    
-    Masks each word in the summary draft one by one with the [MASK] token
-    At t-th time step the t-th word of input summary is
-    masked, and the decoder predicts the refined word given other
+    Masks each token in the summary draft one by one with the [MASK] token
+    At t-th time step the t-th token of input summary is
+    masked, and the decoder predicts the refined token given other
     words of the summary.
     
-    x :: (N, T)
-    returrn :: (N, T-1, T)
+    target_ids :: (N, T)
+    return masked_sequence :: (N, T-1, T)
     
-    We do not mask the first and last postition (corresponding to [CLS]
+    Do not mask the first postition(i.e CLS)
     """
 
-    N, T = tf.shape(x)[0], tf.shape(x)[1]
-    first = tf.reshape(tf.tile(x[:, 0], [T-1]), [N, T-1, 1])    
-    x = x[:, 1:]
-    T = T - 1    
-    masked = tf.reshape(tf.tile(x, [1, T]), [N, T, T])    
-    diag = tf.ones([N, T], dtype=masked.dtype) * mask_with
-    masked = tf.linalg.set_diag(masked, diag)    
-    masked = tf.concat([first, masked], axis=2)    
-    masked = tf.reshape(masked, [N*T, T+1])
+    #batch_size, sequence_len = tf.shape(target_ids)
+    sliced_cls = tf.reshape(tf.tile(target_ids[:, 0], [sequence_len]), [batch_size, sequence_len, 1])    
+    target_ids = target_ids[:, 1:]
+    tile_sequence = tf.reshape(tf.tile(target_ids, [1, sequence_len]), [batch_size, sequence_len, sequence_len])    
+    create_mask = tf.ones([batch_size, sequence_len], dtype=tile_sequence.dtype) * mask_with
+    overwrite_mask_in_diag = tf.linalg.set_diag(tile_sequence, create_mask)    
+    add_cls = tf.concat([sliced_cls, overwrite_mask_in_diag], axis=2)    
+    masked_sequence = tf.reshape(add_cls, [batch_size*sequence_len, sequence_len+1])
 
-    return masked
+    return masked_sequence
 
 def get_angles(pos, i, d_model):
     '''Get angle rate for the projected embedding output (d_model)
@@ -121,15 +120,26 @@ def set_tensor_by_indices_to_value(tensor, indices, value):
     return tf.where(indices, value_tensor, tensor)
 
 def scatter_values_on_batch_indices(values, batch_indices):
+
     shape = tf.shape(batch_indices)
     # broadcast batch dim to shape
-    broad_casted_batch_dims = tf.reshape(tf.broadcast_to(tf.expand_dims(tf.range(shape[0]), axis=-1), shape), [1, -1])
+    broad_casted_batch_dims = tf.reshape(
+                                tf.broadcast_to(
+                                    tf.expand_dims(tf.range(shape[0]), 
+                                        axis=-1), 
+                                            shape), 
+                                [1, -1])
     # transform batch_indices to pair_indices
-    pair_indices = tf.transpose(tf.concat([broad_casted_batch_dims, tf.reshape(batch_indices, [1, -1])], 0))
+    pair_indices = tf.transpose(tf.concat(
+                                [broad_casted_batch_dims, 
+                                tf.reshape(batch_indices, [1, -1])
+                                ], 0)
+                                )
     # scatter values to pair indices
     return tf.scatter_nd(pair_indices, tf.reshape(values, [-1]), shape)
 
-def topp_topk(logits, batch_size, temperature, top_k=0, top_p=1.0, filter_value=-float("Inf"), min_tokens_to_keep=1):
+def topp_topk(logits, batch_size, temperature, top_k=0, top_p=1.0, 
+            filter_value=-float("Inf"), min_tokens_to_keep=1):
     """ Filter a distribution of logits using top-k and/or nucleus (top-p) filtering
         Args:
             logits: logits distribution shape (batch size, vocabulary size)
@@ -185,7 +195,7 @@ def query_decoder(self, enc_output, input_ids,
       top_p, top_k, training=False):
 
     _, combined_mask, dec_padding_mask = create_masks(input_ids, dec_input)
-    embeddings = self.decoder_embedding(dec_input) if config.model_architecture == 'bertified_transformer' else dec_input
+    embeddings = self.decoder_embedding(dec_input) if config.model == 'bertified_transformer' else dec_input
     # (batch_size, i+1, vocab), (_)            
     dec_output, attention_dist = self.decoder(input_ids,
                                                embeddings, 

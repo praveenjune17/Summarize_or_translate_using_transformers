@@ -17,25 +17,36 @@ def pad(l, n, pad=config.PAD_ID):
 
     return np.pad(l, pad_with, mode='constant', constant_values=pad)
 
-def encode(sent_1, sent_2, source_tokenizer, target_tokenizer, input_seq_len, output_seq_len):
-    
-    if config.model_architecture == 'bertified_transformer':
+def encode(sent_1, sent_2, source_tokenizer, target_tokenizer):
+
+    if config.model == 'bertified_transformer':
         input_ids = source_tokenizer.encode(sent_1.numpy().decode('utf-8'), add_special_tokens=True) 
         target_ids = target_tokenizer.encode(sent_2.numpy().decode('utf-8'), add_special_tokens=True) 
-        # Account for [CLS] and [SEP] with "- 2"
-        if len(input_ids) > input_seq_len - 2:
-            input_ids = input_ids[0:(input_seq_len - 2)]
-        if len(target_ids) > (output_seq_len + 1) - 2:
-            target_ids = target_ids[0:((output_seq_len + 1) - 2)]
-        input_ids = pad(input_ids, input_seq_len)
-        target_ids = pad(target_ids, output_seq_len + 1)
+        
     else:    
       input_ids = [config.input_CLS_ID] + source_tokenizer.encode(sent_1.numpy()) + [config.input_SEP_ID]
       target_ids = [config.target_CLS_ID] + target_tokenizer.encode(sent_2.numpy()) + [config.target_SEP_ID]
 
     return input_ids, target_ids
 
-def tf_encode(source_tokenizer, target_tokenizer, input_seq_len, output_seq_len):
+def pad_encoded_ids(input_ids, target_ids, 
+          input_seq_len=config.input_seq_length, 
+          output_seq_len=config.target_seq_length):
+    # Account for [CLS] and [SEP] with "- 2"
+    if len(input_ids) > input_seq_len - 2:
+        input_ids = input_ids[0:(input_seq_len - 2)]
+    if len(target_ids) > (output_seq_len + 1) - 2:
+        target_ids = target_ids[0:((output_seq_len + 1) - 2)]
+    input_ids = pad(input_ids, input_seq_len)
+    target_ids = pad(target_ids, output_seq_len + 1)
+
+    return input_ids, target_ids
+
+def tf_pad_encoded_ids(input_ids, target_ids):
+
+    return tf.py_function(pad_encoded_ids, [input_ids, target_ids], [tf.int32, tf.int32])
+
+def tf_encode(source_tokenizer, target_tokenizer):
     """
     Operations inside `.map()` run in graph mode and receive a graph
     tensor that do not have a `numpy` attribute.
@@ -47,9 +58,7 @@ def tf_encode(source_tokenizer, target_tokenizer, input_seq_len, output_seq_len)
         encode_ = partial(
                           encode, 
                           source_tokenizer=source_tokenizer, 
-                          target_tokenizer=target_tokenizer, 
-                          input_seq_len=input_seq_len, 
-                          output_seq_len=output_seq_len
+                          target_tokenizer=target_tokenizer
                           )
         return tf.py_function(encode_, [s1, s2], [tf.int32, tf.int32])
     return f
@@ -107,7 +116,7 @@ def create_dataset(split,
                                                           with_info=True, 
                                                           as_supervised=True,
                                                           data_dir=config.tfds_data_dir,
-                                                          builder_kwargs={'version': config.tfds_data_version},#config.tfds_data_version,
+                                                          builder_kwargs={'version': config.tfds_data_version},
                                                         )
         for i,j  in en_tam_ds.keys():
             record_count+=(sum([i.num_examples for i in  list(en_tam_ds[(i, j)][1].splits.values())]))
@@ -119,11 +128,9 @@ def create_dataset(split,
             raw_dataset = en_tam_ds[('GNOME_v1_en_to_ta', 'metadata_GNOME_v1_en_to_ta')][0]['train']
             for typ in list(en_tam_ds.keys())[1:]:
                 raw_dataset = raw_dataset.concatenate(en_tam_ds[typ][0]['train'])
-          #validation and test sets are only available for a single typ
-        elif split == 'validation':
-            raw_dataset = en_tam_ds[('en_ta', 'metadata_en_ta')][0]['validation']
+          #other splits include validation and test 
         else:
-            raw_dataset = en_tam_ds[('en_ta', 'metadata_en_ta')][0]['test']
+            raw_dataset = en_tam_ds[('en_ta', 'metadata_en_ta')][0][split]
     else:
         raw_dataset, ds_info = tfds.load(
                              config.tfds_name, 
@@ -137,17 +144,17 @@ def create_dataset(split,
     tf_dataset = raw_dataset.map(
                                  tf_encode(
                                           source_tokenizer,
-                                          target_tokenizer, 
-                                          config.input_seq_length, 
-                                          config.target_seq_length
+                                          target_tokenizer
                                           ), 
                                  num_parallel_calls=AUTOTUNE
                                  )
     tf_dataset = tf_dataset.filter(filter_max_length)
+    if config.model == 'bertified_transformer':
+        tf_dataset = tf_dataset.map(tf_pad_encoded_ids)
     tf_dataset = tf_dataset.take(num_examples_to_select) 
     tf_dataset = tf_dataset.cache()
     if shuffle:
-        tf_dataset = tf_dataset.shuffle(record_count, seed=100)
+        tf_dataset = tf_dataset.shuffle(400000, seed=100)
     tf_dataset = tf_dataset.padded_batch(batch_size, padded_shapes=([-1], [-1]), drop_remainder=drop_remainder)
     tf_dataset = tf_dataset.prefetch(buffer_size=AUTOTUNE)
     log.info(f'{split} tf_dataset created')

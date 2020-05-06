@@ -30,7 +30,7 @@ model_parms = {
      'dff': 1024,                      # feed forward network hidden parameters
      'input_pretrained_bert_model': 'bert-base-uncased',
      'input_seq_length': 300,
-     'model_architecture' : 'transformer',#bertified_transformer or transformer
+     'model' : 'transformer',#bertified_transformer or transformer
      'num_heads': 4,                  # the number of heads in the multi-headed attention unit
      'num_layers': 4,                 # number of transformer blocks
      'target_language' : 'ta',

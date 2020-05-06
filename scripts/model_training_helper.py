@@ -98,12 +98,6 @@ def val_step(
              target_ids,
              step,
              write_output_seq):
-             # decoder_type,
-             # beam_size,
-             # length_penalty,
-             # temperature, 
-             # top_p,
-             # top_k):
 
     enc_padding_mask = create_padding_mask(input_ids)
     (draft_predictions, _,  
@@ -160,25 +154,13 @@ def evaluate_validation_set(
           task_score, bert_f1 = val_step(input_ids,
                                          target_ids,  
                                          step, 
-                                         config.write_batch1_predictions,
-                                         # decoder_type,
-                                         # beam_size,
-                                         # length_penalty,
-                                         # temperature, 
-                                         # top_p,
-                                         # top_k
+                                         config.write_batch1_predictions
                                          )
         else:
           task_score, bert_f1 =  val_step(input_ids,
                                        target_ids, 
                                        step, 
-                                       False,
-                                       # decoder_type,
-                                       # beam_size,
-                                       # length_penalty,
-                                       # temperature, 
-                                       # top_p,
-                                       # top_k
+                                       False
                                        )
         # bleu ranges from 0-100
         if task_score:
@@ -254,25 +236,22 @@ def batch_run_check(batch, start_time):
                                      )
             )
 
-    return train_loss.result()
+    #return train_loss.result()
 
 def save_evaluate_monitor(ck_pt_mgr, val_dataset, 
-            target_tokenizer, predictions, train_loss, 
+            target_tokenizer, predictions, 
             target_ids, step, start_time):
 
     ckpt_save_path = ck_pt_mgr.save()
     # print the detokenized training output of a single sample
     predicted = train_sanity_check(target_tokenizer, predictions, target_ids, log)
+    evaluate = train_loss.result() < config.start_evaluate_when and True if predicted  else False
     # Run evaluation only if the predictions made by the teacher forced output is not empty
+      # and the train_loss is lesser than start_evaluate_when
     (task_score, bert_score) = evaluate_validation_set(       
                                                       val_dataset,
-                                                      step,
-                                                      decoder_type,
-                                                      beam_size,
-                                                      length_penalty,
-                                                      temperature, 
-                                                      top_p,
-                                                      top_k)  if predicted else 0
+                                                      step
+                                                      )  if evaluate else (0,0)
     training_results(
                       step,
                       train_loss.result(), 
