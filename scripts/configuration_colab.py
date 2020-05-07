@@ -47,7 +47,7 @@ training_parms = {
      'display_model_summary' : True,
      'early_stop' : False,
      'enable_jit' : False,
-     'eval_after_steps' : 2000,              # Evaluate after these many training steps
+     'eval_after_steps' : 5000,              # Evaluate after these many training steps
      'gradient_accumulation_steps': 9,   
      'last_recorded_value': None,
      'min_train_loss' : 1.0,
@@ -55,7 +55,7 @@ training_parms = {
      'run_tensorboard': True,
      'samples_to_train' : -1,
      'samples_to_validate' : 100,
-     'start_evaluate_when' : 10.0,           # run evaluation when loss reaches 10
+     'start_evaluate_when' : 6.0,           # run evaluation when loss reaches 10
      'steps_to_print_training_info': 100,      # print training progress per number of batches specified
      'tfds_name' : 'en_tam_parallel_text',            #cnn_dailymail,en_tam_parallel_text     # tfds dataset to be used
      'tolerance' : 0,

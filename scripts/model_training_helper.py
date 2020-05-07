@@ -142,24 +142,24 @@ def evaluate_validation_set(
 
     avg_task_score.reset_states()
     avg_bert_score.reset_states()
-    step='_ '.join([str(i) for i in (decoder_type,
+    file_name='_ '.join([str(i) for i in (decoder_type,
                                      beam_size,
                                      length_penalty,
                                      temperature, 
                                      top_p,
-                                     top_k)])
+                                     top_k)]) + '_' +str(step)
     for (batch, (input_ids, target_ids)) in enumerate(validation_dataset, 1):
         # calculate rouge and bert score for only the first batch
         if batch == 1:
           task_score, bert_f1 = val_step(input_ids,
                                          target_ids,  
-                                         step, 
+                                         file_name, 
                                          config.write_batch1_predictions
                                          )
         else:
           task_score, bert_f1 =  val_step(input_ids,
                                        target_ids, 
-                                       step, 
+                                       file_name, 
                                        False
                                        )
         # bleu ranges from 0-100

@@ -9,25 +9,39 @@ packages
 En_tam Machine translation paper:-  http://www.iitp.ac.in/~sukanta.pcs15/pubs/WAT_2018_paper_12.pdf 
 Why all these ? :- http://www.unesco.org/new/fileadmin/MULTIMEDIA/HQ/CLT/pdf/FlyerEndangeredLanguages-WebVersion.pdf
 ######################################
-*) test batch_size for validation step
-*) increase batch_size and train on colab..train it in this GPU in the night
+enhancements:-
+	Pretraining styles
+		a) Electra style 
+		b) reformer style
+######################################
+*) proceed with training
+*) source_text == decode(encode(source_text)) #use temp.py
+*) create tokenizer using hugging face transformers
 *) code walk through :- remove extra comments, name tensors, 
 						remove duplicate operations
-*) Note on how to use the script
-
+*) Notes on how to use the script
 #################################################33
 Investigate:-
 	*) does gradient accumulation gets skipped when intefered by validation steps?
 ##################################################
 Learning:-
 	*) compression lecture
+	*) RNN attention https://www.youtube.com/watch?v=XXtpJxZBa2c&list=PLoROMvodv4rOhcuXMZkNm7j3fVwBBY42z&index=8
 ###################################################
+Bugs:-
+	*) tags in dataset..due to ROBERTA..visualize the detokenized samples
+	*) BERT score calculation
+	*) rename step to file_name
+	*) weighted_and_unified_metric computation
+		BLEU 5.118620,
+        BERT_f1 61.050230
+        op:- 0.0277
 Post-training improvements:-
     #) Hyper parameter tuning:- Randomsearch using keras-tuner https://keras-team.github.io/keras-tuner/tutorials/subclass-tuner/
     #) avg checkpoints
-
+######################################################
 Things to watchout for when coding
-########################################################
+
 #) Add electra multilingual pretrained model when they are out
 #) separate script for specific functions
 #) functions should be small

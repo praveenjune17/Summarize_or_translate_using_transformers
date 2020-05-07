@@ -21,6 +21,7 @@ val_dataset = create_dataset(
                              from_=0, 
                              to=100, 
                              batch_size=1,
+                             shuffle=True,
                              drop_remainder=True
                              )
 count=0
@@ -32,7 +33,7 @@ print(f'Total records count is {count}')
 ck_pt_mgr = check_ckpt(config.checkpoint_path)
 start_time = time.time()
 (task_score, bert_score) = evaluate_validation_set(       
-                                                    val_dataset.take(2),
+                                                    val_dataset.take(1),
                                                     step
                                                     )  
 training_results(

@@ -73,8 +73,6 @@ def set_bertified_transformer_rules(config):
     
     source_tokenizer = AutoTokenizer.from_pretrained(config['input_pretrained_bert_model'])
     config['input_vocab_size'] = source_tokenizer.vocab_size 
-    config['input_CLS_ID'] = config['CLS_ID']
-    config['input_SEP_ID'] = config['SEP_ID']
     (target_tokenizer, config) = task_check(source_tokenizer, config)
     config['target_vocab_size'] = target_tokenizer.vocab_size
     config['num_of_decoders'] = 2

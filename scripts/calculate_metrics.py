@@ -159,10 +159,10 @@ def write_output_sequence(input_ids, true_target_ids, predictions, step, write_o
     ref_sents = []
     hyp_sents = []
     inp_sents = []
-    for input_id, true_target_id, ref_hyp in zip(input_ids, true_target_ids, predictions):
+    for input_id, true_target_id, predicted_hyp in zip(input_ids, true_target_ids, predictions):
         detokenized_refs, detokenized_hyp_sents = detokenize(target_tokenizer, 
                                                            tf.squeeze(true_target_id), 
-                                                           tf.squeeze(ref_hyp) 
+                                                           tf.squeeze(predicted_hyp) 
                                                            )
         detokenized_input_sequence,_ = detokenize(None, 
                                                tf.squeeze(input_id), 
@@ -177,7 +177,7 @@ def write_output_sequence(input_ids, true_target_ids, predictions, step, write_o
     task_score = evaluate.evaluate_task_score()
     bert_f1  = evaluate.evaluate_bert_score()
     if write_output_seq:
-        with tf.io.gfile.GFile(config.output_sequence_write_path+str(step.numpy()), 'w') as f:
+        with tf.io.gfile.GFile(config.output_sequence_write_path+str(step.numpy().decode('utf-8')), 'w') as f:
             for source, ref, hyp in zip(inp_sents, ref_sents, hyp_sents):
                 f.write(source+'\t'+ref+'\t'+hyp+'\n')
 

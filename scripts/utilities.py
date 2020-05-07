@@ -15,13 +15,19 @@ def detokenize(target_tokenizer, id_1, id_2, source_tokenizer=None):
     else:
         cls_id = config.input_CLS_ID
         sep_id = config.input_SEP_ID
-    detokenized_seq_1 = source_tokenizer.decode([i for i in id_1 if i not in [cls_id, 
-                                                                             sep_id, 
-                                                                             config.PAD_ID]])
+    if config.model == 'transformer':
+        detokenized_seq_1 = source_tokenizer.decode([i for i in id_1 if i not in [cls_id, 
+                                                                                 sep_id, 
+                                                                                 config.PAD_ID]])
+    else:
+        detokenized_seq_1 = source_tokenizer.decode(id_1, skip_special_tokens=True)
     if id_2 is not None:
-        detokenized_seq_2 = target_tokenizer.decode([i for i in id_2 if i not in [config.target_CLS_ID, 
-                                                                             config.target_SEP_ID, 
-                                                                             config.PAD_ID]])
+        if config.model == 'transformer':
+            detokenized_seq_2 = target_tokenizer.decode([i for i in id_2 if i not in [config.target_CLS_ID, 
+                                                                                 config.target_SEP_ID, 
+                                                                                 config.PAD_ID]])
+        else:
+            detokenized_seq_2 = target_tokenizer.decode(id_2, skip_special_tokens=True)
     else:
         detokenized_seq_2 = None
     

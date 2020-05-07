@@ -48,13 +48,13 @@ training_parms = {
      'early_stop' : False,
      'enable_jit' : True,
      'eval_after_steps' : 5000,              # Evaluate after these many training steps
-     'gradient_accumulation_steps': 36,   
-     'last_recorded_value': None,
+     'gradient_accumulation_steps': 18,   
+     'last_recorded_value': 0.0277,
      'min_train_loss' : 1.0,
      'monitor_metric' : 'unified_metric',
      'run_tensorboard': True,
      'samples_to_train' : -1,
-     'samples_to_validate' : 100,
+     'samples_to_validate' : 100,            
      'start_evaluate_when' : 10.0,           # run evaluation when loss reaches 10
      'steps_to_print_training_info': 100,      # print training progress per number of batches specified
      'tfds_name' : 'en_tam_parallel_text',            #cnn_dailymail,en_tam_parallel_text     # tfds dataset to be used
@@ -67,8 +67,8 @@ training_parms = {
 
 # Special Tokens
 special_tokens = {
-    'CLS_ID' : 101,
-    'SEP_ID' : 102,
+    'input_CLS_ID' : 101,                            #assumed to be BERT ids
+    'input_SEP_ID' : 102,                            #assumed to be BERT ids
     'MASK_ID' : 103,
     'PAD_ID' : 0,
     }
@@ -91,8 +91,8 @@ h_parms = {
    'grad_clipnorm':None,
    'l2_norm':0.0,
    'learning_rate': None,              # set None to create decayed learning rate schedule
-   'train_batch_size': 1,
-   'validation_batch_size' : 1
+   'train_batch_size': 2,
+   'validation_batch_size' : 8
    }                                    
 
 dataset_name = training_parms['tfds_name']
