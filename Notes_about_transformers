@@ -10,6 +10,9 @@ Watchout for:-
   Source code needs to be changed once the below changes are implemented by the community
   a) Gradient accumulation implementation by tensorflow community
   b) label smoothing fix.
+
+Please donot train BERTWordpiece tokenizer for tamil seems it removes '.' from the characters.Make use of ByteLevelBPETokenizer
+instead.
   
 #########################
 Positional encoding:-
