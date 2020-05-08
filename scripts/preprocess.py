@@ -159,4 +159,4 @@ def create_dataset(split,
     tf_dataset = tf_dataset.prefetch(buffer_size=AUTOTUNE)
     log.info(f'{split} tf_dataset created')
 
-    return raw_dataset
+    return tf_dataset

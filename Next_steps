@@ -16,7 +16,7 @@ enhancements:-
 ######################################
 *) proceed with training
 *) source_text == decode(encode(source_text)) #use temp.py
-*) create tokenizer using hugging face transformers
+*) create tokenizer using hugging face transformers, https://huggingface.co/blog/how-to-train, https://github.com/huggingface/tokenizers
 *) code walk through :- remove extra comments, name tensors, 
 						remove duplicate operations
 *) Notes on how to use the script
