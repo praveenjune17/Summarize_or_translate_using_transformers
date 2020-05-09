@@ -19,8 +19,11 @@ Addtional refine mechanism:-
 Architectural refinements
 	a) vocab sharing with in input and target languages
 	b) Reformer :- optimized transformer architecture to better support long sequence length 
+	c) Replacing self-attention by CNN.. unified architecture for NLP and vision
 ###################################################
 Investigate:-
+	*) start training a nn when its loss is 0..illaya's paper
+			double descent:- happens after early stopping
 	*) does gradient accumulation gets skipped when intefered by validation steps?
 ###################################################
 Learning
@@ -39,6 +42,7 @@ Bugs
 Coding
 
 #) save model during keyboard interrupt
+#) automatically suggest tokens per batch
 #) source_text == decode(encode(source_text)) #use temp.py
 #) modify the tokenization code assuming that all tokenizers are created using hugging face tokenizers
 #) functions should be small and should be specific
