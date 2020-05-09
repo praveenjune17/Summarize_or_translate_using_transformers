@@ -1,5 +1,4 @@
-*) Base paper :- https://arxiv.org/pdf/1902.09243v2.pdf
-*) Transformer_architecture :- https://www.tensorflow.org/tutorials/text/transformer#training_and_checkpointing
+*) Transformer_architecture :- https://www.tensorflow.org/tutorials/text/transformer
 *) Bertified_transformer :- https://github.com/raufer/bert-summarization
 *) unit test script inspired by :- http://karpathy.github.io/2019/04/25/recipe/
 *) beam search adapted from :- https://github.com/tensorflow/tensor2tensor/blob/master/tensor2tensor/utils/beam_search.py
@@ -7,6 +6,8 @@
 	adapted from :- https://huggingface.co/transformers/_modules/transformers/modeling_tf_utils.html 
 *) BERT score :- https://pypi.org/project/bert-score/
 *) ROUGE score :- https://pypi.org/project/rouge/
+*) Gradient Accumulation(GA) :- thomas wolf's post on GA using pytorch
 
-					
-
+Papers refered:-
+	En_tam Machine translation paper:-  http://www.iitp.ac.in/~sukanta.pcs15/pubs/WAT_2018_paper_12.pdf 
+	Base paper :- https://arxiv.org/pdf/1902.09243v2.pdf

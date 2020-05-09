@@ -1,68 +1,70 @@
-############
-packages
+Why ? :- http://www.unesco.org/new/fileadmin/MULTIMEDIA/HQ/CLT/pdf/FlyerEndangeredLanguages-WebVersion.pdf
+###################################################
+Packages in colab + Additonal packages
 	*) langdetect
 	*) Rouge score
 	*) bert score
-	*) clone bleu score repo
+	*) clone bleu score repo (models/official/google)
     *) tensor2tensor
-###################################################### 
-En_tam Machine translation paper:-  http://www.iitp.ac.in/~sukanta.pcs15/pubs/WAT_2018_paper_12.pdf 
-Why all these ? :- http://www.unesco.org/new/fileadmin/MULTIMEDIA/HQ/CLT/pdf/FlyerEndangeredLanguages-WebVersion.pdf
-######################################
-enhancements:-
-	Pretraining styles
-		a) Electra style 
-		b) reformer style
+###################################################
+Addtional refine mechanism:-
+		a) Electra style
+		b) Conditional Masked Language Modeling (C-MLM) :- make the generated output coherent by establishing a global context before 
+				generating tokens 
 		c) mixmatch
-######################################
-*) source_text == decode(encode(source_text)) #use temp.py
-*) runcate, Pad, add the special tokens your model needs.
-*) create tokenizer using hugging face transformers, https://huggingface.co/blog/how-to-train, https://github.com/huggingface/tokenizers
-*) code walk through :- remove extra comments, name tensors, 
-						remove duplicate operations
-*) Notes on how to use the script
-#################################################33
+		e) policy gradient approach
+			a) immediate reward:- autoregressive score using decoder.. explore beam search
+			b) BERT score :- reward to use once the sentence is generated 
+###################################################
+Architectural refinements
+	a) vocab sharing with in input and target languages
+	b) Reformer :- optimized transformer architecture to better support long sequence length 
+###################################################
 Investigate:-
 	*) does gradient accumulation gets skipped when intefered by validation steps?
-##################################################
-Learning:-
-	*) compression lecture
+###################################################
+Learning
+
+	*) policy gradients
 	*) RNN attention https://www.youtube.com/watch?v=XXtpJxZBa2c&list=PLoROMvodv4rOhcuXMZkNm7j3fVwBBY42z&index=8
 ###################################################
-Bugs:-
-	*) tags in dataset..due to ROBERTA..visualize the detokenized samples
+Bugs
+
 	*) BERT score calculation
-	*) rename step to file_name
 	*) weighted_and_unified_metric computation
 		BLEU 5.118620,
         BERT_f1 61.050230
         op:- 0.0277
-Post-training improvements:-
-    #) Hyper parameter tuning:- Randomsearch using keras-tuner https://keras-team.github.io/keras-tuner/tutorials/subclass-tuner/
-    #) avg checkpoints
-######################################################
-Things to watchout for when coding
+###################################################
+Code cleaning
 
-#) Add electra multilingual pretrained model when they are out
-#) separate script for specific functions
-#) functions should be small
-#) one method that clearly say what it does
+#) source_text == decode(encode(source_text)) #use temp.py
+#) modify the tokenization code assuming that all tokenizers are created using hugging face tokenizers
+#) functions should be small and should be specific
+#) a script should say what it does
 #) remove composite switch statements
-#) identify memory leakage
-#  one line space after function name and before return
+#) remove unused python packages
+#) one line space after function name and before return
 #) check duplicate code
-#) separate script for python ops
-#) test cases on inference decoders
-#################################
-Expected improvements:-
-	*) GPU profiler
+###################################################
+Expected improvements
+
+	*) Add electra multilingual pretrained model when they are out	
 	*) Make the model predict the output_seq_len
 	*) Data augumentation https://colab.research.google.com/drive/1RGWrQv3e0CRDPDROQ3ZmUWTmlRljasGi?authuser=0#scrollTo=E9RYnn9VDE4N
-	*) Tensorflow graph optimizations
-    *) Tensorflow implementation of BERT score
-    *) remove tamil blacklist from the preprocess code
+    *) Remove Tamil blacklist from the preprocess code
     *) Collect all indian languages from that link
-##################
+###################################################
 Additional enhancements
-	a) Scheduled sampling :- toss a coin and perform teacher forcing if it is a heads else perform autoregressive training 
 
+	#) Tensorflow profiler
+	#) Tensorflow graph optimizations
+	#) Hyper parameter tuning using keras tuner
+		Randomsearch using keras-tuner https://keras-team.github.io/keras-tuner/tutorials/subclass-tuner/
+    #) Avg checkpoints
+	#) Support distributed training, 
+		*)remove tf.py_function
+		*)ship the dataset to a bucket
+    #) Tensorflow implementation of BERT score
+    #) Scheduled sampling :- toss a coin and perform teacher forcing if it is a heads else perform autoregressive training 
+	

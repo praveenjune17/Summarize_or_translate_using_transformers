@@ -1,7 +1,12 @@
+''' 
+Borrowed from https://huggingface.co/blog/how-to-train
+'''
+
 from tokenizers import ByteLevelBPETokenizer
 from pathlib import Path
 en_tokenizer = ByteLevelBPETokenizer()
 ta_tokenizer = ByteLevelBPETokenizer()
+'''
 en_path1 = [str(x) for x in Path("D:/Local_run/Hugging_face_tokenizers_input/").glob("**/*_en.*")]
 en_path2 = [str(x) for x in Path("D:/Local_run/Hugging_face_tokenizers_input/").glob("**/*.en")]
 en_path3 = [str(x) for x in Path("D:/Local_run/Hugging_face_tokenizers_input/").glob("**/*.en_??")]
@@ -9,6 +14,9 @@ en_paths = en_path1+en_path2+en_path3
 ta_path1 = [str(x) for x in Path("D:/Local_run/Hugging_face_tokenizers_input/").glob("**/*_ta.*")]
 ta_path2 = [str(x) for x in Path("D:/Local_run/Hugging_face_tokenizers_input/").glob("**/*.ta*")]
 ta_paths = ta_path1+ta_path2
+'''
+en_paths = 'Path to the files containing english documents'
+ta_paths =  'Path to the files containing tamil documents'
 # Customize training
 en_tokenizer.train(files=en_paths, vocab_size=8300, min_frequency=2, special_tokens=[
     "<CLS>",

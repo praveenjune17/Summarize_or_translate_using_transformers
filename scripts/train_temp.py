@@ -42,24 +42,26 @@ total_steps = int(config.epochs * (config.gradient_accumulation_steps))
 train_dataset = train_dataset.repeat(total_steps)
 
 for (step, (input_ids, target_ids)) in tqdm(enumerate(train_dataset, 1), initial=1):
-    
-    start_time = time.time()
-    grad_accum_flag = (True if (step%config.gradient_accumulation_steps) == 0 else False) if config.accumulate_gradients else None
-    predictions = train_step(
-                            input_ids,  
-                            target_ids,
-                            grad_accum_flag
+    if step > 217000:
+        start_time = time.time()
+        grad_accum_flag = (True if (step%config.gradient_accumulation_steps) == 0 else False) if config.accumulate_gradients else None
+        predictions = train_step(
+                                input_ids,  
+                                target_ids,
+                                grad_accum_flag
+                                )
+        if (step % config.steps_to_print_training_info) == 0:
+            batch_run_check(
+                            step,  
+                            start_time
                             )
-    if (step % config.steps_to_print_training_info) == 0:
-        batch_run_check(
-                        step,  
-                        start_time
-                        )
-    if (step % config.eval_after_steps) == 0:
-        early_stop = save_evaluate_monitor(ck_pt_mgr, val_dataset, 
-                      target_tokenizer, predictions, target_ids, step, start_time)
-        if early_stop:
-            break
+        if (step % config.eval_after_steps) == 0:
+            early_stop = save_evaluate_monitor(ck_pt_mgr, val_dataset, 
+                          target_tokenizer, predictions, target_ids, step, start_time)
+            if early_stop:
+                break
+    else:
+        continue
 
 if not early_stop:
     _ = save_evaluate_monitor(ck_pt_mgr, val_dataset, 

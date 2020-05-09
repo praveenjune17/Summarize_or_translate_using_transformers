@@ -55,7 +55,7 @@ training_parms = {
      'run_tensorboard': True,
      'samples_to_train' : -1,
      'samples_to_validate' : 100,            
-     'start_evaluate_when' : 10.0,           # run evaluation when loss reaches 10
+     'start_evaluate_when' : 6.0,           # run evaluation when loss reaches 10
      'steps_to_print_training_info': 100,      # print training progress per number of batches specified
      'tfds_name' : 'en_tam_parallel_text',            #cnn_dailymail,en_tam_parallel_text     # tfds dataset to be used
      'tolerance' : 0,
@@ -65,10 +65,10 @@ training_parms = {
      'write_batch1_predictions': True           # write the first batch of validation set summary to a file
      }                                    
 
-# Special Tokens
+# Special Tokens #assumed to be BERT ids
 special_tokens = {
-    'input_CLS_ID' : 101,                            #assumed to be BERT ids
-    'input_SEP_ID' : 102,                            #assumed to be BERT ids
+    'input_CLS_ID' : 101,                            
+    'input_SEP_ID' : 102,                            
     'MASK_ID' : 103,
     'PAD_ID' : 0,
     }
