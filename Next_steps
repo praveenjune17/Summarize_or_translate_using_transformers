@@ -36,8 +36,9 @@ Bugs
         BERT_f1 61.050230
         op:- 0.0277
 ###################################################
-Code cleaning
+Coding
 
+#) save model during keyboard interrupt
 #) source_text == decode(encode(source_text)) #use temp.py
 #) modify the tokenization code assuming that all tokenizers are created using hugging face tokenizers
 #) functions should be small and should be specific
