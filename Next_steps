@@ -7,19 +7,26 @@ Packages in colab + Additonal packages
 	*) clone bleu score repo (models/official/google)
     *) tensor2tensor
 ###################################################
+Papers:-
+	*) Probing BERT and GPT
+	*) Electra
+	*) Energy based models for text:- https://arxiv.org/pdf/2004.10188.pdf
+
+#####################################################
 Addtional refine mechanism:-
 		a) Electra style
 		b) Conditional Masked Language Modeling (C-MLM) :- make the generated output coherent by establishing a global context before 
 				generating tokens 
 		c) mixmatch
-		e) policy gradient approach
-			a) immediate reward:- autoregressive score using decoder.. explore beam search
+		e) policy gradient approach (start with)
+			a) immediate reward:- autoregressive score using decoder.. like beam search
 			b) BERT score :- reward to use once the sentence is generated 
 ###################################################
 Architectural refinements
 	a) vocab sharing with in input and target languages
 	b) Reformer :- optimized transformer architecture to better support long sequence length 
-	c) Replacing self-attention by CNN.. unified architecture for NLP and vision
+	c) Replacing self-attention by CNN.. unified architecture for NLP and vision. hugging face's papers
+	d) Cross-lingual Transfer of Neural Machine Translation Models without Shared Vocabularies https://arxiv.org/pdf/1905.05475.pdf
 ###################################################
 Investigate:-
 	*) start training a nn when its loss is 0..illaya's paper
@@ -42,12 +49,12 @@ Bugs
 Coding
 
 #) save model during keyboard interrupt
-#) automatically suggest tokens per batch
-#) source_text == decode(encode(source_text)) #use temp.py
+#) automatically suggest tokens per batch based on the available GPU memory
+#) source_text == decode(encode(source_text))
 #) modify the tokenization code assuming that all tokenizers are created using hugging face tokenizers
 #) functions should be small and should be specific
 #) a script should say what it does
-#) remove composite switch statements
+#) avoid composite switch statements
 #) remove unused python packages
 #) one line space after function name and before return
 #) check duplicate code

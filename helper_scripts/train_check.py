@@ -21,14 +21,15 @@ train_dataset = create_dataset(
                               target_tokenizer=target_tokenizer, 
                               from_=0, 
                               to=100, 
-                              batch_size=2,
+                              batch_size=1,
                               shuffle=False
                               )
 
 # if a checkpoint exists, restore the latest checkpoint.
 ck_pt_mgr = check_ckpt(config.checkpoint_path)
 total_steps = int(config.epochs * (config.gradient_accumulation_steps))
-train_dataset = train_dataset.repeat(total_steps)
+train_dataset = train_dataset.take(1)
+train_dataset = train_dataset.repeat(1000000)
 
 for (step, (input_ids, target_ids)) in tqdm(enumerate(train_dataset, 1), initial=1):
 
