@@ -11,7 +11,11 @@ Papers:-
 	*) Probing BERT and GPT
 	*) Electra
 	*) Energy based models for text:- https://arxiv.org/pdf/2004.10188.pdf
-
+#####
+semi-supervised learning ideas:-
+	a) Mixmatch
+	b) UDA
+	c) self-training
 #####################################################
 Addtional refine mechanism:-
 		a) Electra style
@@ -39,7 +43,8 @@ Learning
 	*) RNN attention https://www.youtube.com/watch?v=XXtpJxZBa2c&list=PLoROMvodv4rOhcuXMZkNm7j3fVwBBY42z&index=8
 ###################################################
 Bugs
-
+	*) remove tensorboard log removing code
+	*) nan catcher in loss. stop training once faced with nans
 	*) BERT score calculation
 	*) weighted_and_unified_metric computation
 		BLEU 5.118620,
