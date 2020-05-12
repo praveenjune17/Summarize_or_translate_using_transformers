@@ -55,7 +55,7 @@ training_parms = {
      'run_tensorboard': True,
      'samples_to_train' : -1,
      'samples_to_validate' : 100,
-     'start_evaluate_when' : 6.0,           # run evaluation when loss reaches 10
+     'start_evaluate_when' : 5.0,           # run evaluation when loss reaches 10
      'steps_to_print_training_info': 100,      # print training progress per number of batches specified
      'tfds_name' : 'en_tam_parallel_text',            #cnn_dailymail,en_tam_parallel_text     # tfds dataset to be used
      'tolerance' : 0,
