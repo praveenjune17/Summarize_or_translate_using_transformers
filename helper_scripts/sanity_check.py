@@ -166,7 +166,10 @@ if config.check_training_pipeline:
 if config.check_evaluation_pipeline:
 
     ck_pt_mgr = check_ckpt(config.checkpoint_path)
-    rouge_score, bert_score = evaluate_validation_set(
+    (rouge_score, 
+    bert_score,
+    draft_attention_weights,
+    refine_attention_weights) = evaluate_validation_set(
                               unit_test_dataset, 
                               config.beam_size,
                               config.length_penalty,

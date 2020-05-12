@@ -47,16 +47,16 @@ training_parms = {
      'display_model_summary' : True,
      'early_stop' : False,
      'enable_jit' : True,
-     'eval_after_steps' : 5000,              # Evaluate after these many training steps
+     'eval_after_steps' : 40,              # Evaluate after these many training steps
      'gradient_accumulation_steps': 18,   
      'last_recorded_value': 0.0277,
      'min_train_loss' : 1.0,
      'monitor_metric' : 'unified_metric',
      'run_tensorboard': True,
      'samples_to_train' : -1,
-     'samples_to_validate' : 100,            
+     'samples_to_validate' : 10,            
      'start_evaluate_when' : 6.0,           # run evaluation when loss reaches 10
-     'steps_to_print_training_info': 100,      # print training progress per number of batches specified
+     'steps_to_print_training_info': 20,      # print training progress per number of batches specified
      'tfds_name' : 'en_tam_parallel_text',            #cnn_dailymail,en_tam_parallel_text     # tfds dataset to be used
      'tolerance' : 0,
      'tolerance_threshold': 7,          # Stop training after the threshold is reached
@@ -65,22 +65,15 @@ training_parms = {
      'write_batch1_predictions': True           # write the first batch of validation set summary to a file
      }                                    
 
-# Special Tokens #assumed to be BERT ids
-special_tokens = {
-    'input_CLS_ID' : 101,                            
-    'input_SEP_ID' : 102,                            
-    'MASK_ID' : 103,
-    'PAD_ID' : 0,
-    }
-
 inference_decoder_parms = {
     'beam_size': 1,              
     'draft_decoder_type' : 'greedy',     # 'greedy', 'only_beam_search', 'topktopp' --> topktopp filtering + beam search
     'length_penalty' : 1,
-    'refine_decoder_type' : 'greedy',
+    'num_parallel_calls' : -1,
+    'refine_decoder_type' : 'greedy',     # 'greedy', 'topktopp' --> beam search not possible
     'softmax_temperature' : 1,
-    'top_p' : 0.9, 
-    'top_k' : 5                         
+    'top_p' : 1, 
+    'top_k' : 0                         
     }
 
 h_parms = {
@@ -92,7 +85,7 @@ h_parms = {
    'l2_norm':0.0,
    'learning_rate': None,              # set None to create decayed learning rate schedule
    'train_batch_size': 2,
-   'validation_batch_size' : 8
+   'validation_batch_size' : 1
    }                                    
 
 dataset_name = training_parms['tfds_name']
@@ -119,7 +112,6 @@ file_path = {
 config = Bunch(model_parms)
 config.update(unit_test)
 config.update(training_parms)
-config.update(special_tokens)
 config.update(inference_decoder_parms)
 config.update(h_parms)
 config.update(file_path)
@@ -128,3 +120,8 @@ config.update(file_path)
 _ = set_memory_growth()
 config, source_tokenizer, target_tokenizer = adhere_task_rules(config)
 config = assert_config_values(config)
+# Special Tokens 
+config['PAD_ID']  = target_tokenizer.pad_token_id
+config['CLS_ID']  = target_tokenizer.cls_token_id
+config['MASK_ID'] = target_tokenizer.mask_token_id
+config['SEP_ID']  = target_tokenizer.sep_token_id

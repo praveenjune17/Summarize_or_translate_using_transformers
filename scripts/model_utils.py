@@ -205,20 +205,20 @@ def query_decoder(self, enc_output, input_ids,
                                                dec_padding_mask
                                                )        
     logits = tf.divide(dec_output[:, -1: ,:], temperature)
-    predictions = topp_topk(logits=logits,
+    truncated_logits = topp_topk(logits=logits,
                             batch_size=batch_size,
                             temperature=temperature,
                             top_k=top_k, 
                             top_p=top_p)
+    
     # (batch_size, 1, vocab)
-    return predictions
+    return (truncated_logits, attention_dist)
 
 def draft_decoder(self,
                  input_ids, 
                  enc_output,
                  beam_size,
                  length_penalty,
-                 decoder_type, 
                  temperature, 
                  top_p, 
                  top_k,
@@ -229,8 +229,7 @@ def draft_decoder(self,
         """
         Inference call, builds a draft output_sequence auto-regressively
         """
-        #log.info(f"Building: '{decoder_type} decoder'")
-        start_ids = tf.repeat(config.target_CLS_ID, repeats=batch_size)
+        start_ids = tf.repeat(config.CLS_ID, repeats=batch_size)
         input_ids = tfa.seq2seq.tile_batch(input_ids, multiplier=beam_size)
         enc_output = tfa.seq2seq.tile_batch(enc_output, multiplier=beam_size)
         def perform_beam_search(dec_input):
@@ -239,17 +238,15 @@ def draft_decoder(self,
                                 batch_size, temperature, top_p, 
                                 top_k, training=training)
 
-        predicted_beam_search_op = beam_search(
-                                              perform_beam_search, 
-                                              initial_ids=start_ids, 
-                                              beam_size=beam_size, 
-                                              decode_length=config.target_seq_length, 
-                                              vocab_size=config.target_vocab_size, 
-                                              alpha=length_penalty,
-                                              stop_early=False,
-                                              eos_id=config.target_SEP_ID
-                                              )
-        predicted_output_sequence = predicted_beam_search_op[0][:,0,:]
-        attention_dist = None
-
+        predicted_beam_search_op, _, _ ,attention_dist = beam_search(
+                                                      perform_beam_search, 
+                                                      initial_ids=start_ids, 
+                                                      beam_size=beam_size, 
+                                                      decode_length=config.target_seq_length, 
+                                                      vocab_size=config.target_vocab_size, 
+                                                      alpha=length_penalty,
+                                                      stop_early=False,
+                                                      eos_id=config.SEP_ID)
+        predicted_output_sequence = predicted_beam_search_op[:,0,:]
+        
         return predicted_output_sequence, attention_dist

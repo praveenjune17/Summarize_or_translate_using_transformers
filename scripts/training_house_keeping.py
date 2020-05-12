@@ -1,26 +1,24 @@
 import shutil
 import os
 import tensorflow as tf
-from utilities import create_tensorboard_parms, detokenize
+from utilities import create_tensorboard_parms
 
 model_metrics = 'Step {},\n\
                  Train Loss {:.4f},\n\
                  Train_Accuracy {:.4f},\n\
                  {} {:4f},\n\
-                 BERT_f1 {:4f}\n'
+                 BERT_f1 {:4f}\n'   
 evaluation_step  = 'Time taken for {} step : {} secs' 
 checkpoint_details = 'Saving checkpoint at step {} on {}'
 (_, valid_output_sequence_writer, _) = create_tensorboard_parms()
-avg_unified_metric = tf.keras.metrics.Mean(
+aggregated_metric = tf.keras.metrics.Sum(
                         name='weighted_and_unified_metric_mean', 
                         dtype=None)
 
 def train_sanity_check(tokenizer, predictions, target_id, log):
-    # use the last sample in the batch
-    predicted, target = detokenize(tokenizer, 
-                                   tf.squeeze(tf.argmax(predictions,axis=-1)[-1:]), 
-                                   tf.squeeze(target_id[:, :-1][-1:])
-                                   )
+    
+    predicted = tokenizer.decode(tf.squeeze(tf.argmax(predictions,axis=-1)[-1:]), skip_special_tokens=True)
+    target = tokenizer.decode(tf.squeeze(target_id[:, :-1][-1:]), skip_special_tokens=True)
     log.info(f'target -> {target}')
     log.info(f'predicted by teacher forcing ->\
               {predicted if predicted else "empty hence validation step will be skipped so setting the scores to 0"}')
@@ -110,7 +108,7 @@ def monitor_eval_metrics(ckpt_save_path,
                         }
     assert to_monitor in all_eval_metrics, (
                   f'Available metrics to monitor are {all_eval_metrics}')
-    all_eval_metrics['unified_metric'] = avg_unified_metric([
+    all_eval_metrics['unified_metric'] = aggregated_metric([
                                         all_eval_metrics['bert_f1_score'], 
                                         all_eval_metrics['task_score']], 
                                           sample_weight=[

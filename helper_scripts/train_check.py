@@ -15,22 +15,22 @@ from utilities import log
 from model_training_helper import (check_ckpt, eval_step, train_step, batch_run_check,
                           train_sanity_check)
 
+
 train_dataset = create_dataset(
                               split='train', 
                               source_tokenizer=source_tokenizer, 
                               target_tokenizer=target_tokenizer, 
                               from_=0, 
                               to=100, 
-                              batch_size=1,
+                              batch_size=4,
                               shuffle=False
                               )
 
 # if a checkpoint exists, restore the latest checkpoint.
 ck_pt_mgr = check_ckpt(config.checkpoint_path)
 total_steps = int(config.epochs * (config.gradient_accumulation_steps))
-train_dataset = train_dataset.take(1)
-train_dataset = train_dataset.repeat(1000000)
-
+train_dataset = train_dataset.repeat(total_steps)
+stop_at = 1000
 for (step, (input_ids, target_ids)) in tqdm(enumerate(train_dataset, 1), initial=1):
 
     start_time = time.time()
@@ -46,9 +46,7 @@ for (step, (input_ids, target_ids)) in tqdm(enumerate(train_dataset, 1), initial
                                   start_time
                                   )
         train_sanity_check(target_tokenizer, predictions, target_ids, log)
-    if (step % config.eval_after_steps) == 0:
-        early_stop = True
-        if early_stop:
-            break
+    if (step % stop_at) == 0:
+        break
 train_sanity_check(target_tokenizer, predictions, target_ids, log)
 log.info(f'Training completed at step {step}')

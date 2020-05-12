@@ -55,7 +55,7 @@ training_parms = {
      'run_tensorboard': True,
      'samples_to_train' : -1,
      'samples_to_validate' : 100,
-     'start_evaluate_when' : 6.0,           # run evaluation when loss reaches 10
+     'start_evaluate_when' : 5.0,           # run evaluation when loss reaches 10
      'steps_to_print_training_info': 100,      # print training progress per number of batches specified
      'tfds_name' : 'en_tam_parallel_text',            #cnn_dailymail,en_tam_parallel_text     # tfds dataset to be used
      'tolerance' : 0,
@@ -77,6 +77,7 @@ inference_decoder_parms = {
     'beam_size': 1,              
     'draft_decoder_type' : 'greedy',     # 'greedy', 'only_beam_search', 'topktopp' --> topktopp filtering + beam search
     'length_penalty' : 1,
+    'num_parallel_calls' : -1,
     'refine_decoder_type' : 'greedy',
     'softmax_temperature' : 1,
     'top_p' : 0.9, 
@@ -128,3 +129,9 @@ config.update(file_path)
 _ = set_memory_growth()
 config, source_tokenizer, target_tokenizer = adhere_task_rules(config)
 config = assert_config_values(config)
+
+# Special Tokens 
+config['PAD_ID']  = target_tokenizer.pad_token_id
+config['CLS_ID']  = target_tokenizer.cls_token_id
+config['MASK_ID'] = target_tokenizer.mask_token_id
+config['SEP_ID']  = target_tokenizer.sep_token_id

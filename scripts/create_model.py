@@ -110,7 +110,7 @@ class Bertified_transformer(tf.keras.Model):
         # (batch_size, seq_len - 1, vocab_len)
         refined_logits = tf.reshape(refined_logits, [batch_size, max_time_steps, -1])
         # (batch_size, 1, vocab_len)
-        cls_logits = tf.tile(tf.one_hot([config.target_CLS_ID], 
+        cls_logits = tf.tile(tf.one_hot([config.CLS_ID], 
                                     self.target_vocab_size)[tf.newaxis,:,:], 
                             [batch_size, 1, 1]
                             )
@@ -124,10 +124,10 @@ class Bertified_transformer(tf.keras.Model):
                                          enc_output, 
                                          draft_output_sequence, 
                                          batch_size, 
-                                         decoder_type='greedy', 
-                                         temperature=0.9, 
-                                         p=0.9, 
-                                         k=25,
+                                         decoder_type, 
+                                         temperature, 
+                                         top_p, 
+                                         top_k,
                                          training=False):
         """
         Inference call, builds a refined output_sequence
@@ -155,15 +155,15 @@ class Bertified_transformer(tf.keras.Model):
                                                       )
             # (batch_size, 1, vocab_len)
             dec_output_i = dec_output[:, i:i+1 ,:]
-            logits = topp_topk(logits=dec_output_i, 
+            truncated_logits = topp_topk(logits=dec_output_i, 
                                 batch_size=batch_size,
                                 temperature=temperature, 
-                                top_k=k, 
-                                top_p=p)
+                                top_k=top_k, 
+                                top_p=top_p)
             if decoder_type == 'greedy':
-                predictions = tf.expand_dims(tf.math.argmax(logits, axis=-1, output_type=tf.int32), 1)
+                predictions = tf.expand_dims(tf.math.argmax(truncated_logits, axis=-1, output_type=tf.int32), 1)
             else:
-                predictions = tf.random.categorical(logits, num_samples=1, dtype=tf.int32, seed=1)
+                predictions = tf.random.categorical(truncated_logits, num_samples=1, dtype=tf.int32, seed=1)
             dec_input = with_column(dec_input, i, predictions)
         # (batch_size, seq_len, vocab_len), (_)        
         return dec_input, attention_dist
@@ -214,7 +214,6 @@ class Bertified_transformer(tf.keras.Model):
                                                 enc_output=enc_output,
                                                 beam_size=beam_size,
                                                 length_penalty=length_penalty,
-                                                decoder_type=draft_decoder_type,
                                                 temperature=temperature,
                                                 top_p=top_p, 
                                                 top_k=top_k,
@@ -230,8 +229,8 @@ class Bertified_transformer(tf.keras.Model):
                                             decoder_type=refine_decoder_type,
                                             batch_size=batch_size, 
                                             temperature=temperature, 
-                                            p=top_p, 
-                                            k=top_k
+                                            top_p=top_p, 
+                                            top_k=top_k
                                             )
         
         return (predicted_draft_output_sequence, draft_attention_dist, 

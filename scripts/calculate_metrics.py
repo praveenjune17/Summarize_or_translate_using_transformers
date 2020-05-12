@@ -6,7 +6,7 @@ from rouge import Rouge
 from bert_score import score as b_score
 from official.nlp.transformer import compute_bleu
 from configuration import config, source_tokenizer, target_tokenizer
-from utilities import log, detokenize
+from utilities import log
 
 class evaluation_metrics:
 
@@ -90,22 +90,6 @@ def label_smoothing(inputs, epsilon=config.epsilon_ls):
 
     return ((1-epsilon) * inputs) + (epsilon / V)
 
-
-def convert_wordpiece_to_words(w_piece):
-
-    new=[]
-    for i in w_piece:
-        if '##' in i:
-            m = i.replace('##', '')
-        else:
-            if w_piece.index(i) == 0:
-                m = i
-            else:
-                m = ' '+i
-        new.append(m)
-
-    return (''.join(new))
-
 def mask_and_calculate_loss(mask, loss):
 
     mask   = tf.cast(mask, dtype=loss.dtype)
@@ -113,7 +97,6 @@ def mask_and_calculate_loss(mask, loss):
     loss = tf.reduce_sum(loss)/tf.reduce_sum(mask)
 
     return loss
-
 
 def loss_function(target_ids, draft_predictions, refine_predictions, model):
 
@@ -130,7 +113,7 @@ def loss_function(target_ids, draft_predictions, refine_predictions, model):
         refine_loss  = loss_object(true_ids_3D[:, :-1, :], refine_predictions)
         refine_mask = tf.math.logical_not(tf.math.logical_or(tf.math.equal(
                                                                 target_ids[:, :-1], 
-                                                                config.target_CLS_ID
+                                                                config.CLS_ID
                                                                           ), 
                                                              tf.math.equal(
                                                                 target_ids[:, :-1], 
@@ -160,16 +143,9 @@ def write_output_sequence(input_ids, true_target_ids, predictions, step, write_o
     hyp_sents = []
     inp_sents = []
     for input_id, true_target_id, predicted_hyp in zip(input_ids, true_target_ids, predictions):
-        detokenized_refs, detokenized_hyp_sents = detokenize(target_tokenizer, 
-                                                           tf.squeeze(true_target_id), 
-                                                           tf.squeeze(predicted_hyp) 
-                                                           )
-        detokenized_input_sequence,_ = detokenize(None, 
-                                               tf.squeeze(input_id), 
-                                               None,
-                                               source_tokenizer
-                                               )
-
+        detokenized_refs = target_tokenizer.decode(tf.squeeze(true_target_id), skip_special_tokens=True)
+        detokenized_hyp_sents = target_tokenizer.decode(tf.squeeze(predicted_hyp), skip_special_tokens=True)
+        detokenized_input_sequence = source_tokenizer.decode(tf.squeeze(input_id), skip_special_tokens=True)
         ref_sents.append(detokenized_refs)
         hyp_sents.append(detokenized_hyp_sents)
         inp_sents.append(detokenized_input_sequence)
@@ -177,7 +153,7 @@ def write_output_sequence(input_ids, true_target_ids, predictions, step, write_o
     task_score = evaluate.evaluate_task_score()
     bert_f1  = evaluate.evaluate_bert_score()
     if write_output_seq:
-        with tf.io.gfile.GFile(config.output_sequence_write_path+str(step.numpy().decode('utf-8')), 'w') as f:
+        with tf.io.gfile.GFile(config.output_sequence_write_path+str(step.numpy().decode('utf-8')), 'a') as f:
             for source, ref, hyp in zip(inp_sents, ref_sents, hyp_sents):
                 f.write(source+'\t'+ref+'\t'+hyp+'\n')
 

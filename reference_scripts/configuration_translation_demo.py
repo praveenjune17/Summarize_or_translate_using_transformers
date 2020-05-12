@@ -72,6 +72,7 @@ inference_decoder_parms = {
     'beam_size': 7,              
     'draft_decoder_type' : 'only_beam_search',     # 'greedy', 'only_beam_search', 'topktopp' --> topktopp filtering + beam search
     'length_penalty' : 1,
+    'num_parallel_calls' : -1,
     'refine_decoder_type' : 'greedy',
     'softmax_temperature' : 1,
     'top_p' : 0.9, 

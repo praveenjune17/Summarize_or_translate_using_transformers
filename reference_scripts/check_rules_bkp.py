@@ -12,18 +12,82 @@ def set_memory_growth():
          tf.config.experimental.set_memory_growth(device, True)
          print('GPU memory growth set')
 
-def create_tokenizer(config):
-    
-    source_tokenizer = AutoTokenizer.from_pretrained(config['input_pretrained_bert_model'])
-    config['input_vocab_size'] = source_tokenizer.vocab_size
+def create_vocab(tokenizer_path, tok_type, log=None):
+
+    try:
+        tokenizer = tfds.features.text.SubwordTextEncoder.load_from_file(
+                                                            tokenizer_path
+                                                            )
+    except FileNotFoundError:
+        if log is None:
+            print(f'Vocab files not available in {tokenizer_path} so\
+                            building it from the training set')
+        else:
+            log.warning(f'Vocab files not available in {tokenizer_path} so \
+                             building it from the training set')
+        if config['use_tfds']:
+            examples, metadata = tfds.load(config['tfds_name'], 
+                                            with_info=True, 
+                                            as_supervised=True)
+            train_examples = examples['train']
+            if tok_type=='source':
+              tokenizer = tfds.features.text.SubwordTextEncoder.build_from_corpus(
+                      (ip_seq.numpy() for ip_seq, _ in train_examples), 
+                      target_vocab_size=2**13)
+            else:
+              tokenizer = tfds.features.text.SubwordTextEncoder.build_from_corpus(
+                      (op_seq.numpy() for _, op_seq in train_examples), 
+                      target_vocab_size=2**13)
+        tokenizer.save_to_file(tokenizer_path)
+
+    if log is None:
+        print(f'{tok_type} vocab file created and saved to {tokenizer_path}')
+    else:
+        log.info(f'{tok_type} vocab file created and saved to {tokenizer_path}')
+
+    return tokenizer
+
+def task_check(source_tokenizer, config):
+
     if config['task'] == 'summarize':
         config['bert_score_model'] = 'bert-base-uncased'
+        config['target_CLS_ID'] = config['input_CLS_ID']
+        config['target_SEP_ID'] = config['input_SEP_ID']
         target_tokenizer = source_tokenizer
-    elif config['task'] == 'translate':
+    else:
         config['bert_score_model'] = 'bert-base-multilingual-cased'
-        target_tokenizer = AutoTokenizer.from_pretrained(config['target_pretrained_bert_model'])
+        if config['model'] == 'transformer':
+            target_tokenizer = create_vocab(config['output_seq_vocab_path'], 'target')
+            config['target_CLS_ID'] = target_tokenizer.vocab_size
+            config['target_SEP_ID'] = target_tokenizer.vocab_size+1
+        elif config['model'] == 'bertified_transformer':
+            target_tokenizer = AutoTokenizer.from_pretrained(
+                                            config['target_pretrained_bert_model']
+                                                            )
+            config['target_CLS_ID'] = config['input_CLS_ID']
+            config['target_SEP_ID'] = config['input_SEP_ID']
+
+    return (target_tokenizer, config)
+
+def set_bertified_transformer_rules(config):
+    
+    source_tokenizer = AutoTokenizer.from_pretrained(config['input_pretrained_bert_model'])
+    config['input_vocab_size'] = source_tokenizer.vocab_size 
+    (target_tokenizer, config) = task_check(source_tokenizer, config)
     config['target_vocab_size'] = target_tokenizer.vocab_size
-    config['num_of_decoders'] = 2 if config.model == 'bertified_transformer' else 1
+    config['num_of_decoders'] = 2
+
+    return(config, source_tokenizer, target_tokenizer)
+
+def set_transformer_rules(config):
+
+    source_tokenizer = create_vocab(config['input_seq_vocab_path'], 'source')
+    config['input_vocab_size'] = source_tokenizer.vocab_size + 2
+    config['input_CLS_ID'] = source_tokenizer.vocab_size
+    config['input_SEP_ID'] = source_tokenizer.vocab_size+1
+    (target_tokenizer, config) = task_check(source_tokenizer, config)
+    config['target_vocab_size'] = target_tokenizer.vocab_size + 2
+    config['num_of_decoders'] = 1
 
     return(config, source_tokenizer, target_tokenizer)
 
@@ -82,11 +146,16 @@ def set_training_rules(config):
 
 def adhere_task_rules(config):
 
-    config,source_tokenizer,target_tokenizer = create_tokenizer(config)
-    config['d_model'] = 768
-    config['dff']: 2048
-    config['num_heads'] = 8
-    config['num_layers'] = 8
+    if config['model'] == 'transformer':
+        (config, source_tokenizer, 
+            target_tokenizer) = set_transformer_rules(config)
+    elif config['model'] == 'bertified_transformer':
+        (config, source_tokenizer, 
+            target_tokenizer) = set_bertified_transformer_rules(config)
+        config['d_model'] = 768
+        config['dff']: 2048
+        config['num_heads'] = 8
+        config['num_layers'] = 8
 
     if config['accumulate_gradients'] == False:
         config['gradient_accumulation_steps'] = 1
@@ -121,7 +190,7 @@ def assert_config_values(config):
     available_refine_decoder_types = ['greedy', 'topktopp']
     available_model_architectures = ['transformer', 'bertified_transformer']
     summarization_datasets = ['cnn_dailymail']
-    translate_datasets = ['en_tam_parallel_text']
+    translate_datasets = ['en_tam_parallel_text', 'wmt14_translate/hi-en']
     implemented_tasks = ['summarize', 'translate']
     assert config.task in implemented_tasks, 'summarize and translate are implemented currently'
     assert config.d_model % config.num_heads == 0, 'd_model should be a multiple of num_heads'

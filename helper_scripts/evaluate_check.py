@@ -20,21 +20,28 @@ val_dataset = create_dataset(
                              target_tokenizer=target_tokenizer, 
                              from_=0, 
                              to=100, 
-                             batch_size=1,
+                             batch_size=8,
                              shuffle=True,
                              drop_remainder=True
                              )
 count=0
 step = 1
-for _ in val_dataset:
+for (i, o) in val_dataset:
+  #print(f'input {tf.shape(i)}')
+  #print(f'output {tf.shape(o)}')
   count+=1
 print(f'Total records count is {count}')
+#sys.exit()
+
 #restore checkpoint
 ck_pt_mgr = check_ckpt(config.checkpoint_path)
 start_time = time.time()
-(task_score, bert_score) = evaluate_validation_set(       
+(task_score, bert_score,
+  draft_attention_weights,
+  refine_attention_weights) = evaluate_validation_set(       
                                                     val_dataset.take(1),
-                                                    step
+                                                    step,
+                                                    return_with_attention_weights=False
                                                     )  
 training_results(
                   step,

@@ -54,7 +54,10 @@ for beam_size in beams:
                                                    temperature, 
                                                    top_p,
                                                    top_k)])
-                    (task_score, bert_score) = evaluate_validation_set(test_dataset,
+                    (task_score, 
+                    bert_score,
+                    draft_attention_weights,
+                    refine_attention_weights) = evaluate_validation_set(test_dataset,
                                                                        step,
                                                                        decoder_type,
                                                                        beam_size,

@@ -19,6 +19,7 @@ def scaled_dot_product_attention(q, k, v, mask):
     # (..., seq_len_q, seq_len_k)
     attention_weights = tf.math.softmax(scaled_attention_logits, axis=-1)
     # (..., seq_len_q, depth_v)
+    v = tf.cast(v, tf.float32)
     output = tf.matmul(attention_weights, v)  
 
     return output, attention_weights
@@ -114,10 +115,12 @@ class EncoderLayer(tf.keras.layers.Layer):
 
         self.mha = MultiHeadAttention(d_model, num_heads)
         self.ffn = point_wise_feed_forward_network(d_model, dff)
-        self.layernorm1 = tf.keras.layers.LayerNormalization(epsilon=1e-6)
-        self.layernorm2 = tf.keras.layers.LayerNormalization(epsilon=1e-6)
-        self.dropout1 = tf.keras.layers.Dropout(rate, seed=100)
-        self.dropout2 = tf.keras.layers.Dropout(rate, seed=100)
+        self.layernorm1 = tf.keras.layers.LayerNormalization(epsilon=1e-6, 
+                                                            dtype='float32')
+        self.layernorm2 = tf.keras.layers.LayerNormalization(epsilon=1e-6,
+                                                             dtype='float32')
+        self.dropout1 = tf.keras.layers.Dropout(rate, dtype='float32')
+        self.dropout2 = tf.keras.layers.Dropout(rate, dtype='float32')
       
     def call(self, input_ids, training, mask):
         # (batch_size, input_seq_len, d_model)
@@ -125,6 +128,7 @@ class EncoderLayer(tf.keras.layers.Layer):
         attn_output, _ = self.mha(input_ids, input_ids, input_ids, mask)  
         attn_output = self.dropout1(attn_output, training=training)
         # (batch_size, input_seq_len, d_model)
+        input_ids = tf.cast(input_ids, tf.float32)
         layer_norm_out1 = self.layernorm1(input_ids + attn_output)  
         # (batch_size, input_seq_len, d_model)
         ffn_output = self.ffn(layer_norm_out1)  
@@ -141,12 +145,15 @@ class DecoderLayer(tf.keras.layers.Layer):
         self.mha1 = MultiHeadAttention(d_model, num_heads)
         self.mha2 = MultiHeadAttention(d_model, num_heads)
         self.ffn = point_wise_feed_forward_network(d_model, dff)
-        self.layernorm1 = tf.keras.layers.LayerNormalization(epsilon=1e-6) 
-        self.layernorm2 = tf.keras.layers.LayerNormalization(epsilon=1e-6) 
-        self.layernorm3 = tf.keras.layers.LayerNormalization(epsilon=1e-6) 
-        self.dropout1 = tf.keras.layers.Dropout(rate, seed=100)
-        self.dropout2 = tf.keras.layers.Dropout(rate, seed=100)
-        self.dropout3 = tf.keras.layers.Dropout(rate, seed=100)
+        self.layernorm1 = tf.keras.layers.LayerNormalization(epsilon=1e-6, 
+                                                            dtype='float32')
+        self.layernorm2 = tf.keras.layers.LayerNormalization(epsilon=1e-6, 
+                                                            dtype='float32')
+        self.layernorm3 = tf.keras.layers.LayerNormalization(epsilon=1e-6, 
+                                                            dtype='float32')
+        self.dropout1 = tf.keras.layers.Dropout(rate, dtype='float32')
+        self.dropout2 = tf.keras.layers.Dropout(rate, dtype='float32')
+        self.dropout3 = tf.keras.layers.Dropout(rate, dtype='float32')
       
     def call(self, target_ids, enc_output, training, 
              look_ahead_mask, padding_mask):
@@ -157,6 +164,8 @@ class DecoderLayer(tf.keras.layers.Layer):
                                                look_ahead_mask
                                                )  
         attn1 = self.dropout1(attn1, training=training)
+        attn1 = tf.cast(attn1, tf.float32)
+        target_ids = tf.cast(target_ids, tf.float32)
         layer_norm_out1 = self.layernorm1(attn1 + target_ids)
         attn2, attn_weights_block2 = self.mha2(
                                                enc_output, 
@@ -187,10 +196,9 @@ class Encoder(tf.keras.layers.Layer):
                                                     self.d_model)
         self.enc_layers = [EncoderLayer(d_model, num_heads, dff, rate) 
                            for _ in range(num_layers)]
-        self.dropout = tf.keras.layers.Dropout(rate, seed=100)
+        self.dropout = tf.keras.layers.Dropout(rate, dtype='float32')
           
     def call(self, input_ids, training, mask):
-
         seq_len = tf.shape(input_ids)[1]
         # (batch_size, input_seq_len, d_model)
         input_ids = self.encoder_embedding(input_ids)  
@@ -199,8 +207,9 @@ class Encoder(tf.keras.layers.Layer):
         input_ids = self.dropout(input_ids, training=training)
         #input_ids (batch_size, input_seq_len, d_model)
         for i in range(self.num_layers):
-          input_ids = self.enc_layers[i](input_ids, training, mask)
-
+          input_ids = self.enc_layers[i](tf.cast(input_ids, tf.float32), 
+                                                    training, mask)
+        input_ids = tf.cast(input_ids, tf.float32)
         return input_ids
 
 class Decoder(tf.keras.layers.Layer):
@@ -216,7 +225,7 @@ class Decoder(tf.keras.layers.Layer):
         self.pos_encoding = positional_encoding(target_vocab_size, self.d_model)
         self.dec_layers = [DecoderLayer(d_model, num_heads, dff, rate) 
                            for _ in range(num_layers)]
-        self.dropout = tf.keras.layers.Dropout(rate, seed=100)
+        self.dropout = tf.keras.layers.Dropout(rate)
         self.pointer_generator = Pointer_Generator() if add_pointer_generator else None
         self.final_layer = tf.keras.layers.Dense(
                              target_vocab_size,
@@ -322,9 +331,8 @@ class Pointer_Generator(tf.keras.layers.Layer):
                                                 )   
         total_distribution = weighted_vocab_dist + selected_attention_dist
         # ensures numerical stability
-        total_distribution = tf.math.maximum(total_distribution, 1e-10)
+        total_distribution = tf.math.maximum(total_distribution, 0.0000000001)
         logits = tf.math.log(total_distribution)
-        
         return logits
 
 class Transformer(tf.keras.Model):

@@ -3,7 +3,7 @@ import time
 import os
 from tensorflow.keras.mixed_precision import experimental as mixed_precision
 from preprocess import create_dataset
-from configuration import config, source_tokenizer, target_tokenizer
+from configuration import config
 from utilities import log, create_tensorboard_parms
 from create_model import Model
 from model_utils import create_padding_mask, create_masks
@@ -92,7 +92,7 @@ def train_step(input_ids,
 
     return predictions
 
-@tf.function(input_signature=val_step_signature)#experimental_relax_shapes=True)
+#@tf.function(input_signature=val_step_signature) #slow with tf.function
 def val_step(
              input_ids,
              target_ids,
@@ -100,8 +100,10 @@ def val_step(
              write_output_seq):
 
     enc_padding_mask = create_padding_mask(input_ids)
-    (draft_predictions, _,  
-     refine_predictions, _) = Model( 
+    (draft_predictions, 
+     draft_attention_weights,  
+     refine_predictions, 
+     refine_attention_weights) = Model( 
                                    input_ids,
                                    decoder_type=config.draft_decoder_type,
                                    beam_size=config.beam_size,
@@ -113,7 +115,8 @@ def val_step(
                                    target_ids=None,
                                    dec_padding_mask=None, 
                                    look_ahead_mask=None, 
-                                   training=None)
+                                   training=None
+                                   )
     
     if refine_predictions is not None:
       predictions = refine_predictions
@@ -127,7 +130,9 @@ def val_step(
                                      write_output_seq
                                       )
 
-    return (task_score, bert_f1)
+    return (task_score, bert_f1, 
+            draft_attention_weights, 
+            refine_attention_weights)
 
 def evaluate_validation_set(
                            validation_dataset, 
@@ -137,7 +142,8 @@ def evaluate_validation_set(
                            length_penalty=config.length_penalty,
                            temperature=config.softmax_temperature, 
                            top_p=config.top_p,
-                           top_k=config.top_k
+                           top_k=config.top_k,
+                           return_with_attention_weights=False
                            ):
 
     avg_task_score.reset_states()
@@ -151,25 +157,38 @@ def evaluate_validation_set(
     for (batch, (input_ids, target_ids)) in enumerate(validation_dataset, 1):
         # calculate rouge and bert score for only the first batch
         if batch == 1:
-          task_score, bert_f1 = val_step(input_ids,
-                                         target_ids,  
-                                         file_name, 
-                                         config.write_batch1_predictions
-                                         )
+            (task_score, 
+            bert_f1, 
+            draft_attention_weights, 
+            refine_attention_weights) = val_step(input_ids,
+                                                 target_ids,  
+                                                 file_name, 
+                                                 config.write_batch1_predictions
+                                                 )
         else:
-          task_score, bert_f1 =  val_step(input_ids,
-                                       target_ids, 
-                                       file_name, 
-                                       False
-                                       )
+            (task_score, 
+            bert_f1, 
+            draft_attention_weights, 
+            refine_attention_weights) =  val_step(input_ids,
+                                                 target_ids, 
+                                                 file_name, 
+                                                 False
+                                                 )
         # bleu ranges from 0-100
         if task_score:
             avg_task_score.update_state(task_score if config.task=='summarize' else task_score/100)
         if bert_f1:
             avg_bert_score.update_state(bert_f1)
-
+    if return_with_attention_weights:
+        return (avg_task_score.result().numpy(), 
+                avg_bert_score.result().numpy(),
+                draft_attention_weights,
+                refine_attention_weights
+                )  
     return (avg_task_score.result().numpy(), 
-            avg_bert_score.result().numpy()
+            avg_bert_score.result().numpy(),
+            None,
+            None
             )
 
 def eval_step(input_ids, 
@@ -218,7 +237,7 @@ def check_ckpt(checkpoint_path):
         log.warning('No checkpoint found so using the initialized_weights')
 
     return ckpt_manager
-# run every batch
+
 def batch_run_check(batch, start_time):
 
     if config.run_tensorboard:
@@ -231,16 +250,19 @@ def batch_run_check(batch, start_time):
         config.display_model_summary = False
     log.info(
              batch_run_details.format(
-                                     train_loss.result(), 
+                                     tf.debugging.assert_all_finite(
+                                                 train_loss.result(), 
+                                                 message="NaN's or Inf's.", 
+                                                 name='NAN_assertion'
+                                                ), 
                                      train_accuracy.result()
                                      )
             )
 
-    #return train_loss.result()
-
 def save_evaluate_monitor(ck_pt_mgr, val_dataset, 
             target_tokenizer, predictions, 
-            target_ids, step, start_time):
+            target_ids, step, start_time,
+            return_attention=False):
 
     ckpt_save_path = ck_pt_mgr.save()
     # print the detokenized training output of a single sample
@@ -249,10 +271,14 @@ def save_evaluate_monitor(ck_pt_mgr, val_dataset,
     # Run evaluation only if the predictions made by the teacher forced output is not empty
       # and the train_loss is lesser than start_evaluate_when
     if evaluate:
-        (task_score, bert_score) = evaluate_validation_set(       
-                                                      val_dataset,
-                                                      step
-                                                      )
+        (task_score, 
+        bert_score, 
+        draft_attention_weights,
+        refine_attention_weights) = evaluate_validation_set(       
+                                          val_dataset,
+                                          step,
+                                          return_with_attention_weights=return_attention
+                                          )
         early_stop_training = monitor_eval_metrics(
                               ckpt_save_path, 
                               bert_score, 
@@ -281,4 +307,6 @@ def save_evaluate_monitor(ck_pt_mgr, val_dataset,
     train_loss.reset_states()
     train_accuracy.reset_states()
     
-    return early_stop_training
+    return (early_stop_training,
+            draft_attention_weights,
+            refine_attention_weights)

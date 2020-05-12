@@ -7,7 +7,7 @@ from collections import defaultdict
 from configuration import config
 from utilities import log
 
-AUTOTUNE = tf.data.experimental.AUTOTUNE
+parallel_calls = config.num_parallel_calls
 
 def pad(l, n, pad=config.PAD_ID):
     """
@@ -19,13 +19,10 @@ def pad(l, n, pad=config.PAD_ID):
 
 def encode(sent_1, sent_2, source_tokenizer, target_tokenizer):
 
-    if config.model == 'bertified_transformer':
-        input_ids = source_tokenizer.encode(sent_1.numpy().decode('utf-8'), add_special_tokens=True) 
-        target_ids = target_tokenizer.encode(sent_2.numpy().decode('utf-8'), add_special_tokens=True) 
-        
-    else:    
-      input_ids = [config.input_CLS_ID] + source_tokenizer.encode(sent_1.numpy()) + [config.input_SEP_ID]
-      target_ids = [config.target_CLS_ID] + target_tokenizer.encode(sent_2.numpy()) + [config.target_SEP_ID]
+    input_ids = source_tokenizer.encode(sent_1.numpy().decode('utf-8'), 
+                                add_special_tokens=True) 
+    target_ids = target_tokenizer.encode(sent_2.numpy().decode('utf-8'), 
+                                add_special_tokens=True) 
 
     return input_ids, target_ids
 
@@ -61,6 +58,7 @@ def tf_encode(source_tokenizer, target_tokenizer):
                           target_tokenizer=target_tokenizer
                           )
         return tf.py_function(encode_, [s1, s2], [tf.int32, tf.int32])
+
     return f
 
 # Set threshold for input_sequence and  output_sequence length
@@ -146,7 +144,7 @@ def create_dataset(split,
                                           source_tokenizer,
                                           target_tokenizer
                                           ), 
-                                 num_parallel_calls=AUTOTUNE
+                                 num_parallel_calls=parallel_calls
                                  )
     tf_dataset = tf_dataset.filter(filter_max_length)
     if config.model == 'bertified_transformer':
@@ -154,9 +152,11 @@ def create_dataset(split,
     tf_dataset = tf_dataset.take(num_examples_to_select) 
     tf_dataset = tf_dataset.cache()
     if shuffle:
-        tf_dataset = tf_dataset.shuffle(400000, seed=100)
-    tf_dataset = tf_dataset.padded_batch(batch_size, padded_shapes=([-1], [-1]), drop_remainder=drop_remainder)
-    tf_dataset = tf_dataset.prefetch(buffer_size=AUTOTUNE)
+        tf_dataset = tf_dataset.shuffle(record_count, seed=100)
+    tf_dataset = tf_dataset.padded_batch(batch_size, 
+                            padded_shapes=([-1], [-1]), 
+                            drop_remainder=drop_remainder)
+    tf_dataset = tf_dataset.prefetch(buffer_size=parallel_calls)
     log.info(f'{split} tf_dataset created')
 
     return tf_dataset

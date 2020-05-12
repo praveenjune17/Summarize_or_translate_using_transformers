@@ -20,6 +20,7 @@ from __future__ import division
 from __future__ import print_function
 
 import math
+import psutil
 import numpy as np
 
 from tensor2tensor.layers import common_layers
@@ -27,7 +28,7 @@ import tensorflow as tf
 
 from tensorflow.python.ops import inplace_ops
 from tensorflow.python.util import nest
-
+from configuration import config
 # Assuming EOS_ID is 1
 EOS_ID = 1
 # Default value for INF
@@ -449,6 +450,7 @@ def beam_search(symbols_to_logits_fn,
   # Setting the scores of the initial to negative infinity.
   finished_scores = tf.ones([batch_size, beam_size]) * -INF
   finished_flags = tf.zeros([batch_size, beam_size], tf.bool)
+  
 
   def grow_finished(finished_seq, finished_scores, finished_flags, curr_seq,
                     curr_scores, curr_finished):
@@ -561,7 +563,7 @@ def beam_search(symbols_to_logits_fn,
     elif use_tpu:
       flat_logits = symbols_to_logits_fn(flat_ids, i)
     else:
-      flat_logits = symbols_to_logits_fn(flat_ids)
+      flat_logits, attention_weights = symbols_to_logits_fn(flat_ids)
 
     logits = tf.reshape(flat_logits, [batch_size, beam_size, -1])
 
@@ -628,10 +630,10 @@ def beam_search(symbols_to_logits_fn,
 
     topk_finished = tf.equal(topk_ids, eos_id)
 
-    return topk_seq, topk_log_probs, topk_scores, topk_finished, states
+    return topk_seq, topk_log_probs, topk_scores, topk_finished, states, attention_weights
 
   def inner_loop(i, alive_seq, alive_log_probs, finished_seq, finished_scores,
-                 finished_flags, states):
+                 finished_flags, states, attention_weights):
     """Inner beam search loop.
     There are three groups of tensors, alive, finished, and topk.
     The alive group contains information about the current alive sequences
@@ -677,7 +679,7 @@ def beam_search(symbols_to_logits_fn,
     # 1. Get the current topk items.
     # 2. Extract the ones that have finished and haven't finished
     # 3. Recompute the contents of finished based on scores.
-    topk_seq, topk_log_probs, topk_scores, topk_finished, states = grow_topk(
+    topk_seq, topk_log_probs, topk_scores, topk_finished, states, attention_weights = grow_topk(
         i, alive_seq, alive_log_probs, states)
     alive_seq, alive_log_probs, _, states = grow_alive(
         topk_seq, topk_scores, topk_log_probs, topk_finished, states)
@@ -686,11 +688,12 @@ def beam_search(symbols_to_logits_fn,
         topk_finished)
 
     return (i + 1, alive_seq, alive_log_probs, finished_seq, finished_scores,
-            finished_flags, states)
+            finished_flags, states, attention_weights)
 
   def _is_not_finished(i, unused_alive_seq, alive_log_probs,
                        unused_finished_seq, finished_scores,
-                       unused_finished_in_finished, unused_states):
+                       unused_finished_in_finished, unused_states,
+                       attention_weights):
     """Checking termination condition.
     We terminate when we decoded up to decode_length or the lowest scoring item
     in finished has a greater score that the highest prob item in alive divided
@@ -735,6 +738,12 @@ def beam_search(symbols_to_logits_fn,
         tf.less(i, decode_length), tf.logical_not(bound_is_met))
 
   inner_shape = tf.TensorShape([None, None, None])
+  attention_weights = tf.ones((batch_size*beam_size, 
+                        config.num_heads, 
+                        config.target_seq_length, 
+                        config.input_seq_length
+                        ))
+  attention_weights_shape = tf.TensorShape([None, None, None, None])
   if use_tpu:
     inner_shape = tf.TensorShape([batch_size, beam_size, decode_length + 1])
   if use_tpu:
@@ -742,11 +751,11 @@ def beam_search(symbols_to_logits_fn,
   else:
     state_struc = nest.map_structure(get_state_shape_invariants, states)
   (_, alive_seq, alive_log_probs, finished_seq, finished_scores,
-   finished_flags, states) = tf.while_loop(
+   finished_flags, states, attention_weights) = tf.while_loop(
        cond=_is_not_finished,
        body=inner_loop, loop_vars=[
            tf.constant(0), alive_seq, alive_log_probs, finished_seq,
-           finished_scores, finished_flags, states
+           finished_scores, finished_flags, states, attention_weights
        ],
        shape_invariants=[
            tf.TensorShape([]),
@@ -755,14 +764,14 @@ def beam_search(symbols_to_logits_fn,
            inner_shape,
            finished_scores.get_shape(),
            finished_flags.get_shape(),
-           state_struc
+           state_struc,
+           attention_weights_shape          
        ],
-       parallel_iterations=1,
+       parallel_iterations=psutil.cpu_count(),
        back_prop=False)
 
   alive_seq.set_shape((None, beam_size, None))
   finished_seq.set_shape((None, beam_size, None))
-
   # Accounting for corner case: It's possible that no sequence in alive for a
   # particular batch item ever reached EOS. In that case, we should just copy
   # the contents of alive for that batch item. tf.reduce_any(finished_flags, 1)
@@ -772,4 +781,4 @@ def beam_search(symbols_to_logits_fn,
       tf.reduce_any(input_tensor=finished_flags, axis=1), finished_seq, alive_seq)
   finished_scores = tf.compat.v1.where(
       tf.reduce_any(input_tensor=finished_flags, axis=1), finished_scores, alive_log_probs)
-  return finished_seq, finished_scores, states
+  return finished_seq, finished_scores, states, attention_weights

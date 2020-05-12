@@ -6,12 +6,32 @@ Packages in colab + Additonal packages
 	*) bert score
 	*) clone bleu score repo (models/official/google)
     *) tensor2tensor
-###################################################
+    *) sacrebleu
+####################################################
+explore
+*) For BERT score .. cuda is running out of memory. calculate it other system
+a) keep full stop in the training data to mark end of the sentence.
+b) check preprocessing..in the en-tam ds
+c) policy gradient approach (start with)
+			a) immediate reward:- autoregressive score using decoder.. like beam search
+			b) BERT score :- reward to use once the sentence is generated
+			c) An ensembled reward function as a linear
+				combination(use linear regression on annotated data to learn the linear weights) 
+				of ROUGE, BLEU, BERTScore, etc. that better approximates human evaluation; 
+				#http://cs229.stanford.edu/proj2019aut/data/assignment_308832_raw/26632588.pdf
+################
 Papers:-
+https://openai.com/blog/deep-double-descent/
+https://arxiv.org/abs/2003.10555:- electra
+https://arxiv.org/abs/1911.03829 :- bert distillation
+https://arxiv.org/abs/1910.10683
+https://arxiv.org/abs/2004.14546
+https://https//arxiv.org/abs/2001.04451.pdf
+
 	*) Probing BERT and GPT
 	*) Electra
 	*) Energy based models for text:- https://arxiv.org/pdf/2004.10188.pdf
-#####
+####################################################
 semi-supervised learning ideas:-
 	a) Mixmatch
 	b) UDA
@@ -22,9 +42,7 @@ Addtional refine mechanism:-
 		b) Conditional Masked Language Modeling (C-MLM) :- make the generated output coherent by establishing a global context before 
 				generating tokens 
 		c) mixmatch
-		e) policy gradient approach (start with)
-			a) immediate reward:- autoregressive score using decoder.. like beam search
-			b) BERT score :- reward to use once the sentence is generated 
+		
 ###################################################
 Architectural refinements
 	a) vocab sharing with in input and target languages
@@ -38,25 +56,22 @@ Investigate:-
 	*) does gradient accumulation gets skipped when intefered by validation steps?
 ###################################################
 Learning
-
-	*) policy gradients
 	*) RNN attention https://www.youtube.com/watch?v=XXtpJxZBa2c&list=PLoROMvodv4rOhcuXMZkNm7j3fVwBBY42z&index=8
 ###################################################
 Bugs
-	*) remove tensorboard log removing code
-	*) nan catcher in loss. stop training once faced with nans
-	*) BERT score calculation
-	*) weighted_and_unified_metric computation
+	*) convert tfds vocab to hugging's
+	*) BERT score calculation, weighted_and_unified_metric computation
 		BLEU 5.118620,
         BERT_f1 61.050230
         op:- 0.0277
 ###################################################
-Coding
+#) save shuffle tf.records
+#) Make validation run in another gpu
 
-#) save model during keyboard interrupt
 #) automatically suggest tokens per batch based on the available GPU memory
 #) source_text == decode(encode(source_text))
-#) modify the tokenization code assuming that all tokenizers are created using hugging face tokenizers
+#) remove index reading of the embeddings of the hugging face models.
+
 #) functions should be small and should be specific
 #) a script should say what it does
 #) avoid composite switch statements

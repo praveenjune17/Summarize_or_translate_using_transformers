@@ -6,33 +6,6 @@ import shutil
 import logging
 from configuration import config
 
-def detokenize(target_tokenizer, id_1, id_2, source_tokenizer=None):
-
-    if source_tokenizer is None:
-        source_tokenizer = target_tokenizer
-        cls_id = config.target_CLS_ID
-        sep_id = config.target_SEP_ID
-    else:
-        cls_id = config.input_CLS_ID
-        sep_id = config.input_SEP_ID
-    if config.model == 'transformer':
-        detokenized_seq_1 = source_tokenizer.decode([i for i in id_1 if i not in [cls_id, 
-                                                                                 sep_id, 
-                                                                                 config.PAD_ID]])
-    else:
-        detokenized_seq_1 = source_tokenizer.decode(id_1, skip_special_tokens=True)
-    if id_2 is not None:
-        if config.model == 'transformer':
-            detokenized_seq_2 = target_tokenizer.decode([i for i in id_2 if i not in [config.target_CLS_ID, 
-                                                                                 config.target_SEP_ID, 
-                                                                                 config.PAD_ID]])
-        else:
-            detokenized_seq_2 = target_tokenizer.decode(id_2, skip_special_tokens=True)
-    else:
-        detokenized_seq_2 = None
-    
-    return (detokenized_seq_1, detokenized_seq_2)
-
 def check_and_create_dir():
 
     for key in config.keys():

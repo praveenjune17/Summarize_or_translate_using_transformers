@@ -7,44 +7,18 @@ from collections import defaultdict
 from configuration import config
 from utilities import log
 
-AUTOTUNE = tf.data.experimental.AUTOTUNE
-
-def pad(l, n, pad=config.PAD_ID):
-    """
-    Pad the list 'l' to have size 'n' using 'padding_element'
-    """
-    pad_with = (0, max(0, n - len(l)))
-
-    return np.pad(l, pad_with, mode='constant', constant_values=pad)
+parallel_calls = config.num_parallel_calls
 
 def encode(sent_1, sent_2, source_tokenizer, target_tokenizer):
-
-    if config.model == 'bertified_transformer':
-        input_ids = source_tokenizer.encode(sent_1.numpy().decode('utf-8'), add_special_tokens=True) 
-        target_ids = target_tokenizer.encode(sent_2.numpy().decode('utf-8'), add_special_tokens=True) 
-        
-    else:    
-      input_ids = [config.input_CLS_ID] + source_tokenizer.encode(sent_1.numpy()) + [config.input_SEP_ID]
-      target_ids = [config.target_CLS_ID] + target_tokenizer.encode(sent_2.numpy()) + [config.target_SEP_ID]
-
+  
+    input_ids = source_tokenizer.encode(sent_1.numpy().decode('utf-8'),
+                                      pad_to_max_length=config.input_seq_length,
+                                      add_special_tokens=True) 
+    target_ids = target_tokenizer.encode(sent_2.numpy().decode('utf-8'),
+                                      pad_to_max_length=config.target_seq_length,
+                                      add_special_tokens=True) 
+  
     return input_ids, target_ids
-
-def pad_encoded_ids(input_ids, target_ids, 
-          input_seq_len=config.input_seq_length, 
-          output_seq_len=config.target_seq_length):
-    # Account for [CLS] and [SEP] with "- 2"
-    if len(input_ids) > input_seq_len - 2:
-        input_ids = input_ids[0:(input_seq_len - 2)]
-    if len(target_ids) > (output_seq_len + 1) - 2:
-        target_ids = target_ids[0:((output_seq_len + 1) - 2)]
-    input_ids = pad(input_ids, input_seq_len)
-    target_ids = pad(target_ids, output_seq_len + 1)
-
-    return input_ids, target_ids
-
-def tf_pad_encoded_ids(input_ids, target_ids):
-
-    return tf.py_function(pad_encoded_ids, [input_ids, target_ids], [tf.int32, tf.int32])
 
 def tf_encode(source_tokenizer, target_tokenizer):
     """
@@ -103,21 +77,25 @@ def create_dataset(split,
         en_tam_ds = defaultdict(list)
         record_count=0
         #List of available datasets in the package
-        dataset_names = ['GNOME_v1_en_to_ta', 'GNOME_v1_en_AU_to_ta', 'GNOME_v1_en_CA_to_ta', 
-                 'GNOME_v1_en_GB_to_ta', 'GNOME_v1_en_US_to_ta', 'KDE4_v2_en_to_ta', 
-                 'KDE4_v2_en_GB_to_ta', 'Tatoeba_v20190709_en_to_ta', 'Ubuntu_v14.10_en_to_ta_LK', 
-                 'Ubuntu_v14.10_en_GB_to_ta_LK', 'Ubuntu_v14.10_en_AU_to_ta_LK', 'Ubuntu_v14.10_en_CA_to_ta_LK', 
-                 'Ubuntu_v14.10_en_US_to_ta_LK', 'Ubuntu_v14.10_en_to_ta', 'Ubuntu_v14.10_en_GB_to_ta', 
-                 'Ubuntu_v14.10_en_AU_to_ta', 'Ubuntu_v14.10_en_CA_to_ta', 'Ubuntu_v14.10_en_NZ_to_ta', 
-                 'Ubuntu_v14.10_en_US_to_ta', 'OpenSubtitles_v2018_en_to_ta', 'OpenSubtitles_v2016_en_to_ta',
-                 'en_ta', 'github_joshua_en_ta']
+        dataset_names = ['GNOME_v1_en_to_ta', 'GNOME_v1_en_AU_to_ta', 
+                 'GNOME_v1_en_CA_to_ta', 'GNOME_v1_en_GB_to_ta', 
+                 'GNOME_v1_en_US_to_ta', 'KDE4_v2_en_to_ta', 
+                 'KDE4_v2_en_GB_to_ta', 'Tatoeba_v20190709_en_to_ta', 
+                 'Ubuntu_v14.10_en_to_ta_LK', 'Ubuntu_v14.10_en_GB_to_ta_LK', 
+                 'Ubuntu_v14.10_en_AU_to_ta_LK', 'Ubuntu_v14.10_en_CA_to_ta_LK', 
+                 'Ubuntu_v14.10_en_US_to_ta_LK', 'Ubuntu_v14.10_en_to_ta', 
+                 'Ubuntu_v14.10_en_GB_to_ta', 'Ubuntu_v14.10_en_AU_to_ta', 
+                 'Ubuntu_v14.10_en_CA_to_ta', 'Ubuntu_v14.10_en_NZ_to_ta', 
+                 'Ubuntu_v14.10_en_US_to_ta', 'OpenSubtitles_v2018_en_to_ta', 
+                 'OpenSubtitles_v2016_en_to_ta','en_ta', 'github_joshua_en_ta']
         for name in dataset_names:
-            en_tam_ds[(name,'metadata_'+name)] = tfds.load(f'{config.tfds_name}/'+name, 
-                                                          with_info=True, 
-                                                          as_supervised=True,
-                                                          data_dir=config.tfds_data_dir,
-                                                          builder_kwargs={'version': config.tfds_data_version},
-                                                        )
+            en_tam_ds[(name,'metadata_'+name)] = tfds.load(
+                                                  f'{config.tfds_name}/'+name, 
+                                                  with_info=True, 
+                                                  as_supervised=True,
+                                                  data_dir=config.tfds_data_dir,
+                                                  builder_kwargs={'version': config.tfds_data_version},
+                                                )
         for i,j  in en_tam_ds.keys():
             record_count+=(sum([i.num_examples for i in  list(en_tam_ds[(i, j)][1].splits.values())]))
         if not config.test_script:
@@ -138,7 +116,10 @@ def create_dataset(split,
                              as_supervised=True, 
                              data_dir=config.tfds_data_dir,
                              builder_kwargs={'version': config.tfds_data_version},
-                             split=tfds.core.ReadInstruction(split, from_=from_, to=to, unit='%')
+                             split=tfds.core.ReadInstruction(
+                                              split, 
+                                              from_=from_, to=to, unit='%'
+                                              )
                             )
         record_count = (sum([i.num_examples for i in  list(ds_info.splits.values())]))
     tf_dataset = raw_dataset.map(
@@ -146,17 +127,14 @@ def create_dataset(split,
                                           source_tokenizer,
                                           target_tokenizer
                                           ), 
-                                 num_parallel_calls=AUTOTUNE
+                                 num_parallel_calls=parallel_calls
                                  )
-    #tf_dataset = tf_dataset.filter(filter_max_length)
-    if config.model == 'bertified_transformer':
-        tf_dataset = tf_dataset.map(tf_pad_encoded_ids)
     tf_dataset = tf_dataset.take(num_examples_to_select) 
     tf_dataset = tf_dataset.cache()
     if shuffle:
-        tf_dataset = tf_dataset.shuffle(400000, seed=100)
-    tf_dataset = tf_dataset.padded_batch(batch_size, padded_shapes=([-1], [-1]), drop_remainder=drop_remainder)
-    tf_dataset = tf_dataset.prefetch(buffer_size=AUTOTUNE)
+        tf_dataset = tf_dataset.shuffle(record_count, seed=100)
+    tf_dataset = tf_dataset.batch(batch_size, drop_remainder=drop_remainder)
+    tf_dataset = tf_dataset.prefetch(buffer_size=parallel_calls)
     log.info(f'{split} tf_dataset created')
 
     return tf_dataset
