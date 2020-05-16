@@ -8,6 +8,10 @@ from official.nlp.transformer import compute_bleu
 from configuration import config, source_tokenizer, target_tokenizer
 from utilities import log
 
+loss_object = tf.keras.losses.CategoricalCrossentropy(
+                                                      from_logits=True, 
+                                                      reduction='none'
+                                                      )
 class evaluation_metrics:
 
     def __init__(self, true_output_sequences, predicted_output_sequences, task=config.task):
@@ -33,7 +37,8 @@ class evaluation_metrics:
         
         try:
             _, _, bert_f1 = b_score(self.ref_sents, self.hyp_sents, 
-                                  model_type=config.bert_score_model)
+                                  model_type=config.bert_score_model,
+                                  device='cpu')
             avg_bert_f1 = np.mean(bert_f1.numpy())
         except:
             log.warning('Some problem while calculating BERT score so setting it to zero')
@@ -101,10 +106,6 @@ def mask_and_calculate_loss(mask, loss):
 def loss_function(target_ids, draft_predictions, refine_predictions, model):
 
     true_ids_3D = label_smoothing(tf.one_hot(target_ids, depth=config.target_vocab_size))
-    loss_object = tf.keras.losses.CategoricalCrossentropy(
-                                                      from_logits=True, 
-                                                      reduction='none'
-                                                      )
     draft_loss  = loss_object(true_ids_3D[:, 1:, :], draft_predictions)
     draft_mask = tf.math.logical_not(tf.math.equal(target_ids[:, 1:], config.PAD_ID))
     draft_loss = mask_and_calculate_loss(draft_mask, draft_loss)

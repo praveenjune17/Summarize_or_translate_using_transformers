@@ -2,8 +2,7 @@
 import os
 import platform
 from bunch import Bunch
-from check_rules import (adhere_task_rules, 
-        assert_config_values, set_memory_growth)
+from check_rules import check_and_assert_config
 
 unit_test = {
       'check_evaluation_pipeline' : False,
@@ -29,13 +28,13 @@ model_parms = {
      'add_pointer_generator': True,
      'd_model': 768,                  # the projected word vector dimension
      'dff': 1024,                      # feed forward network hidden parameters
-     'input_pretrained_bert_model': 'distilroberta-base',  #distilroberta-base, #bert-base-uncased , #google/electra-small-discriminator
+     'input_pretrained_model': 'distilroberta-base',  #distilroberta-base, #bert-base-uncased , #google/electra-small-discriminator
      'input_seq_length': 50,
      'model' : 'bertified_transformer',#bertified_transformer or transformer
-     'num_heads': 12,                  # the number of heads in the multi-headed attention unit
-     'num_layers': 6,                 # number of transformer blocks
+     'num_heads': 8,                  # the number of heads in the multi-headed attention unit
+     'num_layers': 8,                 # number of transformer blocks
      'target_language' : 'ta',
-     'target_pretrained_bert_model' : 'distilbert-base-multilingual-cased',#'bert-base-uncased',
+     'target_pretrained_model' : 'distilbert-base-multilingual-cased',#'bert-base-uncased',
                                                                      #'bert-base-multilingual-cased',
                                                                     #'distilbert-base-multilingual-cased'
      'target_seq_length': 20,
@@ -47,20 +46,21 @@ training_parms = {
      'display_model_summary' : True,
      'early_stop' : False,
      'enable_jit' : True,
-     'eval_after_steps' : 40,              # Evaluate after these many training steps
+     'eval_after_steps' : 5000,              # Evaluate after these many training steps
      'gradient_accumulation_steps': 18,   
-     'last_recorded_value': 0.0277,
+     'last_recorded_value': 0.5459,
      'min_train_loss' : 1.0,
      'monitor_metric' : 'unified_metric',
      'run_tensorboard': True,
      'samples_to_train' : -1,
-     'samples_to_validate' : 10,            
+     'samples_to_validate' : 126,            
      'start_evaluate_when' : 6.0,           # run evaluation when loss reaches 10
-     'steps_to_print_training_info': 20,      # print training progress per number of batches specified
+     'steps_to_print_training_info': 100,      # print training progress per number of batches specified
      'tfds_name' : 'en_tam_parallel_text',            #cnn_dailymail,en_tam_parallel_text     # tfds dataset to be used
-     'tolerance' : 0,
+     'init_tolerance' : 0,
      'tolerance_threshold': 7,          # Stop training after the threshold is reached
      'tokens_per_batch' : 4050,
+     'use_custom_tokenizer' : None,
      'use_tfds' : True,                 # use tfds datasets as to train the model else use the given csv file
      'write_batch1_predictions': True           # write the first batch of validation set summary to a file
      }                                    
@@ -85,7 +85,7 @@ h_parms = {
    'l2_norm':0.0,
    'learning_rate': None,              # set None to create decayed learning rate schedule
    'train_batch_size': 2,
-   'validation_batch_size' : 1
+   'validation_batch_size' : 32
    }                                    
 
 dataset_name = training_parms['tfds_name']
@@ -116,12 +116,4 @@ config.update(inference_decoder_parms)
 config.update(h_parms)
 config.update(file_path)
 
-#set GPU memory growth
-_ = set_memory_growth()
-config, source_tokenizer, target_tokenizer = adhere_task_rules(config)
-config = assert_config_values(config)
-# Special Tokens 
-config['PAD_ID']  = target_tokenizer.pad_token_id
-config['CLS_ID']  = target_tokenizer.cls_token_id
-config['MASK_ID'] = target_tokenizer.mask_token_id
-config['SEP_ID']  = target_tokenizer.sep_token_id
+config, source_tokenizer, target_tokenizer = check_and_assert_config(config)

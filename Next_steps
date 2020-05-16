@@ -6,71 +6,67 @@ Packages in colab + Additonal packages
 	*) bert score
 	*) clone bleu score repo (models/official/google)
     *) tensor2tensor
-    *) sacrebleu
 ####################################################
-explore
-*) For BERT score .. cuda is running out of memory. calculate it other system
-a) keep full stop in the training data to mark end of the sentence.
-b) check preprocessing..in the en-tam ds
-c) policy gradient approach (start with)
+Addtional refine mechanism:-
+
+http://cs229.stanford.edu/proj2019aut/data/assignment_308832_raw/26632588.pdf:- Policy gradient approach to refine.
+https://arxiv.org/pdf/1905.05475.pdf :- Cross-lingual Transfer of Neural Machine Translation Models without Shared Vocabularies
+https://arxiv.org/abs/1910.10683 :- T5
+https://arxiv.org/abs/1911.03829 :- Conditional Masked Language Modeling (C-MLM) distillation BERT
+https://arxiv.org/abs/2003.10555:- electra
+https://kentonl.com/pub/gltpc.2020.pdf :- salient span masking, focus on problems that require world knowledge (suits QA)
+
+
+Enhance neural network understanding:-
+
+https://www.microsoft.com/en-us/research/uploads/prod/2018/02/UniNMT.pdf :- shared vocab bw souce and target sentences
+https://www-nlp.stanford.edu/pubs/clark2019what.pdf :- analyse BERT's attention
+https://arxiv.org/pdf/1906.05909.pdf :- Self-attention in vision
+https://arxiv.org/abs/1911.03584 :- relation bw attention and convolution
+https://arxiv.org/abs/2004.14546 :- train the model to output the explanation after generating the (natural text) prediction.
+https://arxiv.org/pdf/2004.10188.pdf :- energy based models for text 
+https://colinraffel.com/publications/arxiv2020how.pdf :- self-supervised training T5 for QA
+
+Optimize the model:-
+	https://www.aaai.org/ojs/index.php/AAAI/article/view/4487 :- Tied transformers:parameter sharing bw encoder and decoder
+	https://arxiv.org/abs/2001.04451 :- Reformer
+	https://arxiv.org/abs/1904.07418 :- Positional Encoding to Control Output Sequence Length
+	*) keep full stop in the training data to mark end of the sentence.
+	*) online Data augumentation  during training
+		https://colab.research.google.com/drive/1RGWrQv3e0CRDPDROQ3ZmUWTmlRljasGi?authuser=0#scrollTo=E9RYnn9VDE4N
+    *) Remove Tamil blacklist from the preprocess code
+####################################################
+Coding
+*) For BERT score .. cuda is running out of memory. 
+		a) validate parallely in other system
+		b) Code BERT in tensorflow
+		c) move the embeddings to cpu if cpu memory is free
+*) printout the except in metrics
+*) policy gradient approach (start with)
 			a) immediate reward:- autoregressive score using decoder.. like beam search
 			b) BERT score :- reward to use once the sentence is generated
 			c) An ensembled reward function as a linear
 				combination(use linear regression on annotated data to learn the linear weights) 
-				of ROUGE, BLEU, BERTScore, etc. that better approximates human evaluation; 
-				#http://cs229.stanford.edu/proj2019aut/data/assignment_308832_raw/26632588.pdf
-################
-Papers:-
-https://openai.com/blog/deep-double-descent/
-https://arxiv.org/abs/2003.10555:- electra
-https://arxiv.org/abs/1911.03829 :- bert distillation
-https://arxiv.org/abs/1910.10683
-https://arxiv.org/abs/2004.14546
-https://https//arxiv.org/abs/2001.04451.pdf
-
-	*) Probing BERT and GPT
-	*) Electra
-	*) Energy based models for text:- https://arxiv.org/pdf/2004.10188.pdf
-####################################################
-semi-supervised learning ideas:-
-	a) Mixmatch
-	b) UDA
-	c) self-training
+				of ROUGE, BLEU, BERTScore, etc. that better approximates human evaluation; 		
 #####################################################
 Addtional refine mechanism:-
 		a) Electra style
 		b) Conditional Masked Language Modeling (C-MLM) :- make the generated output coherent by establishing a global context before 
 				generating tokens 
-		c) mixmatch
-		
-###################################################
-Architectural refinements
-	a) vocab sharing with in input and target languages
-	b) Reformer :- optimized transformer architecture to better support long sequence length 
-	c) Replacing self-attention by CNN.. unified architecture for NLP and vision. hugging face's papers
-	d) Cross-lingual Transfer of Neural Machine Translation Models without Shared Vocabularies https://arxiv.org/pdf/1905.05475.pdf
+		c) Mixmatch, Fixmatch, Remixmatch
+		d) UDA
+		e) self-training
+		f) contrastive predictive coding
 ###################################################
 Investigate:-
-	*) start training a nn when its loss is 0..illaya's paper
-			double descent:- happens after early stopping
 	*) does gradient accumulation gets skipped when intefered by validation steps?
 ###################################################
-Learning
-	*) RNN attention https://www.youtube.com/watch?v=XXtpJxZBa2c&list=PLoROMvodv4rOhcuXMZkNm7j3fVwBBY42z&index=8
-###################################################
 Bugs
-	*) convert tfds vocab to hugging's
-	*) BERT score calculation, weighted_and_unified_metric computation
-		BLEU 5.118620,
-        BERT_f1 61.050230
-        op:- 0.0277
+	*) test unified metric. will it be greater than 1?
 ###################################################
-#) save shuffle tf.records
 #) Make validation run in another gpu
-
 #) automatically suggest tokens per batch based on the available GPU memory
 #) source_text == decode(encode(source_text))
-#) remove index reading of the embeddings of the hugging face models.
 
 #) functions should be small and should be specific
 #) a script should say what it does
@@ -81,10 +77,10 @@ Bugs
 ###################################################
 Expected improvements
 
-	*) Add electra multilingual pretrained model when they are out	
-	*) Make the model predict the output_seq_len
-	*) Data augumentation https://colab.research.google.com/drive/1RGWrQv3e0CRDPDROQ3ZmUWTmlRljasGi?authuser=0#scrollTo=E9RYnn9VDE4N
-    *) Remove Tamil blacklist from the preprocess code
+	*) XLM ROBERTA as the multilingual pretrained model:- https://github.com/pytorch/fairseq/tree/master/examples/xlmr
+			https://huggingface.co/transformers/model_doc/xlmroberta.html
+	*) Add electra multilingual pretrained model when they are out
+	*) Adafactor optimizer:- consumes less auxiliary storage
     *) Collect all indian languages from that link
 ###################################################
 Additional enhancements
@@ -93,10 +89,10 @@ Additional enhancements
 	#) Tensorflow graph optimizations
 	#) Hyper parameter tuning using keras tuner
 		Randomsearch using keras-tuner https://keras-team.github.io/keras-tuner/tutorials/subclass-tuner/
-    #) Avg checkpoints
 	#) Support distributed training, 
 		*)remove tf.py_function
 		*)ship the dataset to a bucket
-    #) Tensorflow implementation of BERT score
+    #) Tensorflow implementation of BERT score :- request tensorflow community
     #) Scheduled sampling :- toss a coin and perform teacher forcing if it is a heads else perform autoregressive training 
+    #) Avg checkpoints
 	

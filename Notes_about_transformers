@@ -11,7 +11,8 @@ Watchout for:-
   a) Gradient accumulation implementation by tensorflow community
   b) label smoothing fix.
 
-Please donot train BERTWordpiece tokenizer for tamil seems it removes '.' from the characters.Make use of ByteLevelBPETokenizer
+For using custom tokenizers for transformer model please train it using 'create_tokenizer_using_huggingface_tokenizers.py'
+Please donot train BERTWordpiece tokenizer for tamil seems it removes '.' from the characters make use of ByteLevelBPETokenizer
 instead.
   
 #########################

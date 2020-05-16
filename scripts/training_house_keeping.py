@@ -54,9 +54,9 @@ def copy_checkpoint(copy_best_ckpt, ckpt_save_path, all_metrics,
                     to_monitor, log, config):
 
     ckpt_fold, ckpt_string = os.path.split(ckpt_save_path)
-    config.tolerance=0
+    config.init_tolerance=0
     config.last_recorded_value =  all_metrics[to_monitor]
-    ckpt_files_tocopy = [files for files in os.listdir(ckpt_fold) if ckpt_string in files]
+    ckpt_files_tocopy = [files for files in os.listdir(ckpt_fold) if ckpt_string in files if not 'temp' in files]
     ckpt_files_tocopy = ['checkpoint'] + ckpt_files_tocopy
     for files in ckpt_files_tocopy:
         shutil.copy2(os.path.join(ckpt_fold, files), config.best_ckpt_path)
@@ -76,7 +76,7 @@ def pass_eval_results_to_tensorboard(task_score, bert_score, unified_score, step
 
 def early_stop(train_loss, log, config):
     # Warn and early stop
-    if config.tolerance > config.tolerance_threshold:
+    if config.init_tolerance > config.tolerance_threshold:
         log.warning('Tolerance exceeded')
         if config.early_stop:
             log.info(f'Early stopping since the {to_monitor} reached the tolerance threshold')
@@ -108,6 +108,7 @@ def monitor_eval_metrics(ckpt_save_path,
                         }
     assert to_monitor in all_eval_metrics, (
                   f'Available metrics to monitor are {all_eval_metrics}')
+    aggregated_metric.reset_states()
     all_eval_metrics['unified_metric'] = aggregated_metric([
                                         all_eval_metrics['bert_f1_score'], 
                                         all_eval_metrics['task_score']], 
@@ -129,6 +130,6 @@ def monitor_eval_metrics(ckpt_save_path,
         else:
             pass
     else:
-        config.tolerance+=1
+        config.init_tolerance+=1
 
     return early_stop(train_loss, log, config)

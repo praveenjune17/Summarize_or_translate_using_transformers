@@ -9,28 +9,48 @@ def set_memory_growth():
         print("GPU not available so Running in CPU")
     else:
         for device in gpu_devices:
-         tf.config.experimental.set_memory_growth(device, True)
-         print('GPU memory growth set')
+            tf.config.experimental.set_memory_growth(device, True)
+        print('GPU memory growth set')
 
-def create_tokenizer(config):
+def create_tokenizer(config, tokenizer_type=None,
+                    source_tokenizer_path=None, 
+                    target_tokenizer_path=None):
     
-    source_tokenizer = AutoTokenizer.from_pretrained(config['input_pretrained_bert_model'])
-    config['input_vocab_size'] = source_tokenizer.vocab_size
-    if config['task'] == 'summarize':
-        config['bert_score_model'] = 'bert-base-uncased'
-        target_tokenizer = source_tokenizer
-    elif config['task'] == 'translate':
-        config['bert_score_model'] = 'bert-base-multilingual-cased'
-        target_tokenizer = AutoTokenizer.from_pretrained(config['target_pretrained_bert_model'])
-    config['target_vocab_size'] = target_tokenizer.vocab_size
-    config['num_of_decoders'] = 2 if config.model == 'bertified_transformer' else 1
+    if config.use_custom_tokenizer:
+        available_tokenizers = {'BertWordPieceTokenizer': BertWordPieceTokenizer,
+                                'ByteLevelBPETokenizer': ByteLevelBPETokenizer,
+                                'CharBPETokenizer': CharBPETokenizer,
+                                'SentencePieceBPETokenizer': SentencePieceBPETokenizer
+                                }
+        assert tokenizer_type not in available_tokenizers, (
+            f'tokenizer_type should be either one in {available_tokenizers.keys()}'
+                                )
+        assert not ((available_tokenizers[tokenizer_type] == 'BertWordPieceTokenizer')
+            and (config.target_language == 'ta'), ('Please donot use wordpiece\
+                                                    for tamil try BPE')
+                   )
+        try:
+            source_tokenizer = available_tokenizers[tokenizer_type](
+                                                    f'.\\{source_tokenizer_path}-vocab.json', 
+                                                    f'.\\{source_tokenizer_path}-merges.txt'
+                                                    )
+            target_tokenizer = available_tokenizers[tokenizer_type](
+                                                f'.\\{target_tokenizer_path}-vocab.json', 
+                                                f'.\\{target_tokenizer_path}-merges.txt'
+                                                ) if config['task'] == 'translate' else source_tokenizer
+        except Exception as e:
+            print(e)
+    else:
+        source_tokenizer = AutoTokenizer.from_pretrained(config['input_pretrained_model'])
+        target_tokenizer = AutoTokenizer.from_pretrained(
+                                                    config['target_pretrained_model']
+                            ) if config['task'] == 'translate' else source_tokenizer
 
     return(config, source_tokenizer, target_tokenizer)
 
 def set_inference_rules(config):
 
     if config['draft_decoder_type'] == 'greedy':
-        config['draft_decoder_type'] = 'only_beam_search'
         config['beam_size'] = 1
         config['top_p'] = 1 
         config['top_k'] = 0
@@ -80,41 +100,6 @@ def set_training_rules(config):
 
     return config
 
-def adhere_task_rules(config):
-
-    config,source_tokenizer,target_tokenizer = create_tokenizer(config)
-    config['d_model'] = 768
-    config['dff']: 2048
-    config['num_heads'] = 8
-    config['num_layers'] = 8
-
-    if config['accumulate_gradients'] == False:
-        config['gradient_accumulation_steps'] = 1
-
-    if config.add_bias is not None:
-        if (config.model == 'bertified_transformer'
-        and config.task == 'translate'):
-            assert config.target_language in config.serialized_tensor_path, (
-            'serialized Bias file not found,\
-            please create it using helper scripts/create_bias script')
-            config['add_bias'] = load_and_set_bias(config['serialized_tensor_path'])
-        else:
-            assert False,(
-            f'add_bias is only available for\n\
-            config.model <- bertified_transformer\n\
-            config.task  <- translate'
-                        )
-
-    if config['test_script']:
-        config = set_testing_rules(config)
-    else:
-        config = set_training_rules(config)
-
-    config = set_inference_rules(config)
-
-    return (config, source_tokenizer, target_tokenizer)
-
-# create metrics dict
 def assert_config_values(config):
 
     available_draft_decoder_types = ['topktopp','greedy', 'only_beam_search']
@@ -126,7 +111,7 @@ def assert_config_values(config):
     assert config.task in implemented_tasks, 'summarize and translate are implemented currently'
     assert config.d_model % config.num_heads == 0, 'd_model should be a multiple of num_heads'
     assert config.eval_after_steps % config.steps_to_print_training_info == 0, (
-    'For printing the training results for the given steps without any issues "eval_after_steps"\
+    'For printing the training results without any issues "eval_after_steps"\
      must be a multiple of steps_to_print_training_info')
     assert config.steps_to_print_training_info > config.gradient_accumulation_steps, (
     'To prevent undesirable training results please set gradient_accumulation_steps lesser\
@@ -144,13 +129,54 @@ def assert_config_values(config):
                 f'{config.tfds_name} not currently added to summarize dataset list')
         assert config.input_seq_length > config.target_seq_length, (
             'input_seq_length must be greater than target_seq_length for summarize')
-        assert config.input_pretrained_bert_model == config.target_pretrained_bert_model, (
+        assert config.input_pretrained_model == config.target_pretrained_model, (
                 f'For {config.task} the input and target models must be same  for {config.task}')
     elif config.task == 'translate':
         assert config.tfds_name in translate_datasets , (
                 f'{config.tfds_name} not currently added to translate dataset list')
         if config.model == 'bertified_transformer':
-            assert config.input_pretrained_bert_model != config.target_pretrained_bert_model, (
+            assert config.input_pretrained_model != config.target_pretrained_model, (
                 f'For translate the input and target pre-trained BERT must not be same')
 
     return config
+
+def check_and_assert_config(config):
+
+    config, source_tokenizer, target_tokenizer = create_tokenizer(config)
+    config['bert_score_model'] = 'bert-base-multilingual-cased' if config['task'] == 'translate' else 'bert-base-uncased'
+    config['input_vocab_size'] = source_tokenizer.vocab_size
+    config['target_vocab_size'] = target_tokenizer.vocab_size
+    config['num_of_decoders'] = 2 if config.model == 'bertified_transformer' else 1
+    # Special Tokens 
+    config['PAD_ID']  = target_tokenizer.pad_token_id
+    config['CLS_ID']  = target_tokenizer.cls_token_id
+    config['MASK_ID'] = target_tokenizer.mask_token_id
+    config['SEP_ID']  = target_tokenizer.sep_token_id
+    if config['accumulate_gradients'] == False:
+        config['gradient_accumulation_steps'] = 1
+
+    if config.add_bias is not None:
+        if (config.model == 'bertified_transformer'
+        and config.task == 'translate'):
+            assert config.target_language in config.serialized_tensor_path, (
+            'serialized Bias file not found,\
+            please create it using helper scripts/create_bias script')
+            config['add_bias'] = load_and_set_bias(config['serialized_tensor_path'])
+        else:
+            assert False,(
+            f'add_bias is only available for\n\
+            config.model <- bertified_transformer\n\
+            config.task  <- translate'
+                        )
+    if config['test_script']:
+        config = set_testing_rules(config)
+    else:
+        config = set_training_rules(config)
+
+    config = set_inference_rules(config)
+    config = assert_config_values(config)
+    
+    return (config, source_tokenizer, target_tokenizer)
+
+#set GPU memory growth
+_ = set_memory_growth()

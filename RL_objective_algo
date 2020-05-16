@@ -1,0 +1,20 @@
+Rl objective:-
+	a) Train the model using log likelihood:- as usual
+	b) Perform training using RL objective:
+		*) From the trained model, 
+		  y^s <-- generate random sample (sampling distribution for inference)
+		  y^  <-- generated sequence using argmax(draft or refine predictions)
+		X) <- Take BERT score(x) 
+		Y) <- BERT score(y)
+
+		Z) use y^s in the categorical cross entropy loss. like below
+			Instead of the existing
+				*) loss_object(true_ids_3D[:, 1:, :], draft_predictions)
+			use
+				*) loss_object(one_hot(y^s), draft_predictions)
+
+Loss = (Y - X)*(Z)
+
+a) each refine step should carry its own loss function..unify the total loss when applying gradients
+	*) create draft_loss function:- nll 
+	*) mlm loss

@@ -22,7 +22,7 @@ train_dataset = create_dataset(
                               target_tokenizer=target_tokenizer, 
                               from_=0, 
                               to=100, 
-                              batch_size=4,
+                              batch_size=2,
                               shuffle=False
                               )
 

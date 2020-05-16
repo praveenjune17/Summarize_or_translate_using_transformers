@@ -22,7 +22,7 @@ train_dataset = create_dataset(
                               from_=0, 
                               to=100, 
                               batch_size=config.train_batch_size,
-                              shuffle=False
+                              shuffle=True
                               )
 val_dataset = create_dataset(
                              split='validation',
@@ -43,7 +43,7 @@ train_dataset = train_dataset.repeat(total_steps)
 
 try:
     for (step, (input_ids, target_ids)) in tqdm(enumerate(train_dataset, 1), initial=1):
-        if step > -1:
+        if step > 595000:
             start_time = time.time()
             grad_accum_flag = (True if (step%config.gradient_accumulation_steps) == 0 else False) if config.accumulate_gradients else None
             predictions = train_step(

@@ -41,10 +41,9 @@ ck_pt_mgr = check_ckpt(config.checkpoint_path)
 total_steps = int(config.epochs * (config.gradient_accumulation_steps))
 train_dataset = train_dataset.repeat(total_steps)
 
-<<<<<<< HEAD
 try:
     for (step, (input_ids, target_ids)) in tqdm(enumerate(train_dataset, 1), initial=1):
-        if step > 505000:
+        if step > 580000:
             start_time = time.time()
             grad_accum_flag = (True if (step%config.gradient_accumulation_steps) == 0 else False) if config.accumulate_gradients else None
             predictions = train_step(
@@ -56,29 +55,20 @@ try:
                 batch_run_check(
                                 step,  
                                 start_time
-=======
-for (step, (input_ids, target_ids)) in tqdm(enumerate(train_dataset, 1), initial=1):
-    if step > 565000:
-        start_time = time.time()
-        grad_accum_flag = (True if (step%config.gradient_accumulation_steps) == 0 else False) if config.accumulate_gradients else None
-        predictions = train_step(
-                                input_ids,  
-                                target_ids,
-                                grad_accum_flag
->>>>>>> 3c35457c40b2e08b4e32b8478cf5740894b588f1
                                 )
             if (step % config.eval_after_steps) == 0:
                 (early_stop,
                 draft_attention_weights,
                 refine_attention_weights) = save_evaluate_monitor(ck_pt_mgr, val_dataset, 
-                                                    target_tokenizer, predictions, 
-                                                    target_ids, step, start_time,
-                                                    return_attention=True
-                                                    )
+                                                target_tokenizer, predictions, 
+                                                target_ids, step, start_time,
+                                                return_attention=True
+                                                )
                 if early_stop:
                     break
         else:
             continue
+
     if not early_stop:
         _ = save_evaluate_monitor(ck_pt_mgr, val_dataset, 
                 target_tokenizer, predictions, target_ids, step, start_time)

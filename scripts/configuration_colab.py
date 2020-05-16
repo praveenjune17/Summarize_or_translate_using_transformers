@@ -32,8 +32,8 @@ model_parms = {
      'input_pretrained_bert_model': 'distilroberta-base',  #distilroberta-base, #bert-base-uncased , #google/electra-small-discriminator
      'input_seq_length': 50,
      'model' : 'bertified_transformer',#bertified_transformer or transformer
-     'num_heads': 12,                  # the number of heads in the multi-headed attention unit
-     'num_layers': 6,                 # number of transformer blocks
+     'num_heads': 8,                  # the number of heads in the multi-headed attention unit
+     'num_layers': 8,                 # number of transformer blocks
      'target_language' : 'ta',
      'target_pretrained_bert_model' : 'distilbert-base-multilingual-cased',#'bert-base-uncased',
                                                                      #'bert-base-multilingual-cased',
@@ -61,6 +61,7 @@ training_parms = {
      'tolerance' : 0,
      'tolerance_threshold': 7,          # Stop training after the threshold is reached
      'tokens_per_batch' : 4050,
+     'use_custom_tokenizer' : None,
      'use_tfds' : True,                 # use tfds datasets as to train the model else use the given csv file
      'write_batch1_predictions': True           # write the first batch of validation set summary to a file
      }                                    

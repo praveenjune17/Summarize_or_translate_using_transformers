@@ -292,7 +292,8 @@ def save_evaluate_monitor(ck_pt_mgr, val_dataset,
         log.info('Not running evaluation since loss is not lesser than config.start_evaluate_when')
         (task_score, bert_score) = (0, 0)
         early_stop_training = False
-
+        draft_attention_weights = None
+        refine_attention_weights = None
     training_results(
                       step,
                       train_loss.result(), 
