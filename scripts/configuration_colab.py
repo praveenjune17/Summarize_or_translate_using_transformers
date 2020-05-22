@@ -49,7 +49,7 @@ training_parms = {
      'eval_after_steps' : 5000,              # Evaluate after these many training steps
      'gradient_accumulation_steps': 9,   
      'last_recorded_value': 0.5459,
-     'min_train_loss' : 1.0,
+     'min_train_loss' : 3.85,
      'monitor_metric' : 'unified_metric',
      'run_tensorboard': True,
      'samples_to_train' : -1,
