@@ -1,6 +1,7 @@
 import tensorflow as tf
 import tensorflow_datasets as tfds
 from transformers import AutoTokenizer
+from tokenizers import ByteLevelBPETokenizer, ByteLevelBPETokenizer, BertWordPieceTokenizer,SentencePieceBPETokenizer, Tokenizer
 
 def set_memory_growth():
     # Set GPU memory growth
@@ -13,8 +14,8 @@ def set_memory_growth():
         print('GPU memory growth set')
 
 def create_tokenizer(config, tokenizer_type=None,
-                    source_tokenizer_path=None, 
-                    target_tokenizer_path=None):
+                    source_tokenizer_path=config.input_seq_vocab_path, 
+                    target_tokenizer_path=config.output_seq_vocab_path):
     
     if config.use_custom_tokenizer:
         available_tokenizers = {'BertWordPieceTokenizer': BertWordPieceTokenizer,
@@ -30,14 +31,10 @@ def create_tokenizer(config, tokenizer_type=None,
                                                     for tamil try BPE')
                    )
         try:
-            source_tokenizer = available_tokenizers[tokenizer_type](
-                                                    f'.\\{source_tokenizer_path}-vocab.json', 
-                                                    f'.\\{source_tokenizer_path}-merges.txt'
-                                                    )
-            target_tokenizer = available_tokenizers[tokenizer_type](
-                                                f'.\\{target_tokenizer_path}-vocab.json', 
-                                                f'.\\{target_tokenizer_path}-merges.txt'
-                                                ) if config['task'] == 'translate' else source_tokenizer
+            source_tokenizer = Tokenizer.from_file(source_tokenizer_path)
+            target_tokenizer = Tokenizer.from_file(
+                                                  target_tokenizer_path
+                                                  ) if config['task'] == 'translate' else source_tokenizer
         except Exception as e:
             print(e)
     else:
