@@ -1,15 +1,14 @@
+import sys
+sys.path.insert(0, '/content/Summarize_or_translate_using_transformers/scripts')
 import time
 import re
 import pickle
 import tensorflow as tf
+import tensorflow_datasets as tfds
 from profanity_check import predict_prob as vulgar_check
 from create_model import  Model
-from utilities import detokenize
 from model_utils import create_padding_mask
 from configuration import config, source_tokenizer, target_tokenizer
-
-with open('correction_dictonary.pickle', 'rb') as handle:
-    correction_dictonary = pickle.load(handle)
 
 def preprocess(sentence):
     en_blacklist = '"#$%&\()*+-./:;<=>@[\\]^_`♪{|}~='
@@ -37,31 +36,33 @@ def postprocess(input_sentence, translated_sequence, input_word_to_be_corrected,
             correction_dictonary[input_word_to_be_corrected] = (incorrect_target_word, correct_target_word)
     else:
         if input_word_to_be_corrected in input_sentence:
-            translated_sequence = translated_sequence.replace(correction_available[0], correction_available[1])
-    with open('correction_dictonary.pickle', 'wb') as handle:
-        pickle.dump(correction_dictonary, handle, protocol=pickle.HIGHEST_PROTOCOL)
-        
+            translated_sequence = translated_sequence.replace(correction_available[0], correction_available[1])    
     return translated_sequence
+
 def translate():
     
     en_input = input('Enter the sentence to be translated-> ')
     en_input = preprocess(en_input)
-    input_ids = tf.convert_to_tensor([[config.input_CLS_ID] + source_tokenizer.encode(en_input) + [config.input_SEP_ID]])
+    input_CLS_ID = source_tokenizer.vocab_size
+    input_SEP_ID = source_tokenizer.vocab_size+1
+    target_CLS_ID = target_tokenizer.vocab_size
+    target_SEP_ID = target_tokenizer.vocab_size+1
+
+    input_ids = tf.convert_to_tensor([[input_CLS_ID] + source_tokenizer.encode(en_input) + [input_SEP_ID]])
     dec_padding_mask = create_padding_mask(input_ids)
     start = time.time()
     preds_draft_summary, _, _, _ = Model.predict(input_ids,
                                                 dec_padding_mask
                                                 )
                                                 
-    translated_sequence = target_tokenizer.decode([i for i in tf.squeeze(preds_draft_summary) if i not in [config.target_CLS_ID, 
-                                                                                                           config.target_SEP_ID, 
-                                                                                                           config.PAD_ID]])
-    translated_sequence = postprocess(en_input, 
-                                      translated_sequence, 
-                                      input_word_to_be_corrected='hemalatha',
-                                      incorrect_target_word='ஹேமாலயா', 
-                                      correct_target_word='ஹேமலதா'
-                                     )
+    translated_sequence = target_tokenizer.decode([i for i in tf.squeeze(preds_draft_summary) if i not in [target_CLS_ID, 
+                                                                                                           target_SEP_ID,                                                                                                            config.PAD_ID]])
+    # translated_sequence = postprocess(en_input, 
+    #                                   translated_sequence, 
+    #                                   input_word_to_be_corrected='hemalatha',
+    #                                   incorrect_target_word='ஹேமாலயா', 
+    #                                   correct_target_word='ஹேமலதா'
+    #                                  )
     print(f'the summarized output is --> {translated_sequence if translated_sequence else "EMPTY"}')
     print(f'Time to process --> {round(time.time()-start)} seconds')
 
@@ -69,10 +70,5 @@ if __name__ == '__main__':
     ckpt = tf.train.Checkpoint(
                                Model=Model
                               )
-    ckpt.restore('/root/ckpt_dir/temp_ckpt/ckpt-223').expect_partial()
+    ckpt.restore('/content/drive/My Drive/best_checkpoints/en_tam_parallel_text/ckpt-232').expect_partial()
     translate()
-
-# import pickle
-# correction_dictonary = {}
-# with open('correction_dictonary.pickle', 'wb') as handle:
-#     pickle.dump(correction_dictonary, handle, protocol=pickle.HIGHEST_PROTOCOL)
