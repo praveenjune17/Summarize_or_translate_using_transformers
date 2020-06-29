@@ -13,36 +13,39 @@ def set_memory_growth():
             tf.config.experimental.set_memory_growth(device, True)
         print('GPU memory growth set')
 
-def create_tokenizer(config, tokenizer_type=None,
-                    source_tokenizer_path=config.input_seq_vocab_path, 
-                    target_tokenizer_path=config.output_seq_vocab_path):
+def create_tokenizer(config, tokenizer_type=None):
     
-    if config.use_custom_tokenizer:
-        available_tokenizers = {'BertWordPieceTokenizer': BertWordPieceTokenizer,
-                                'ByteLevelBPETokenizer': ByteLevelBPETokenizer,
-                                'CharBPETokenizer': CharBPETokenizer,
-                                'SentencePieceBPETokenizer': SentencePieceBPETokenizer
-                                }
-        assert tokenizer_type not in available_tokenizers, (
-            f'tokenizer_type should be either one in {available_tokenizers.keys()}'
-                                )
-        assert not ((available_tokenizers[tokenizer_type] == 'BertWordPieceTokenizer')
-            and (config.target_language == 'ta'), ('Please donot use wordpiece\
-                                                    for tamil try BPE')
-                   )
-        try:
-            source_tokenizer = Tokenizer.from_file(source_tokenizer_path)
-            target_tokenizer = Tokenizer.from_file(
-                                                  target_tokenizer_path
-                                                  ) if config['task'] == 'translate' else source_tokenizer
-        except Exception as e:
-            print(e)
+    source_tokenizer_path=config['input_seq_vocab_path'], 
+    target_tokenizer_path=config['output_seq_vocab_path']
+    if config.tokenizer_api == 'hugging_face':
+        if config.use_custom_tokenizer:
+            available_tokenizers = {'BertWordPieceTokenizer': BertWordPieceTokenizer,
+                                    'ByteLevelBPETokenizer': ByteLevelBPETokenizer,
+                                    'CharBPETokenizer': CharBPETokenizer,
+                                    'SentencePieceBPETokenizer': SentencePieceBPETokenizer
+                                    }
+            assert tokenizer_type not in available_tokenizers, (
+                f'tokenizer_type should be either one in {available_tokenizers.keys()}'
+                                    )
+            assert not ((available_tokenizers[tokenizer_type] == 'BertWordPieceTokenizer')
+                and (config.target_language == 'ta'), ('Please donot use wordpiece\
+                                                        for tamil try BPE')
+                      )
+            try:
+                source_tokenizer = Tokenizer.from_file(source_tokenizer_path)
+                target_tokenizer = Tokenizer.from_file(
+                                                      target_tokenizer_path
+                                                      ) if config['task'] == 'translate' else source_tokenizer
+            except Exception as e:
+                print(e)
+        else:
+            source_tokenizer = AutoTokenizer.from_pretrained(config['input_pretrained_model'])
+            target_tokenizer = AutoTokenizer.from_pretrained(
+                                                        config['target_pretrained_model']
+                                ) if config['task'] == 'translate' else source_tokenizer
     else:
-        source_tokenizer = AutoTokenizer.from_pretrained(config['input_pretrained_model'])
-        target_tokenizer = AutoTokenizer.from_pretrained(
-                                                    config['target_pretrained_model']
-                            ) if config['task'] == 'translate' else source_tokenizer
-
+        source_tokenizer = tfds.features.text.SubwordTextEncoder.load_from_file('/content/drive/My Drive/best_checkpoints/en_tam_parallel_text/vocab_en')
+        target_tokenizer = tfds.features.text.SubwordTextEncoder.load_from_file('/content/drive/My Drive/best_checkpoints/en_tam_parallel_text/vocab_ta')
     return(config, source_tokenizer, target_tokenizer)
 
 def set_inference_rules(config):
@@ -141,14 +144,24 @@ def check_and_assert_config(config):
 
     config, source_tokenizer, target_tokenizer = create_tokenizer(config)
     config['bert_score_model'] = 'bert-base-multilingual-cased' if config['task'] == 'translate' else 'bert-base-uncased'
-    config['input_vocab_size'] = source_tokenizer.vocab_size
-    config['target_vocab_size'] = target_tokenizer.vocab_size
+    if config['model'] == 'transformer':
+      config['input_vocab_size'] = source_tokenizer.vocab_size+2
+      config['target_vocab_size'] = target_tokenizer.vocab_size+2
+    else:
+      config['input_vocab_size'] = source_tokenizer.vocab_size
+      config['target_vocab_size'] = target_tokenizer.vocab_size
     config['num_of_decoders'] = 2 if config.model == 'bertified_transformer' else 1
     # Special Tokens 
-    config['PAD_ID']  = target_tokenizer.pad_token_id
-    config['CLS_ID']  = target_tokenizer.cls_token_id
-    config['MASK_ID'] = target_tokenizer.mask_token_id
-    config['SEP_ID']  = target_tokenizer.sep_token_id
+    if config['tokenizer_api'] == 'hugging_face':
+        config['PAD_ID']  = target_tokenizer.pad_token_id
+        config['CLS_ID']  = target_tokenizer.cls_token_id
+        config['MASK_ID'] = target_tokenizer.mask_token_id
+        config['SEP_ID']  = target_tokenizer.sep_token_id
+    else:
+        config['PAD_ID']  = 0
+        config['CLS_ID']  = target_tokenizer.vocab_size
+        config['MASK_ID'] = 103
+        config['SEP_ID']  = target_tokenizer.vocab_size+1
     if config['accumulate_gradients'] == False:
         config['gradient_accumulation_steps'] = 1
 
