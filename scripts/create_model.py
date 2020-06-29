@@ -2,7 +2,6 @@ import tensorflow as tf
 from tensorflow.keras.initializers import Constant
 from transformers import TFAutoModel
 from transformer import Decoder, Transformer
-from utilities import log
 from configuration import config
 from model_utils import (tile_and_mask_diagonal, create_masks, topp_topk,
                          with_column, mask_timestamp, draft_decoder)
@@ -17,7 +16,6 @@ def _embedding_from_bert():
                                               trainable=False, 
                                               name=config.target_pretrained_model)
     decoder_embedding = target_pretrained_bert.get_weights()[0]
-    log.info(f"Decoder_Embedding matrix shape '{decoder_embedding.shape}'")
 
     return (decoder_embedding, input_pretrained_bert, target_pretrained_bert)
 
@@ -136,8 +134,6 @@ class Bertified_transformer(tf.keras.Model):
         It first masks each word in the output_sequence draft one by one,
         then feeds the draft to BERT to generate context vectors.
         """
-        
-        #log.info(f"Building: 'Refined {decoder_type} decoder'")
         dec_input = draft_output_sequence
         for i in (range(1, config.target_seq_length)):    
 
@@ -284,6 +280,4 @@ elif config.model == 'bertified_transformer':
 
 if config.print_config:
     if config['add_bias']:
-          config['add_bias'] = True
-    log.info(f'Configuration used \n {config}')
-    
+          config['add_bias'] = True    
