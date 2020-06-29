@@ -44,8 +44,8 @@ def create_tokenizer(config, tokenizer_type=None):
                                                         config['target_pretrained_model']
                                 ) if config['task'] == 'translate' else source_tokenizer
     else:
-        source_tokenizer = tfds.features.text.SubwordTextEncoder.load_from_file('/content/drive/My Drive/best_checkpoints/en_tam_parallel_text/vocab_en')
-        target_tokenizer = tfds.features.text.SubwordTextEncoder.load_from_file('/content/drive/My Drive/best_checkpoints/en_tam_parallel_text/vocab_ta')
+        source_tokenizer = tfds.features.text.SubwordTextEncoder.load_from_file('/content/content/drive/My Drive/best_checkpoints/en_tam_parallel_text/vocab_en')
+        target_tokenizer = tfds.features.text.SubwordTextEncoder.load_from_file('/content/content/drive/My Drive/best_checkpoints/en_tam_parallel_text/vocab_ta')
     return(config, source_tokenizer, target_tokenizer)
 
 def set_inference_rules(config):
