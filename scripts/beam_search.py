@@ -751,7 +751,7 @@ def beam_search(symbols_to_logits_fn,
   else:
     state_struc = nest.map_structure(get_state_shape_invariants, states)
   (_, alive_seq, alive_log_probs, finished_seq, finished_scores,
-   finished_flags, states, attention_weights) = tf.while_loop(
+   finished_flags, states, attention_weights) = tf.nest.map_structure(tf.stop_gradient, tf.while_loop(
        cond=_is_not_finished,
        body=inner_loop, loop_vars=[
            tf.constant(0), alive_seq, alive_log_probs, finished_seq,
@@ -766,9 +766,8 @@ def beam_search(symbols_to_logits_fn,
            finished_flags.get_shape(),
            state_struc,
            attention_weights_shape          
-       ],
-       parallel_iterations=psutil.cpu_count(),
-       back_prop=False)
+       ]
+       ))
 
   alive_seq.set_shape((None, beam_size, None))
   finished_seq.set_shape((None, beam_size, None))
