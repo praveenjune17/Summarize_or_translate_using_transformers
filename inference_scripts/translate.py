@@ -56,13 +56,8 @@ def translate():
                                                 )
                                                 
     translated_sequence = target_tokenizer.decode([i for i in tf.squeeze(preds_draft_summary) if i not in [target_CLS_ID, 
-                                                                                                           target_SEP_ID,                                                                                                            config.PAD_ID]])
-    # translated_sequence = postprocess(en_input, 
-    #                                   translated_sequence, 
-    #                                   input_word_to_be_corrected='hemalatha',
-    #                                   incorrect_target_word='ஹேமாலயா', 
-    #                                   correct_target_word='ஹேமலதா'
-    #                                  )
+                                                                                                           target_SEP_ID,
+                                                                                                           config.PAD_ID]])
     print(f'the summarized output is --> {translated_sequence if translated_sequence else "EMPTY"}')
     print(f'Time to process --> {round(time.time()-start)} seconds')
 
@@ -70,5 +65,5 @@ if __name__ == '__main__':
     ckpt = tf.train.Checkpoint(
                                Model=Model
                               )
-    ckpt.restore('/content/drive/My Drive/best_checkpoints/en_tam_parallel_text/ckpt-232').expect_partial()
+    ckpt.restore('/content/content/drive/My Drive/best_checkpoints/en_tam_parallel_text/ckpt-232').expect_partial()
     translate()
