@@ -41,7 +41,7 @@ def postprocess(input_sentence, translated_sequence, input_word_to_be_corrected,
 
 def translate():
     
-    en_input = input('Enter the sentence to be translated-> ')
+    en_input = input('Enter the english sentence-> ')
     en_input = preprocess(en_input)
     input_CLS_ID = source_tokenizer.vocab_size
     input_SEP_ID = source_tokenizer.vocab_size+1
@@ -58,8 +58,8 @@ def translate():
     translated_sequence = target_tokenizer.decode([i for i in tf.squeeze(preds_draft_summary) if i not in [target_CLS_ID, 
                                                                                                            target_SEP_ID,
                                                                                                            config.PAD_ID]])
-    print(f'the summarized output is --> {translated_sequence if translated_sequence else "EMPTY"}')
-    print(f'Time to process --> {round(time.time()-start)} seconds')
+    print(f'Translated output --> {translated_sequence if translated_sequence else "EMPTY"}')
+    print(f'Time taken --> {round(time.time()-start)} seconds')
 
 if __name__ == '__main__':
     ckpt = tf.train.Checkpoint(
