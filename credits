@@ -11,3 +11,8 @@
 Papers refered:-
 	En_tam Machine translation paper:-  http://www.iitp.ac.in/~sukanta.pcs15/pubs/WAT_2018_paper_12.pdf 
 	Base paper :- https://arxiv.org/pdf/1902.09243v2.pdf
+	
+Datasets used:-  
+	a) Open subtitiles:- http://opus.nlpl.eu/  
+	b) bible, cinema and news domains:- http://ufal.mff.cuni.cz/loganathan-ramasamy
+	
